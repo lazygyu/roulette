@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+		<title>Document</title>
+		<style type="text/css">
+html, body {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+	body {
+		display: flex;
+		justify-content: center;
+		align-items: stretch;
+	}
+
+	canvas {
+
+	}
+
+	#settings {
+		background: rgba(255, 255, 255, 0.8);
+		position: absolute;
+		bottom: 5%;
+		left: 5%;
+		width: 400px;
+		padding: 1em;
+	}
+
+	textarea {
+		width: 100%;
+		height: 10em;
+	}
+
+	div.actions {
+		text-align: right;
+	}
+		</style>
+	</head>
+	<body>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/planck-js/0.2.7/planck.min.js"></script>
+		<script type="module" src="./src/index.ts"></script>	
+		<script type="text/javascript">
+			function getNames() {
+							const value = document.querySelector('#in_names').value.trim();
+							const arr = value.split(/[,\r\n]/g).map(v => v.trim()).filter(v => !!v);
+							return arr;
+						}
+
+			let ready = false;
+
+			document.addEventListener('DOMContentLoaded', () => {
+							document.querySelector('#in_names').addEventListener('input', () => {
+											const names = getNames();
+											window.roullete.setMarbles(names);
+											if (names.length > 0) {
+															ready = true;
+														}
+										});
+							document.querySelector('#btnShuffle').addEventListener('click', () => {
+											const names = getNames();
+											window.roullete.setMarbles(names);
+											if (names.length > 0) {
+															ready = true;
+														}
+
+										});
+							document.querySelector('#btnStop').addEventListener('click', () => {
+											window.roullete.reset();
+											ready = false;
+										});
+
+							document.querySelector('#btnStart').addEventListener('click', () => {
+											if (!ready) return;
+
+											window.roullete.start();
+											document.querySelector('#settings').style.display = 'none';
+										});
+
+							window.roullete.addEventListener('goal', (e) => {
+											ready = false;
+											document.querySelector('#settings').style.display = 'block';
+										});
+						});
+		</script>
+		<div id="settings">
+			<textarea id="in_names" placeholder="Input names saparated by commas or line feed here"></textarea>
+			<div class="actions">
+				<button id="btnStop">Stop</button>
+				<button id="btnStart">Start</button>
+				<button id="btnShuffle">Shuffle</button>
+			</div>
+		</div>
+	</body>
+</html>
