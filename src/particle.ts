@@ -1,8 +1,5 @@
 import * as planck from 'planck';
-
-function rad(degree: number) {
-	return Math.PI * degree / 180;
-}
+import {rad} from './utils';
 
 export class Particle {
     position: planck.Vec2 = new planck.Vec2();

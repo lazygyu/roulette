@@ -3,7 +3,7 @@ import {Marble} from './marble';
 import {canvasHeight, canvasWidth, initialZoom} from './constants';
 import {ParticleRenderer} from './particleRenderer';
 import {StageDef, stages} from './wallDefs';
-import {createBox, createMover} from './utils';
+import {createBox, createJumper, createMover} from './utils';
 
 export class Roulette extends EventTarget {
     private _update: () => void;
@@ -19,8 +19,6 @@ export class Roulette extends EventTarget {
 
     private _canvas!: HTMLCanvasElement;
     private _ctx!: CanvasRenderingContext2D;
-
-    private _goalY = 111;
 
     private _winners: Marble[] = [];
 
@@ -81,14 +79,22 @@ export class Roulette extends EventTarget {
     }
 
     private _updateMarbles(deltaTime: number) {
+        if (!this._stage) return;
+
         for (let contact = this._world.getContactList(); contact; contact = contact.getNext()) {
             if (!contact.isTouching()) continue;
             let fixtures = [contact.getFixtureA(), contact.getFixtureB()];
             fixtures.forEach(fixture => {
-                const userData = fixture.getBody().getUserData();
-                if (userData && userData instanceof Marble) {
-                    userData.impact += 200;
-                    if (userData.impact > 500) userData.impact = 500;
+                const body = fixture.getBody();
+                const userData = body.getUserData() as any;
+                if (userData) {
+                    if (userData instanceof Marble) {
+                        userData.impact += 200;
+                        if (userData.impact > 500) userData.impact = 500;
+                    } else if ('isTemporary' in userData && userData.isTemporary) {
+                        this._world.destroyBody(body);
+                        this._objects = this._objects.filter(obj => obj !== body);
+                    }
                 }
             });
         }
@@ -96,7 +102,7 @@ export class Roulette extends EventTarget {
         for (let i = 0; i < this._marbles.length; i++) {
             const marble = this._marbles[i];
             marble.update(deltaTime);
-            if (marble.y > this._goalY) {
+            if (marble.y > this._stage.goalY) {
                 this._winners.push(marble);
                 if (this._winners.length === 1) {
                     this.dispatchEvent(new CustomEvent('goal', {detail: {winner: marble.name}}));
@@ -109,20 +115,21 @@ export class Roulette extends EventTarget {
         }
 
         const topY = this._marbles[0] ? this._marbles[0].y : 0;
-        const goalDist = Math.abs(106.75 - topY);
-        if (this._winners.length === 0 && goalDist < 5) {
-            if (this._marbles[1] && this._marbles[1].y > 104) {
-                this._timeScale = Math.max(0.2, (goalDist / 5));
+        const goalDist = Math.abs(this._stage.zoomY - topY);
+        const ratio = 5;
+        if (this._winners.length === 0 && goalDist < ratio) {
+            if (this._marbles[1] && this._marbles[1].y > this._stage.zoomY - (ratio*1.2)) {
+                this._timeScale = Math.max(0.2, (goalDist / ratio));
             } else {
                 this._timeScale = 1;
             }
-            this._zoom = initialZoom + ((1 - (goalDist / 5)) * 50);
+            this._zoom = initialZoom + ((1 - (goalDist / ratio)) * 50);
         } else {
             this._timeScale = 1;
             this._zoom = initialZoom;
         }
 
-        this._marbles = this._marbles.filter(marble => marble.y <= this._goalY);
+        this._marbles = this._marbles.filter(marble => marble.y <= this._stage!.goalY);
     }
 
     private _render() {
@@ -211,12 +218,19 @@ export class Roulette extends EventTarget {
             this._ctx.rotate(ang);
             for (let fixture = obj.getFixtureList(); fixture; fixture = fixture.getNext()) {
                 const shape = fixture.getShape() as planck.Polygon;
-                const vertices = shape.m_vertices;
                 this._ctx.beginPath();
-                this._ctx.moveTo(vertices[0].x, vertices[0].y);
-                for (let i = 0; i < vertices.length; i++) {
-                    const vert = vertices[(i + 1) % vertices.length];
-                    this._ctx.lineTo(vert.x, vert.y);
+                switch(shape.getType()) {
+                    case 'circle':
+                        this._ctx.arc(0, 0, shape.m_radius, 0, Math.PI * 2);
+                        break;
+                    default:
+                        const vertices = shape.m_vertices;
+                        this._ctx.moveTo(vertices[0].x, vertices[0].y);
+                        for (let i = 0; i < vertices.length; i++) {
+                            const vert = vertices[(i + 1) % vertices.length];
+                            this._ctx.lineTo(vert.x, vert.y);
+                        }
+                        break;
                 }
                 this._ctx.fill();
 
@@ -242,11 +256,12 @@ export class Roulette extends EventTarget {
     }
 
     private _renderMinimap() {
+        if (!this._stage) return;
         this._ctx.save();
         this._ctx.fillStyle = `#333`;
         this._ctx.translate(10, 10);
         this._ctx.scale(4, 4);
-        this._ctx.fillRect(0, 0, 26, 112);
+        this._ctx.fillRect(0, 0, 26, this._stage.goalY);
         this._renderWalls(true);
         this._renderObjects(true);
         this._renderMarbles(true);
@@ -294,7 +309,7 @@ export class Roulette extends EventTarget {
 
     private _loadMap() {
         this._stage = stages[Math.floor(Math.random() * stages.length)];
-        const {walls, boxes, wheels} = this._stage;
+        const {walls, boxes, wheels, jumpers} = this._stage;
         walls.forEach((wallDef) => {
             const wall = this._world.createBody({type: 'static'});
             wall.setPosition(new planck.Vec2(0, 0));
@@ -304,12 +319,18 @@ export class Roulette extends EventTarget {
         });
 
         wheels.forEach((wheelDef) => {
-           this._objects.push(createMover(this._world, new planck.Vec2(wheelDef[0], wheelDef[1]), wheelDef[2], (wheelDef[3] !== undefined && wheelDef[4] !== undefined) ? new planck.Vec2(wheelDef[3], wheelDef[4]) : undefined));
+           this._objects.push(createMover(this._world, new planck.Vec2(wheelDef[0], wheelDef[1]), wheelDef[2], (wheelDef[3] !== undefined && wheelDef[4] !== undefined) ? new planck.Vec2(wheelDef[3], wheelDef[4]) : undefined, wheelDef[5] ?? undefined));
         });
 
         boxes.forEach(boxDef => {
             this._objects.push(createBox(this._world, new planck.Vec2(boxDef[0], boxDef[1]), boxDef[2], boxDef[3], boxDef[4]));
         });
+
+        if (jumpers) {
+            jumpers.forEach(jumperDef => {
+                this._objects.push(createJumper(this._world, new planck.Vec2(jumperDef[0], jumperDef[1]), jumperDef[2], jumperDef[3]));
+            });
+        }
     }
 
     public clearMarbles() {
@@ -335,8 +356,18 @@ export class Roulette extends EventTarget {
         });
     }
 
+    private _clearMap() {
+        for(let body = this._world.getBodyList(); body; body = body.getNext()) {
+            this._world.destroyBody(body);
+        }
+        this._objects = [];
+        this._marbles = [];
+    }
+
     public reset() {
         this.clearMarbles();
+        this._clearMap();
+        this._loadMap();
         this._isStarted = false;
     }
 }
