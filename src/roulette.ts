@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import {Marble} from './marble';
 import {canvasHeight, canvasWidth, initialZoom} from './constants';
 import {ParticleRenderer} from './particleRenderer';
-import {wallDefs} from './wallDefs';
+import {StageDef, stages} from './wallDefs';
 import {createBox, createMover} from './utils';
 
 export class Roulette extends EventTarget {
@@ -33,6 +33,8 @@ export class Roulette extends EventTarget {
 
     private _isStarted = false;
     private _particles = new ParticleRenderer();
+
+    private _stage: StageDef | null = null;
 
     constructor() {
         super();
@@ -176,11 +178,12 @@ export class Roulette extends EventTarget {
     }
 
     private _renderWalls(isMinimap: boolean = false) {
+        if (!this._stage) return;
         this._ctx.save();
         this._ctx.strokeStyle = isMinimap ? 'black' : 'white';
         this._ctx.lineWidth = isMinimap ? 0.5 : 5 / this._zoom;
         this._ctx.beginPath();
-        wallDefs.forEach((wallDef) => {
+        this._stage.walls.forEach((wallDef) => {
             this._ctx.moveTo(wallDef[0][0], wallDef[0][1]);
             for (let i = 1; i < wallDef.length; i++) {
                 this._ctx.lineTo(wallDef[i][0], wallDef[i][1]);
@@ -278,19 +281,21 @@ export class Roulette extends EventTarget {
         if (this._winners.length === 0) return;
         this._ctx.save();
         this._ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        this._ctx.fillRect(canvasWidth / 2, canvasHeight - 168, canvasWidth / 2, 168);
+        this._ctx.fillRect(this._canvas.width / 2, this._canvas.height - 168, this._canvas.width / 2, 168);
         this._ctx.fillStyle = 'white';
         this._ctx.font = 'bold 48px sans-serif';
         this._ctx.textAlign = 'right';
-        this._ctx.fillText('Winner', canvasWidth - 10, canvasHeight - 120);
+        this._ctx.fillText('Winner', this._canvas.width - 10, this._canvas.height - 120);
         this._ctx.font = 'bold 72px sans-serif';
         this._ctx.fillStyle = (Math.floor(this._lastTime / 500) % 2) === 0 ? this._winners[0].color : 'white';
-        this._ctx.fillText(this._winners[0].name, canvasWidth - 10, canvasHeight - 55);
+        this._ctx.fillText(this._winners[0].name, this._canvas.width - 10, this._canvas.height - 55);
         this._ctx.restore();
     }
 
     private _loadMap() {
-        wallDefs.forEach((wallDef) => {
+        this._stage = stages[Math.floor(Math.random() * stages.length)];
+        const {walls, boxes, wheels} = this._stage;
+        walls.forEach((wallDef) => {
             const wall = this._world.createBody({type: 'static'});
             wall.setPosition(new planck.Vec2(0, 0));
             wall.createFixture({
@@ -298,36 +303,13 @@ export class Roulette extends EventTarget {
             });
         });
 
-        for (let i = 0; i < 5; i++) {
-            this._objects.push(createMover(this._world, new planck.Vec2(8 + (i * 4), 85), 3.5 * (i % 2 === 1 ? 1 : -1)));
-        }
-
-        this._objects.push(createMover(this._world, new planck.Vec2(13.9, 106.75), -1.2));
-        //this._objects.push(createMover(this._world, new planck.Vec2(18.4, 102.5), 2.5));
-        //this._objects.push(createMover(this._world, new planck.Vec2(13.4, 102.5), -2.5));
-
-        [
-            [15.5, 30.0, -45],
-            [15.5, 32.0, -45],
-            [15.5, 28.0, -45],
-            [12.5, 30.0, -45],
-            [12.5, 32.0, -45],
-            [12.5, 28.0, -45],
-        ].forEach(boxDef => {
-            this._objects.push(createBox(this._world, new planck.Vec2(boxDef[0], boxDef[1]), boxDef[2], 0.2, 0.2));
+        wheels.forEach((wheelDef) => {
+           this._objects.push(createMover(this._world, new planck.Vec2(wheelDef[0], wheelDef[1]), wheelDef[2], (wheelDef[3] !== undefined && wheelDef[4] !== undefined) ? new planck.Vec2(wheelDef[3], wheelDef[4]) : undefined));
         });
 
-        for (let i = 0; i < 8; i++) {
-            this._objects.push(createBox(this._world, new planck.Vec2((188 + (i * 38)) / 20, 66.6), 45 * (i % 2 === 0 ? -1 : 1)));
-            this._objects.push(createBox(this._world, new planck.Vec2((188 + (i * 38)) / 20, 69.1), 45 * (i % 2 === 0 ? 1 : -1)));
-        }
-
-        for (let i = 0; i < 5; i++) {
-            this._objects.push(createBox(this._world, new planck.Vec2(9.5 + (i * (16.25 / 5)), -98), 45, 0.25, 0.25));
-        }
-        for (let i = 0; i < 4; i++) {
-            this._objects.push(createBox(this._world, new planck.Vec2(11.0 + (i * (16.25 / 5)), -95), 45, 0.25, 0.25));
-        }
+        boxes.forEach(boxDef => {
+            this._objects.push(createBox(this._world, new planck.Vec2(boxDef[0], boxDef[1]), boxDef[2], boxDef[3], boxDef[4]));
+        });
     }
 
     public clearMarbles() {
