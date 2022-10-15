@@ -50,6 +50,10 @@ export class Roulette extends EventTarget {
         this._canvas.height = canvasHeight;
         this._ctx = this._canvas.getContext('2d') as CanvasRenderingContext2D;
         document.body.appendChild(this._canvas);
+
+        const realSize = this._canvas.getBoundingClientRect();
+        this._canvas.width = realSize.width;
+        this._canvas.height = realSize.height;
     }
 
     private _updateHandler() {
@@ -258,6 +262,7 @@ export class Roulette extends EventTarget {
 
     private _renderMinimap() {
         if (!this._stage) return;
+        if (this._canvas.width < this._canvas.height) return;
         this._ctx.save();
         this._ctx.fillStyle = `#333`;
         this._ctx.translate(10, 10);
