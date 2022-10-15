@@ -208,7 +208,6 @@ export class Roulette extends EventTarget {
     private _renderObjects(isMinimap: boolean = false) {
         this._ctx.save();
         this._ctx.fillStyle = 'black';
-        this._ctx.strokeStyle = '#94d5ed';
         this._ctx.lineWidth = 3 / this._zoom;
         this._objects.forEach(obj => {
             this._ctx.save();
@@ -221,9 +220,11 @@ export class Roulette extends EventTarget {
                 this._ctx.beginPath();
                 switch(shape.getType()) {
                     case 'circle':
+                        this._ctx.strokeStyle = '#fb4934';
                         this._ctx.arc(0, 0, shape.m_radius, 0, Math.PI * 2);
                         break;
                     default:
+                        this._ctx.strokeStyle = '#94d5ed';
                         const vertices = shape.m_vertices;
                         this._ctx.moveTo(vertices[0].x, vertices[0].y);
                         for (let i = 0; i < vertices.length; i++) {
