@@ -52,8 +52,8 @@ export class Roulette extends EventTarget {
         document.body.appendChild(this._canvas);
 
         const realSize = this._canvas.getBoundingClientRect();
-        this._canvas.width = realSize.width;
-        this._canvas.height = realSize.height;
+        this._canvas.width = realSize.width / 2;
+        this._canvas.height = realSize.height / 2;
     }
 
     private _updateHandler() {
@@ -224,7 +224,7 @@ export class Roulette extends EventTarget {
                 this._ctx.beginPath();
                 switch(shape.getType()) {
                     case 'circle':
-                        this._ctx.strokeStyle = '#fb4934';
+                        this._ctx.strokeStyle = 'yellow';
                         this._ctx.arc(0, 0, shape.m_radius, 0, Math.PI * 2);
                         break;
                     default:
