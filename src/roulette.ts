@@ -51,9 +51,19 @@ export class Roulette extends EventTarget {
         this._ctx = this._canvas.getContext('2d') as CanvasRenderingContext2D;
         document.body.appendChild(this._canvas);
 
-        const realSize = this._canvas.getBoundingClientRect();
-        this._canvas.width = realSize.width / 2;
-        this._canvas.height = realSize.height / 2;
+        const resizing = (entries?: ResizeObserverEntry[]) => {
+            console.log("resizing!");
+            const realSize = entries ? entries[0].contentRect : this._canvas.getBoundingClientRect();
+            const width = Math.max(realSize.width / 2, 640);
+            const height = (width / realSize.width) * realSize.height;
+            this._canvas.width = width;
+            this._canvas.height = height;
+        }
+
+        const resizeObserver = new ResizeObserver(resizing);
+
+        resizeObserver.observe(this._canvas);
+        resizing();
     }
 
     private _updateHandler() {
