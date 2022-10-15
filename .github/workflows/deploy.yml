@@ -28,6 +28,7 @@ jobs:
         run: |
           yarn
           yarn build
+          sed "s/src=\"\//src=\"/" dist/index.html > dist/index.html
       - name: deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
