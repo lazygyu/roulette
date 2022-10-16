@@ -60,8 +60,6 @@ export class Marble {
 
     render(ctx: CanvasRenderingContext2D, zoom: number, isMinimap: boolean = false) {
         ctx.save();
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 2 / zoom;
 
         if (!isMinimap) {
             ctx.shadowColor = this.color;
@@ -77,11 +75,15 @@ export class Marble {
 
         if (!isMinimap) {
             ctx.save();
-            ctx.font = `${12 / zoom}px sans-serif`;
+            ctx.translate(this.x, this.y+0.25);
+            ctx.scale(1/zoom, 1/zoom);
+            ctx.font = `12pt sans-serif`;
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2 / zoom;
             ctx.fillStyle = this.color;
             ctx.shadowBlur = 0;
-            ctx.strokeText(this.name, this.x, this.y + 0.25);
-            ctx.fillText(this.name, this.x, this.y + 0.25);
+            ctx.fillText(this.name, 0, 0);
+            ctx.strokeText(this.name, 0, 0);
             ctx.restore();
         }
 
