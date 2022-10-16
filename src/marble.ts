@@ -62,22 +62,22 @@ export class Marble {
         ctx.save();
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 2 / zoom;
+
         if (!isMinimap) {
             ctx.shadowColor = this.color;
             ctx.shadowBlur = zoom / 2;
-        }
-        if (!isMinimap) {
             ctx.fillStyle = `hsl(${this.hue} 100% ${70 + (25 * Math.min(1, this.impact / 500))}%`;
         } else {
             ctx.fillStyle = this.color;
         }
+
         ctx.beginPath();
         ctx.arc(this.x, this.y, isMinimap ? this.size : this.size / 2, 0, Math.PI * 2);
         ctx.fill();
 
         if (!isMinimap) {
             ctx.save();
-            ctx.font = `${11 / zoom}pt sans-serif`;
+            ctx.font = `${12 / zoom}px sans-serif`;
             ctx.fillStyle = this.color;
             ctx.shadowBlur = 0;
             ctx.strokeText(this.name, this.x, this.y + 0.25);
