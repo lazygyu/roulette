@@ -2,7 +2,7 @@ import * as planck from 'planck';
 import {Marble} from './marble';
 import {canvasHeight, canvasWidth, initialZoom} from './constants';
 import {ParticleRenderer} from './particleRenderer';
-import {StageDef, stages} from './wallDefs';
+import {StageDef, stages} from './maps';
 import {createBox, createJumper, createMover} from './utils';
 
 export class Roulette extends EventTarget {
