@@ -36,6 +36,7 @@ export class Marble {
             type: 'dynamic',
             allowSleep: false,
             awake: true,
+            active: false,
             linearDamping: 0,
             angularDamping: 0.01,
 			linearVelocity: new planck.Vec2(0, 0.0),

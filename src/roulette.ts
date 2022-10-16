@@ -20,7 +20,6 @@ export class Roulette extends EventTarget {
 
     private _winners: Marble[] = [];
     private _objects: planck.Body[] = [];
-    private _isStarted = false;
     private _particleManager = new ParticleManager();
     private _stage: StageDef | null = null;
 
@@ -46,17 +45,12 @@ export class Roulette extends EventTarget {
         this._lastTime = currentTime;
 
         while (this._elapsed >= this._updateInterval) {
-            if (this._isStarted) {
-                this._world.step((this._updateInterval * this._timeScale) / 1000);
-                this._updateMarbles(this._updateInterval);
-            }
+            this._world.step((this._updateInterval * this._timeScale) / 1000);
+            this._updateMarbles(this._updateInterval);
             this._particleManager.update(this._updateInterval);
             this._elapsed -= this._updateInterval;
         }
 
-        if (this._marbles.length === 0) {
-            this._isStarted = false;
-        }
         if (this._marbles.length > 1) {
             this._marbles.sort((a, b) => b.y - a.y);
         }
@@ -175,7 +169,7 @@ export class Roulette extends EventTarget {
     }
 
     public start() {
-        this._isStarted = true;
+        this._marbles.forEach(marble => marble.body.setActive(true));
     }
 
     public setMarbles(names: string[]) {
@@ -201,6 +195,5 @@ export class Roulette extends EventTarget {
         this.clearMarbles();
         this._clearMap();
         this._loadMap();
-        this._isStarted = false;
     }
 }
