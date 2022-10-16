@@ -1,9 +1,10 @@
 import * as planck from 'planck';
 import {Marble} from './marble';
-import {canvasHeight, canvasWidth, initialZoom} from './constants';
+import {canvasHeight, canvasWidth, initialZoom, zoomThreshold} from './constants';
 import {ParticleRenderer} from './particleRenderer';
 import {StageDef, stages} from './maps';
 import {createBox, createJumper, createMover} from './utils';
+import {Camera} from './camera';
 
 export class Roulette extends EventTarget {
     private _update: () => void;
@@ -22,17 +23,14 @@ export class Roulette extends EventTarget {
 
     private _winners: Marble[] = [];
 
-    private _zoom = initialZoom;
-
-    private _camera: planck.Vec2 = new planck.Vec2();
-    private _cameraTarget: planck.Vec2 = new planck.Vec2();
-
     private _objects: planck.Body[] = [];
 
     private _isStarted = false;
     private _particles = new ParticleRenderer();
 
     private _stage: StageDef | null = null;
+
+    private _camera: Camera = new Camera();
 
     constructor() {
         super();
@@ -49,10 +47,10 @@ export class Roulette extends EventTarget {
         this._canvas.width = canvasWidth;
         this._canvas.height = canvasHeight;
         this._ctx = this._canvas.getContext('2d') as CanvasRenderingContext2D;
+
         document.body.appendChild(this._canvas);
 
         const resizing = (entries?: ResizeObserverEntry[]) => {
-            console.log("resizing!");
             const realSize = entries ? entries[0].contentRect : this._canvas.getBoundingClientRect();
             const width = Math.max(realSize.width / 2, 640);
             const height = (width / realSize.width) * realSize.height;
@@ -78,7 +76,7 @@ export class Roulette extends EventTarget {
                 this._world.step((this._updateInterval * this._timeScale) / 1000);
                 this._updateMarbles(this._updateInterval);
             }
-            this._particles.update(this._updateInterval);
+            this._particles.update(this._updateInterval, this._canvas.height);
             this._elapsed -= this._updateInterval;
         }
 
@@ -88,6 +86,11 @@ export class Roulette extends EventTarget {
         if (this._marbles.length > 1) {
             this._marbles.sort((a, b) => b.y - a.y);
         }
+
+        if (this._stage) {
+            this._camera.update({marbles: this._marbles, stage: this._stage, needToZoom: !this._winners.length});
+        }
+
         this._render();
         window.requestAnimationFrame(this._update);
     }
@@ -130,17 +133,14 @@ export class Roulette extends EventTarget {
 
         const topY = this._marbles[0] ? this._marbles[0].y : 0;
         const goalDist = Math.abs(this._stage.zoomY - topY);
-        const ratio = 5;
-        if (this._winners.length === 0 && goalDist < ratio) {
-            if (this._marbles[1] && this._marbles[1].y > this._stage.zoomY - (ratio*1.2)) {
-                this._timeScale = Math.max(0.2, (goalDist / ratio));
+        if (this._winners.length === 0 && goalDist < zoomThreshold) {
+            if (this._marbles[1] && this._marbles[1].y > this._stage.zoomY - (zoomThreshold*1.2)) {
+                this._timeScale = Math.max(0.2, (goalDist / zoomThreshold));
             } else {
                 this._timeScale = 1;
             }
-            this._zoom = initialZoom + ((1 - (goalDist / ratio)) * 50);
         } else {
             this._timeScale = 1;
-            this._zoom = initialZoom;
         }
 
         this._marbles = this._marbles.filter(marble => marble.y <= this._stage!.goalY);
@@ -152,57 +152,28 @@ export class Roulette extends EventTarget {
         this._ctx.fillRect(0, 0, this._canvas.width, this._canvas.height);
 
         this._ctx.save();
-
-        this._ctx.textAlign = 'left';
-        this._ctx.textBaseline = 'top';
-        this._ctx.font = '0.4pt sans-serif';
-
-        this._moveCamera();
-
-        this._renderWalls();
-        this._renderObjects();
-        this._renderMarbles();
-
+            this._ctx.scale(initialZoom, initialZoom);
+            this._ctx.textAlign = 'left';
+            this._ctx.textBaseline = 'top';
+            this._ctx.font = '0.4pt sans-serif';
+            this._camera.renderScene(this._ctx, () => {
+                this._renderWalls();
+                this._renderObjects();
+                this._renderMarbles();
+            });
         this._ctx.restore();
 
         this._renderMinimap();
-
         this._renderRanking();
-
         this._renderWinner();
-
         this._particles.render(this._ctx);
-    }
-
-    private _moveCamera() {
-        this._cameraTarget.x = -(this._marbles[0] ? this._marbles[0].x : 0);
-        this._cameraTarget.y = (this._marbles[0] ? -this._marbles[0].y : 0);
-
-        const xDist = (this._cameraTarget.x - this._camera.x);
-        const yDist = (this._cameraTarget.y - this._camera.y);
-        const xFactor = (xDist / 5);
-        const yFactor = (yDist / 5);
-
-        if (Math.abs(xDist * this._zoom) > 3) {
-            this._camera.x += xFactor;
-        } else {
-            this._camera.x = this._cameraTarget.x;
-        }
-
-        if (Math.abs(yDist * this._zoom) > 10) {
-            this._camera.y += yFactor;
-        } else {
-            this._camera.y = this._cameraTarget.y;
-        }
-        this._ctx.translate(this._camera.x * this._zoom + (this._canvas.width / 2), this._camera.y * this._zoom + (this._canvas.height / 2));
-        this._ctx.scale(this._zoom, this._zoom);
     }
 
     private _renderWalls(isMinimap: boolean = false) {
         if (!this._stage) return;
         this._ctx.save();
         this._ctx.strokeStyle = isMinimap ? 'black' : 'white';
-        this._ctx.lineWidth = isMinimap ? 0.5 : 5 / this._zoom;
+        this._ctx.lineWidth = isMinimap ? 0.5 : 5 / (this._camera.zoom + initialZoom);
         this._ctx.beginPath();
         this._stage.walls.forEach((wallDef) => {
             this._ctx.moveTo(wallDef[0][0], wallDef[0][1]);
@@ -222,7 +193,7 @@ export class Roulette extends EventTarget {
     private _renderObjects(isMinimap: boolean = false) {
         this._ctx.save();
         this._ctx.fillStyle = 'black';
-        this._ctx.lineWidth = 3 / this._zoom;
+        this._ctx.lineWidth = 3 / (this._camera.zoom + initialZoom);
         this._objects.forEach(obj => {
             this._ctx.save();
             const pos = obj.getPosition();
@@ -266,7 +237,7 @@ export class Roulette extends EventTarget {
 
     private _renderMarbles(isMinimap: boolean = false) {
         this._marbles.forEach(marble => {
-            marble.render(this._ctx, this._zoom, isMinimap);
+            marble.render(this._ctx, this._camera.zoom + initialZoom, isMinimap);
         });
     }
 

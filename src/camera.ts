@@ -1,0 +1,80 @@
+import {Marble} from './marble';
+import {StageDef} from './maps';
+import {Vec2} from 'planck';
+import {initialZoom, zoomThreshold} from './constants';
+
+export class Camera {
+    private _position: Vec2 = new Vec2();
+    private _targetPosition: Vec2 = new Vec2();
+    private _zoom: number = 1;
+    private _targetZoom: number = 1;
+
+    get zoom() {
+        return this._zoom;
+    }
+    set zoom(v: number) {
+        this._targetZoom = v;
+    }
+
+    get x() {
+        return this._position.x;
+    }
+    set x(v: number) {
+        this._targetPosition.x = v;
+    }
+    get y() {
+        return this._position.y;
+    }
+    set y(v: number) {
+        this._targetPosition.y = v;
+    }
+
+    setPosition(v: Vec2) {
+        return this._targetPosition.set(v);
+    }
+
+    update({marbles, stage, needToZoom}: {marbles: Marble[], stage: StageDef, needToZoom: boolean}) {
+        // set target position
+        this._calcTargetPositionAndZoom(marbles, stage, needToZoom);
+
+        // interpolate position
+        this._position.x = this._interpolation(this.x, this._targetPosition.x);
+        this._position.y = this._interpolation(this.y, this._targetPosition.y);
+
+        // interpolate zoom
+        this._zoom = this._interpolation(this._zoom, this._targetZoom);
+    }
+
+    private _calcTargetPositionAndZoom(marbles: Marble[], stage: StageDef, needToZoom: boolean) {
+        if (marbles.length > 0) {
+            this.setPosition(marbles[0].position);
+            if (needToZoom) {
+                const goalDist = Math.abs(stage.zoomY - marbles[0].y);
+                this.zoom = Math.max(1, (1 - (goalDist / zoomThreshold)) * 4);
+            } else {
+                this.zoom = 1;
+            }
+        } else {
+            this.setPosition(new Vec2(0,0));
+            this.zoom = 1;
+        }
+    }
+
+    private _interpolation(current: number, target: number) {
+        const d = target - current;
+        if (Math.abs(d) < (1 / initialZoom)) {
+            return target;
+        }
+        return current + (d / 2);
+    }
+
+    renderScene(ctx: CanvasRenderingContext2D, callback: (ctx: CanvasRenderingContext2D) => void) {
+        const zoomFactor = initialZoom * 2 * this._zoom;
+        ctx.save();
+        ctx.translate(-this.x * this._zoom, -this.y * this._zoom);
+        ctx.scale(this.zoom, this.zoom);
+        ctx.translate(ctx.canvas.width / zoomFactor, ctx.canvas.height / zoomFactor)
+        callback(ctx);
+        ctx.restore();
+    }
+}
