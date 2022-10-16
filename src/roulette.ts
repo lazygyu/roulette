@@ -46,7 +46,7 @@ export class Roulette extends EventTarget {
         this._canvas = document.createElement('canvas');
         this._canvas.width = canvasWidth;
         this._canvas.height = canvasHeight;
-        this._ctx = this._canvas.getContext('2d') as CanvasRenderingContext2D;
+        this._ctx = this._canvas.getContext('2d', {alpha: false}) as CanvasRenderingContext2D;
 
         document.body.appendChild(this._canvas);
 
@@ -212,10 +212,11 @@ export class Roulette extends EventTarget {
                         this._ctx.strokeStyle = '#94d5ed';
                         const vertices = shape.m_vertices;
                         this._ctx.moveTo(vertices[0].x, vertices[0].y);
-                        for (let i = 0; i < vertices.length; i++) {
-                            const vert = vertices[(i + 1) % vertices.length];
+                        for (let i = 1; i < vertices.length; i++) {
+                            const vert = vertices[i];
                             this._ctx.lineTo(vert.x, vert.y);
                         }
+                        this._ctx.closePath();
                         break;
                 }
                 this._ctx.fill();
@@ -237,7 +238,7 @@ export class Roulette extends EventTarget {
 
     private _renderMarbles(isMinimap: boolean = false) {
         this._marbles.forEach(marble => {
-            marble.render(this._ctx, this._camera.zoom + initialZoom, isMinimap);
+            marble.render(this._ctx, this._camera.zoom * initialZoom, isMinimap);
         });
     }
 
