@@ -164,9 +164,9 @@ export class Roulette extends EventTarget {
         this._ctx.restore();
 
         this._renderMinimap();
+        this._particleManager.render(this._ctx);
         this._renderRanking();
         this._renderWinner();
-        this._particleManager.render(this._ctx);
     }
 
     private _renderWalls(isMinimap: boolean = false) {
