@@ -79,11 +79,11 @@ export class Marble {
             ctx.scale(1/zoom, 1/zoom);
             ctx.font = `12pt sans-serif`;
             ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2 / zoom;
+            ctx.lineWidth = 2;
             ctx.fillStyle = this.color;
             ctx.shadowBlur = 0;
-            ctx.fillText(this.name, 0, 0);
             ctx.strokeText(this.name, 0, 0);
+            ctx.fillText(this.name, 0, 0);
             ctx.restore();
         }
 
