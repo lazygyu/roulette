@@ -1,7 +1,7 @@
 import * as planck from 'planck';
 import {Marble} from './marble';
 import {canvasHeight, canvasWidth, initialZoom, zoomThreshold} from './constants';
-import {ParticleRenderer} from './particleRenderer';
+import {ParticleManager} from './particleManager';
 import {StageDef, stages} from './maps';
 import {createBox, createJumper, createMover} from './utils';
 import {Camera} from './camera';
@@ -26,7 +26,7 @@ export class Roulette extends EventTarget {
     private _objects: planck.Body[] = [];
 
     private _isStarted = false;
-    private _particles = new ParticleRenderer();
+    private _particleManager = new ParticleManager();
 
     private _stage: StageDef | null = null;
 
@@ -76,7 +76,7 @@ export class Roulette extends EventTarget {
                 this._world.step((this._updateInterval * this._timeScale) / 1000);
                 this._updateMarbles(this._updateInterval);
             }
-            this._particles.update(this._updateInterval, this._canvas.height);
+            this._particleManager.update(this._updateInterval, this._canvas.height);
             this._elapsed -= this._updateInterval;
         }
 
@@ -123,7 +123,7 @@ export class Roulette extends EventTarget {
                 this._winners.push(marble);
                 if (this._winners.length === 1) {
                     this.dispatchEvent(new CustomEvent('goal', {detail: {winner: marble.name}}));
-                    this._particles.shot(this._canvas.width, this._canvas.height);
+                    this._particleManager.shot(this._canvas.width, this._canvas.height);
                 }
                 setTimeout(() => {
                     this._world.destroyBody(marble.body);
@@ -166,7 +166,7 @@ export class Roulette extends EventTarget {
         this._renderMinimap();
         this._renderRanking();
         this._renderWinner();
-        this._particles.render(this._ctx);
+        this._particleManager.render(this._ctx);
     }
 
     private _renderWalls(isMinimap: boolean = false) {

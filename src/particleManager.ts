@@ -1,6 +1,6 @@
 import {Particle} from './particle';
 
-export class ParticleRenderer {
+export class ParticleManager {
     private _particles: Particle[] = [];
 
     update(deltaTime: number, maxY: number) {
