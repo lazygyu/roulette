@@ -3,11 +3,11 @@ import {Particle} from './particle';
 export class ParticleManager {
     private _particles: Particle[] = [];
 
-    update(deltaTime: number, maxY: number) {
+    update(deltaTime: number) {
         this._particles.forEach(particle => {
             particle.update(deltaTime);
         });
-        this._particles = this._particles.filter(particle => particle.position.y < maxY + 20);
+        this._particles = this._particles.filter(particle => !particle.isDestroy);
     }
 
     render(ctx: CanvasRenderingContext2D) {

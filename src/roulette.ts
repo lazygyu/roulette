@@ -1,15 +1,15 @@
 import * as planck from 'planck';
 import {Marble} from './marble';
-import {canvasHeight, canvasWidth, initialZoom, zoomThreshold} from './constants';
+import {zoomThreshold} from './constants';
 import {ParticleManager} from './particleManager';
 import {StageDef, stages} from './maps';
 import {createBox, createJumper, createMover} from './utils';
 import {Camera} from './camera';
+import {RouletteRenderer} from './rouletteRenderer';
 
 export class Roulette extends EventTarget {
     private _update: () => void;
     private _world!: planck.World;
-
     private _marbles: Marble[] = [];
 
     private _lastTime: number = 0;
@@ -18,51 +18,25 @@ export class Roulette extends EventTarget {
     private _updateInterval = 10;
     private _timeScale = 1;
 
-    private _canvas!: HTMLCanvasElement;
-    private _ctx!: CanvasRenderingContext2D;
-
     private _winners: Marble[] = [];
-
     private _objects: planck.Body[] = [];
-
     private _isStarted = false;
     private _particleManager = new ParticleManager();
-
     private _stage: StageDef | null = null;
 
     private _camera: Camera = new Camera();
+    private _renderer: RouletteRenderer = new RouletteRenderer();
 
     constructor() {
         super();
         this._update = this._updateHandler.bind(this);
 
-        this._createElements();
+        this._renderer.init();
 
         this._init();
         this._update();
     }
 
-    private _createElements() {
-        this._canvas = document.createElement('canvas');
-        this._canvas.width = canvasWidth;
-        this._canvas.height = canvasHeight;
-        this._ctx = this._canvas.getContext('2d', {alpha: false}) as CanvasRenderingContext2D;
-
-        document.body.appendChild(this._canvas);
-
-        const resizing = (entries?: ResizeObserverEntry[]) => {
-            const realSize = entries ? entries[0].contentRect : this._canvas.getBoundingClientRect();
-            const width = Math.max(realSize.width / 2, 640);
-            const height = (width / realSize.width) * realSize.height;
-            this._canvas.width = width;
-            this._canvas.height = height;
-        }
-
-        const resizeObserver = new ResizeObserver(resizing);
-
-        resizeObserver.observe(this._canvas);
-        resizing();
-    }
 
     private _updateHandler() {
         if (!this._lastTime) this._lastTime = Date.now();
@@ -76,7 +50,7 @@ export class Roulette extends EventTarget {
                 this._world.step((this._updateInterval * this._timeScale) / 1000);
                 this._updateMarbles(this._updateInterval);
             }
-            this._particleManager.update(this._updateInterval, this._canvas.height);
+            this._particleManager.update(this._updateInterval);
             this._elapsed -= this._updateInterval;
         }
 
@@ -123,7 +97,7 @@ export class Roulette extends EventTarget {
                 this._winners.push(marble);
                 if (this._winners.length === 1) {
                     this.dispatchEvent(new CustomEvent('goal', {detail: {winner: marble.name}}));
-                    this._particleManager.shot(this._canvas.width, this._canvas.height);
+                    this._particleManager.shot(this._renderer.width, this._renderer.height);
                 }
                 setTimeout(() => {
                     this._world.destroyBody(marble.body);
@@ -147,113 +121,15 @@ export class Roulette extends EventTarget {
     }
 
     private _render() {
-
-        this._ctx.fillStyle = 'black';
-        this._ctx.fillRect(0, 0, this._canvas.width, this._canvas.height);
-
-        this._ctx.save();
-            this._ctx.scale(initialZoom, initialZoom);
-            this._ctx.textAlign = 'left';
-            this._ctx.textBaseline = 'top';
-            this._ctx.font = '0.4pt sans-serif';
-            this._camera.renderScene(this._ctx, () => {
-                this._renderWalls();
-                this._renderObjects();
-                this._renderMarbles();
-            });
-        this._ctx.restore();
-
-        this._renderMinimap();
-        this._particleManager.render(this._ctx);
-        this._renderRanking();
-        this._renderWinner();
-    }
-
-    private _renderWalls(isMinimap: boolean = false) {
         if (!this._stage) return;
-        this._ctx.save();
-        this._ctx.strokeStyle = isMinimap ? 'black' : 'white';
-        this._ctx.lineWidth = isMinimap ? 0.5 : 5 / (this._camera.zoom + initialZoom);
-        this._ctx.beginPath();
-        this._stage.walls.forEach((wallDef) => {
-            this._ctx.moveTo(wallDef[0][0], wallDef[0][1]);
-            for (let i = 1; i < wallDef.length; i++) {
-                this._ctx.lineTo(wallDef[i][0], wallDef[i][1]);
-            }
+        this._renderer.render({
+            camera: this._camera,
+            stage: this._stage,
+            objects: this._objects,
+            marbles: this._marbles,
+            winners: this._winners,
+            particleManager: this._particleManager,
         });
-        if (!isMinimap) {
-            this._ctx.shadowColor = 'cyan';
-            this._ctx.shadowBlur = 15;
-        }
-        this._ctx.stroke();
-        this._ctx.closePath();
-        this._ctx.restore();
-    }
-
-    private _renderObjects(isMinimap: boolean = false) {
-        this._ctx.save();
-        this._ctx.fillStyle = 'black';
-        this._ctx.lineWidth = 3 / (this._camera.zoom + initialZoom);
-        this._objects.forEach(obj => {
-            this._ctx.save();
-            const pos = obj.getPosition();
-            const ang = obj.getAngle();
-            this._ctx.translate(pos.x, pos.y);
-            this._ctx.rotate(ang);
-            for (let fixture = obj.getFixtureList(); fixture; fixture = fixture.getNext()) {
-                const shape = fixture.getShape() as planck.Polygon;
-                this._ctx.beginPath();
-                switch(shape.getType()) {
-                    case 'circle':
-                        this._ctx.strokeStyle = 'yellow';
-                        this._ctx.arc(0, 0, shape.m_radius, 0, Math.PI * 2);
-                        break;
-                    default:
-                        this._ctx.strokeStyle = '#94d5ed';
-                        const vertices = shape.m_vertices;
-                        this._ctx.moveTo(vertices[0].x, vertices[0].y);
-                        for (let i = 1; i < vertices.length; i++) {
-                            const vert = vertices[i];
-                            this._ctx.lineTo(vert.x, vert.y);
-                        }
-                        this._ctx.closePath();
-                        break;
-                }
-                this._ctx.fill();
-
-                if (!isMinimap) {
-                    this._ctx.save();
-                    this._ctx.shadowBlur = 15;
-                    this._ctx.shadowColor = 'cyan';
-                    this._ctx.stroke();
-                    this._ctx.restore();
-                }
-
-                this._ctx.closePath();
-            }
-            this._ctx.restore();
-        });
-        this._ctx.restore();
-    }
-
-    private _renderMarbles(isMinimap: boolean = false) {
-        this._marbles.forEach(marble => {
-            marble.render(this._ctx, this._camera.zoom * initialZoom, isMinimap);
-        });
-    }
-
-    private _renderMinimap() {
-        if (!this._stage) return;
-        if (this._canvas.width < this._canvas.height) return;
-        this._ctx.save();
-        this._ctx.fillStyle = `#333`;
-        this._ctx.translate(10, 10);
-        this._ctx.scale(4, 4);
-        this._ctx.fillRect(0, 0, 26, this._stage.goalY);
-        this._renderWalls(true);
-        this._renderObjects(true);
-        this._renderMarbles(true);
-        this._ctx.restore();
     }
 
     private _init() {
@@ -262,37 +138,6 @@ export class Roulette extends EventTarget {
         });
 
         this._loadMap();
-    }
-
-    private _renderRanking() {
-        this._ctx.save();
-        this._ctx.font = 'bold 11pt sans-serif';
-        this._ctx.textAlign = 'right';
-        this._winners.forEach((marble, rank) => {
-            this._ctx.fillStyle = marble.color;
-            this._ctx.fillText(`\u2714 ${marble.name} #${rank + 1}`, this._canvas.width - 10, 20 + rank * 16);
-        });
-        this._ctx.font = '10pt sans-serif';
-        this._marbles.forEach((marble, rank) => {
-            this._ctx.fillStyle = marble.color;
-            this._ctx.fillText(`${marble.name} #${rank + 1 + this._winners.length}`, this._canvas.width - 10, 20 + (rank + this._winners.length) * 16);
-        });
-        this._ctx.restore();
-    }
-
-    private _renderWinner() {
-        if (this._winners.length === 0) return;
-        this._ctx.save();
-        this._ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        this._ctx.fillRect(this._canvas.width / 2, this._canvas.height - 168, this._canvas.width / 2, 168);
-        this._ctx.fillStyle = 'white';
-        this._ctx.font = 'bold 48px sans-serif';
-        this._ctx.textAlign = 'right';
-        this._ctx.fillText('Winner', this._canvas.width - 10, this._canvas.height - 120);
-        this._ctx.font = 'bold 72px sans-serif';
-        this._ctx.fillStyle = (Math.floor(this._lastTime / 500) % 2) === 0 ? this._winners[0].color : 'white';
-        this._ctx.fillText(this._winners[0].name, this._canvas.width - 10, this._canvas.height - 55);
-        this._ctx.restore();
     }
 
     private _loadMap() {
