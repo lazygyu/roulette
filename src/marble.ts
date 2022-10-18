@@ -55,7 +55,7 @@ export class Marble {
 
         this._maxCoolTime = 1000 + ((1-this.weight) * 4000);
         this._coolTime = this._maxCoolTime * Math.random();
-        this._skillRate = 0.1 * this.weight;
+        this._skillRate = 0.2 * this.weight;
 
         const maxLine = Math.ceil(max / 10);
         const line = Math.floor(order / 10);

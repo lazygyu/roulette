@@ -218,8 +218,10 @@ export class Roulette extends EventTarget {
             return {name, weight};
         });
 
+        const gap = maxWeight - minWeight;
+
         members.forEach(member => {
-            member.weight = member.weight / maxWeight;
+            member.weight = 0.1 + (gap ? (member.weight - minWeight) / gap : 0);
         });
 
         if (members.length > 0) {
