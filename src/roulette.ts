@@ -171,7 +171,7 @@ export class Roulette extends EventTarget {
         });
 
         wheels.forEach((wheelDef) => {
-           this._objects.push(createMover(this._world, new planck.Vec2(wheelDef[0], wheelDef[1]), wheelDef[2], (wheelDef[3] !== undefined && wheelDef[4] !== undefined) ? new planck.Vec2(wheelDef[3], wheelDef[4]) : undefined, wheelDef[5] ?? undefined));
+            this._objects.push(createMover(this._world, new planck.Vec2(wheelDef[0], wheelDef[1]), wheelDef[2], (wheelDef[3] !== undefined && wheelDef[4] !== undefined) ? new planck.Vec2(wheelDef[3], wheelDef[4]) : undefined, wheelDef[5] ?? undefined));
         });
 
         boxes.forEach(boxDef => {
@@ -200,11 +200,35 @@ export class Roulette extends EventTarget {
     public setMarbles(names: string[]) {
         this.reset();
         const arr = names.slice();
-        if (arr.length > 0) {
-            arr.sort(() => Math.random() - 0.5);
+
+
+        let maxWeight = -Infinity;
+        let minWeight = Infinity;
+
+        const members = arr.map(nameString => {
+            const parts = nameString.split('/');
+            let weight = 1;
+            let name = nameString;
+            if (parts.length > 1 && /[0-9]+/.test(parts[parts.length - 1].trim())) {
+                weight = parseInt(parts[parts.length - 1].trim(), 10);
+                name = parts.slice(0, parts.length - 1).join('/');
+            }
+            if (weight > maxWeight) maxWeight = weight;
+            if (weight < minWeight) minWeight = weight;
+            return {name, weight};
+        });
+
+        members.forEach(member => {
+            member.weight = member.weight / maxWeight;
+        });
+
+        if (members.length > 0) {
+            members.sort(() => {
+                return Math.random() - 0.5;
+            });
         }
-        arr.forEach((name, i) => {
-            this._marbles.push(new Marble(this._world, i, arr.length, name));
+        members.forEach((member, i) => {
+            this._marbles.push(new Marble(this._world, i, arr.length, member.name, member.weight));
         });
     }
 

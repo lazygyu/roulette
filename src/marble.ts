@@ -10,6 +10,7 @@ export class Marble {
     color: string = 'red';
     hue: number = 0;
     impact: number = 0;
+    weight: number = 1;
     skill: Skills = Skills.None;
 
     private _skillRate = 0.0005;
@@ -38,7 +39,7 @@ export class Marble {
 
     body: planck.Body;
 
-    constructor(world: planck.World, order: number, max: number, name?: string) {
+    constructor(world: planck.World, order: number, max: number, name?: string, weight: number = 1) {
         this.name = name || `M${order}`;
         this.body = world.createBody({
             type: 'dynamic',
@@ -49,6 +50,12 @@ export class Marble {
             angularDamping: 0.01,
 			linearVelocity: new planck.Vec2(0, 0.0),
         });
+
+        this.weight = weight;
+
+        this._maxCoolTime = 1000 + ((1-this.weight) * 4000);
+        this._coolTime = this._maxCoolTime * Math.random();
+        this._skillRate = 0.1 * this.weight;
 
         const maxLine = Math.ceil(max / 10);
         const line = Math.floor(order / 10);
@@ -77,8 +84,8 @@ export class Marble {
             this._coolTime -= deltaTime;
         }
 
-        if (this._coolTime <= 0 && Math.random() < this._skillRate) {
-            this.skill = Skills.Impact;
+        if (this._coolTime <= 0 ) {
+            this.skill = Math.random() < this._skillRate ? Skills.Impact : Skills.None;
             this._coolTime = this._maxCoolTime;
         }
     }
