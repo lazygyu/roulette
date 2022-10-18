@@ -1,11 +1,13 @@
 import * as planck from 'planck';
 import {Marble} from './marble';
-import {zoomThreshold} from './constants';
+import {Skills, zoomThreshold} from './constants';
 import {ParticleManager} from './particleManager';
 import {StageDef, stages} from './maps';
 import {createBox, createJumper, createMover} from './utils';
 import {Camera} from './camera';
 import {RouletteRenderer} from './rouletteRenderer';
+import {SkillEffect} from './skillEffect';
+import {GameObject} from './gameObject';
 
 export class Roulette extends EventTarget {
     private _update: () => void;
@@ -25,6 +27,8 @@ export class Roulette extends EventTarget {
 
     private _camera: Camera = new Camera();
     private _renderer: RouletteRenderer = new RouletteRenderer();
+
+    private _effects: GameObject[] = [];
 
     constructor() {
         super();
@@ -48,6 +52,9 @@ export class Roulette extends EventTarget {
             this._world.step((this._updateInterval * this._timeScale) / 1000);
             this._updateMarbles(this._updateInterval);
             this._particleManager.update(this._updateInterval);
+
+            this._updateEffects(this._updateInterval);
+
             this._elapsed -= this._updateInterval;
         }
 
@@ -87,6 +94,18 @@ export class Roulette extends EventTarget {
         for (let i = 0; i < this._marbles.length; i++) {
             const marble = this._marbles[i];
             marble.update(deltaTime);
+            if (marble.skill === Skills.Impact) {
+                this._effects.push(new SkillEffect(marble.x, marble.y));
+                this._marbles
+                    .filter(target => target !== marble && target.position.clone().sub(marble.position).lengthSquared() < 100)
+                    .forEach(target => {
+                        const v = target.position.clone().sub(marble.position);
+                        const norm = v.clone(); norm.normalize();
+                        const power = (1-(v.length()/10));
+                        norm.mul(power * power * 5);
+                        target.body.applyLinearImpulse(norm, marble.position);
+                    });
+            }
             if (marble.y > this._stage.goalY) {
                 this._winners.push(marble);
                 if (this._winners.length === 1) {
@@ -114,6 +133,11 @@ export class Roulette extends EventTarget {
         this._marbles = this._marbles.filter(marble => marble.y <= this._stage!.goalY);
     }
 
+    private _updateEffects(deltaTime: number) {
+        this._effects.forEach(effect => effect.update(deltaTime));
+        this._effects = this._effects.filter(effect => !effect.isDestroy)
+    }
+
     private _render() {
         if (!this._stage) return;
         this._renderer.render({
@@ -123,6 +147,7 @@ export class Roulette extends EventTarget {
             marbles: this._marbles,
             winners: this._winners,
             particleManager: this._particleManager,
+            effects: this._effects,
         });
     }
 

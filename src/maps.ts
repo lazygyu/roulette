@@ -17,7 +17,7 @@ export type StageDef = {
 export const stages: StageDef[] = [
     {
         goalY: 83,
-        zoomY: 80,
+        zoomY: 78,
         walls: [
             [ // left
                 [16.5, 0],
@@ -151,6 +151,7 @@ export const stages: StageDef[] = [
         zoomY: 106.75,
         walls: [
             [
+                [16.5, 0],
                 [9.25, 0],
                 [9.25, 8.5],
                 [2, 19.25],

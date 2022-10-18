@@ -1,4 +1,7 @@
 import * as planck from 'planck';
+import {Skills} from './constants';
+import {rad} from './utils';
+import options from './options';
 
 export class Marble {
     type: 'marble' = 'marble';
@@ -7,6 +10,11 @@ export class Marble {
     color: string = 'red';
     hue: number = 0;
     impact: number = 0;
+    skill: Skills = Skills.None;
+
+    private _skillRate = 0.0005;
+    private _coolTime = 5000;
+    private _maxCoolTime = 5000;
 
     get position() {
         return this.body.getPosition();
@@ -54,8 +62,24 @@ export class Marble {
     }
 
     update(deltaTime: number) {
+        this.skill = Skills.None;
         if (this.impact) {
             this.impact = Math.max(0, this.impact - deltaTime);
+        }
+        if (!this.body.isActive()) return;
+        if (options.useSkills) {
+            this._updateSkillInformation(deltaTime);
+        }
+    }
+
+    private _updateSkillInformation(deltaTime: number) {
+        if (this._coolTime > 0) {
+            this._coolTime -= deltaTime;
+        }
+
+        if (this._coolTime <= 0 && Math.random() < this._skillRate) {
+            this.skill = Skills.Impact;
+            this._coolTime = this._maxCoolTime;
         }
     }
 
@@ -86,8 +110,19 @@ export class Marble {
             ctx.strokeText(this.name, 0, 0);
             ctx.fillText(this.name, 0, 0);
             ctx.restore();
-        }
 
+            if (options.useSkills) {
+                this._renderCooltime(ctx, zoom);
+            }
+        }
         ctx.restore();
+    }
+
+    private _renderCooltime(ctx: CanvasRenderingContext2D, zoom: number) {
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 1 / zoom;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size / 2 + (2 / zoom), rad(270), rad(270 + 360 * this._coolTime / this._maxCoolTime));
+        ctx.stroke();
     }
 }

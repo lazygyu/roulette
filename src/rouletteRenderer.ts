@@ -4,6 +4,7 @@ import {StageDef} from './maps';
 import { Body } from 'planck';
 import {Marble} from './marble';
 import {ParticleManager} from './particleManager';
+import {GameObject} from './gameObject';
 
 export type RenderParameters = {
     camera: Camera,
@@ -11,7 +12,8 @@ export type RenderParameters = {
     objects: Body[],
     marbles: Marble[],
     winners: Marble[],
-    particleManager: ParticleManager
+    particleManager: ParticleManager,
+    effects: GameObject[],
 };
 
 export class RouletteRenderer {
@@ -66,6 +68,7 @@ export class RouletteRenderer {
                 ...renderParameters,
                 isMinimap: false,
             });
+            this._renderEffects(renderParameters);
             this._renderMarbles(renderParameters);
         });
         this._ctx.restore();
@@ -145,6 +148,10 @@ export class RouletteRenderer {
             this._ctx.restore();
         });
         this._ctx.restore();
+    }
+
+    private _renderEffects({effects, camera}: RenderParameters) {
+        effects.forEach(effect => effect.render(this._ctx, camera.zoom * initialZoom));
     }
 
     private _renderMarbles({isMinimap = false, marbles, camera}: RenderParameters & { isMinimap?: boolean }) {

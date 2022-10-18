@@ -91,6 +91,10 @@
 			document.querySelector('#settings').style.display = 'none';
 		});
 
+		document.querySelector('#chkSkill').addEventListener('change', (e) => {
+			window.options.useSkills =e.target.matches(':checked');
+		});
+
 		window.roullete.addEventListener('goal', () => {
 			ready = false;
 			document.querySelector('#settings').style.display = 'block';
@@ -103,6 +107,10 @@
 <div id="settings" class="settings">
 	<textarea id="in_names" placeholder="Input names saparated by commas or line feed here">짱구, 철수, 맹구, 흰둥이, 훈이, 유리, 신형만, 봉미선, 짱아</textarea>
 	<div class="settings-actions">
+		<label>
+			<input type="checkbox" id="chkSkill" checked />
+			Using skills
+		</label>
 		<button id="btnStop">Stop</button>
 		<button id="btnStart">Start</button>
 		<button id="btnShuffle">Shuffle</button>
