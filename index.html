@@ -20,8 +20,7 @@
 		.settings {
 			position: absolute;
 			inset: 1rem;
-			max-width: 50%;
-			top: auto;
+			bottom: auto;
 			padding: 1rem;
 			border-radius: 0.75em;
 			box-shadow: inset 0 0 6rem 4px green;
@@ -30,10 +29,15 @@
 			backdrop-filter: blur(10px);
 			color: #fff;
 			font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-			font-size: 1.25rem;
+			font-size: 1rem;
 			font-weight: bold;
 			transition: all 0.15s;
 			z-index: 10;
+		}
+		.settings.hide {
+			transition-delay: 0.15s;
+			opacity: 0;
+			transform: scale(0.9);
 		}
 		.settings:focus-within {
 			box-shadow: inset 0 0 2rem 4px green;
@@ -47,14 +51,31 @@
 			font: inherit;
 			color: inherit;
 		}
-		.settings .settings-actions {
+		.settings .actions {
+			font-size: 0.8rem;
 			text-align: right;
 		}
-
-		.settings p {
-			font-size: 1rem;
+		.settings .actions label {
+			margin-bottom: 0.5rem;
+			display: block;
+		}
+		.settings .text {
+			margin-top: 0;
+			font-size: 0.8rem;
 			font-weight: normal;
 			color: lightgreen;
+		}
+
+		@media screen and (min-width: 768px) {
+			.settings {
+				top: auto;
+				bottom: 1rem;
+				max-width: 50%;
+			}
+			.settings .actions label {
+				margin: 0 0.5rem 0;
+				display: inline-block;
+			}
 		}
 	</style>
 </head>
@@ -92,18 +113,17 @@
 
 		document.querySelector('#btnStart').addEventListener('click', () => {
 			if (!ready) return;
-
 			window.roullete.start();
-			document.querySelector('#settings').style.display = 'none';
+			document.querySelector('#settings').classList.add('hide');
 		});
 
 		document.querySelector('#chkSkill').addEventListener('change', (e) => {
-			window.options.useSkills =e.target.matches(':checked');
+			window.options.useSkills = e.target.matches(':checked');
 		});
 
 		window.roullete.addEventListener('goal', () => {
 			ready = false;
-			document.querySelector('#settings').style.display = 'block';
+			document.querySelector('#settings').classList.remove('hide');
 		});
 
 		document.querySelector('#btnShuffle').click();
@@ -111,11 +131,11 @@
 </script>
 
 <div id="settings" class="settings">
-	<p>
+	<p class="text">
 		You can set weight values for each member by putting a number after each name with a slash. (ex: Tom/2, Jane/5)
 	</p>
 	<textarea id="in_names" placeholder="Input names saparated by commas or line feed here">짱구/5, 철수/4, 맹구/3, 흰둥이/2, 훈이, 유리, 신형만, 봉미선, 짱아</textarea>
-	<div class="settings-actions">
+	<div class="actions">
 		<label>
 			<input type="checkbox" id="chkSkill" checked />
 			Using skills
