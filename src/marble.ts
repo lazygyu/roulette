@@ -48,7 +48,7 @@ export class Marble {
             active: false,
             linearDamping: 0,
             angularDamping: 0.01,
-			linearVelocity: new planck.Vec2(0, 0.0),
+            linearVelocity: new planck.Vec2(0, 0.0),
         });
 
         this.weight = weight;
@@ -59,12 +59,13 @@ export class Marble {
 
         const maxLine = Math.ceil(max / 10);
         const line = Math.floor(order / 10);
+        const lineDelta = -Math.max(0, Math.ceil(maxLine - 6));
         this.hue = 360 / max * order;
         this.color = `hsl(${this.hue} 100% 70%)`;
 
         const circle = planck.Circle(new planck.Vec2(0, 0), this.size / 2);
         this.body.createFixture({shape: circle, density: Math.random() + 1, restitution: 0.2});
-        this.body.setPosition(new planck.Vec2(10.25 + ((order % 10) * 0.6), (maxLine * 1.1) - (line * 1.1)));
+        this.body.setPosition(new planck.Vec2(10.25 + ((order % 10) * 0.6), (maxLine * 1.1) - (line * 1.1) + lineDelta));
         this.body.setUserData(this);
     }
 
