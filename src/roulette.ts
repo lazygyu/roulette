@@ -3,7 +3,7 @@ import {Marble} from './marble';
 import {Skills, zoomThreshold} from './constants';
 import {ParticleManager} from './particleManager';
 import {StageDef, stages} from './maps';
-import {createBox, createJumper, createMover} from './utils';
+import { createBox, createJumper, createMover, parseName } from './utils';
 import {Camera} from './camera';
 import {RouletteRenderer} from './rouletteRenderer';
 import {SkillEffect} from './skillEffect';
@@ -206,31 +206,32 @@ export class Roulette extends EventTarget {
         let minWeight = Infinity;
 
         const members = arr.map(nameString => {
-            const parts = nameString.split('/');
-            let weight = 1;
-            let name = nameString;
-            if (parts.length > 1 && /[0-9]+/.test(parts[parts.length - 1].trim())) {
-                weight = parseInt(parts[parts.length - 1].trim(), 10);
-                name = parts.slice(0, parts.length - 1).join('/');
-            }
+            const result =  parseName(nameString);
+            if (!result) return null;
+            const { name, weight, count } = result;
             if (weight > maxWeight) maxWeight = weight;
             if (weight < minWeight) minWeight = weight;
-            return {name, weight};
-        });
+            return {name, weight, count};
+        }).filter(member => !!member);
 
         const gap = maxWeight - minWeight;
 
+        let totalCount = 0;
         members.forEach(member => {
-            member.weight = 0.1 + (gap ? (member.weight - minWeight) / gap : 0);
+            if (member) {
+                member.weight = 0.1 + (gap ? (member.weight - minWeight) / gap : 0);
+                totalCount += member.count;
+            }
         });
 
-        if (members.length > 0) {
-            members.sort(() => {
-                return Math.random() - 0.5;
-            });
-        }
-        members.forEach((member, i) => {
-            this._marbles.push(new Marble(this._world, i, arr.length, member.name, member.weight));
+        const orders = Array(totalCount).fill(0).map((_, i) => i).sort(() => Math.random() - 0.5);
+        members.forEach((member) => {
+            if (member) {
+                for (let j = 0; j < member.count; j++) {
+                    const order = orders.pop() || 0;
+                    this._marbles.push(new Marble(this._world, order, totalCount, member.name, member.weight));
+                }
+            }
         });
     }
 

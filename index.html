@@ -95,23 +95,62 @@
 		return value.split(/[,\r\n]/g).map(v => v.trim()).filter(v => !!v);
 	}
 
+	function parseName(nameStr) {
+		const weightRegex = /(\/\d+)/;
+		const countRegex = /(\*\d+)/;
+		const hasWeight = weightRegex.test(nameStr);
+		const hasCount = countRegex.test(nameStr);
+		const name = /^\s*([^\/*]+)?/.exec(nameStr)[1];
+		const weight = hasWeight ? parseInt(weightRegex.exec(nameStr)[1].replace('/', '')) : 1;
+		const count = hasCount ? parseInt(countRegex.exec(nameStr)[1].replace('*', '')) : 1;
+		return {
+			name,
+			weight,
+			count,
+		};
+	}
+
+	function getReady() {
+		const names = getNames();
+		window.roullete.setMarbles(names);
+		ready = names.length > 0;
+	}
+
 	let ready = false;
 
 	document.addEventListener('DOMContentLoaded', () => {
 		document.querySelector('#in_names').addEventListener('input', () => {
-			const names = getNames();
-			window.roullete.setMarbles(names);
-			if (names.length > 0) {
-				ready = true;
-			}
+			getReady();
+		});
+
+		document.querySelector('#in_names').addEventListener('blur', () => {
+			const nameSource = getNames();
+			const nameSet = new Set();
+			const nameCounts = {};
+			nameSource.forEach(nameSrc => {
+				const name = parseName(nameSrc);
+				const key = name.weight > 1 ? `${name.name}/${name.weight}` : name.name;
+				if (!nameSet.has(key)) {
+					nameSet.add(key);
+					nameCounts[key] = 0;
+				}
+				nameCounts[key] += name.count;
+			});
+			const result = [];
+			Object.keys(nameCounts).forEach(key => {
+				if (nameCounts[key] > 1) {
+					result.push(`${key}*${nameCounts[key]}`);
+				} else {
+					result.push(key);
+				}
+			});
+
+			document.querySelector('#in_names').value = result.join(',');
+			getReady();
 		});
 
 		document.querySelector('#btnShuffle').addEventListener('click', () => {
-			const names = getNames();
-			window.roullete.setMarbles(names);
-			if (names.length > 0) {
-				ready = true;
-			}
+			getReady();
 		});
 
 		document.querySelector('#btnStop').addEventListener('click', () => {
@@ -140,9 +179,10 @@
 
 <div id="settings" class="settings">
 	<p class="text">
-		You can set weight values for each member by putting a number after each name with a slash. (ex: Tom/2, Jane/5)
+		You can set weight values for each member by putting a number after each name with a slash. (ex: Tom/2, Jane/5)<br />
+		You can set the count of each member by putting a number after each name with a star. (ex: Tom*2, Jane*5)
 	</p>
-	<textarea id="in_names" placeholder="Input names saparated by commas or line feed here">짱구/5, 철수/4, 맹구/3, 흰둥이/2, 훈이, 유리, 신형만, 봉미선, 짱아</textarea>
+	<textarea id="in_names" placeholder="Input names saparated by commas or line feed here">짱구*5, 짱아*10, 흰둥이*3</textarea>
 	<div class="actions">
 		<label>
 			<input type="checkbox" id="chkSkill" checked />
