@@ -28,14 +28,6 @@ jobs:
         run: |
           yarn
           yarn build
-      - name: update src
-        run: |
-          cat dist/index.html | sed -e 's/src="\//src="/' > dist/index_new.html
-          rm dist/index.html
-          mv dist/index_new.html dist/index.html
-          cp ./*.png dist/
-          cp ./browserconfig.xml dist/
-          cp ./manifest.json dist/
       - name: deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
