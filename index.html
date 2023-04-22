@@ -12,6 +12,23 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link rel="apple-touch-icon" sizes="57x57" href="/apple-icon-57x57.png">
+	<link rel="apple-touch-icon" sizes="60x60" href="/apple-icon-60x60.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="/apple-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="76x76" href="/apple-icon-76x76.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="/apple-icon-114x114.png">
+	<link rel="apple-touch-icon" sizes="120x120" href="/apple-icon-120x120.png">
+	<link rel="apple-touch-icon" sizes="144x144" href="/apple-icon-144x144.png">
+	<link rel="apple-touch-icon" sizes="152x152" href="/apple-icon-152x152.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-icon-180x180.png">
+	<link rel="icon" type="image/png" sizes="192x192"  href="/android-icon-192x192.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/manifest.json">
+	<meta name="msapplication-TileColor" content="#ffffff">
+	<meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
+	<meta name="theme-color" content="#ffffff">
 	<title>Marble Roulette</title>
 	<style>
 		* {
@@ -72,6 +89,16 @@
 			font-size: 0.8rem;
 			font-weight: normal;
 			color: lightgreen;
+		}
+
+		input[type=number] {
+			width: 3rem;
+			text-align: center;
+			background-color: transparent;
+			border: none;
+			outline: none;
+			font: inherit;
+			color: inherit;
 		}
 
 		@media screen and (min-width: 768px) {
@@ -166,6 +193,12 @@
 
 		document.querySelector('#chkSkill').addEventListener('change', (e) => {
 			window.options.useSkills = e.target.matches(':checked');
+			window.roullete.setWinningRank(window.options.winningRank);
+		});
+
+		document.querySelector('#in_winningRank').addEventListener('change', (e) => {
+			const v = parseInt(e.target.value, 10);
+			window.options.winningRank = isNaN(v) ? 0 : v - 1;
 		});
 
 		window.roullete.addEventListener('goal', () => {
@@ -184,6 +217,9 @@
 	</p>
 	<textarea id="in_names" placeholder="Input names saparated by commas or line feed here">짱구*5, 짱아*10, 흰둥이*3</textarea>
 	<div class="actions">
+		<label>
+			The winner is #<input type="number" id="in_winningRank" value="1" min="1" />
+		</label>
 		<label>
 			<input type="checkbox" id="chkSkill" checked />
 			Using skills

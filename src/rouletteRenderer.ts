@@ -14,6 +14,7 @@ export type RenderParameters = {
     winners: Marble[],
     particleManager: ParticleManager,
     effects: GameObject[],
+    winnerRank: number,
 };
 
 export class RouletteRenderer {
@@ -154,9 +155,10 @@ export class RouletteRenderer {
         effects.forEach(effect => effect.render(this._ctx, camera.zoom * initialZoom));
     }
 
-    private _renderMarbles({isMinimap = false, marbles, camera}: RenderParameters & { isMinimap?: boolean }) {
-        marbles.forEach(marble => {
-            marble.render(this._ctx, camera.zoom * initialZoom, isMinimap);
+    private _renderMarbles({isMinimap = false, marbles, camera, winnerRank, winners}: RenderParameters & { isMinimap?: boolean }) {
+        const winnerIndex = winnerRank - winners.length;
+        marbles.forEach((marble, i) => {
+            marble.render(this._ctx, camera.zoom * initialZoom, i === winnerIndex, isMinimap);
         });
     }
 
@@ -175,7 +177,7 @@ export class RouletteRenderer {
         this._ctx.restore();
     }
 
-    private _renderRanking({winners, marbles}: RenderParameters) {
+    private _renderRanking({winners, marbles, winnerRank}: RenderParameters) {
         const lineWidth = 100;
         const totalCount = winners.length + marbles.length;
         const fontHeight = 16;
@@ -192,7 +194,8 @@ export class RouletteRenderer {
             this._ctx.fillStyle = marble.color;
             const line = Math.floor(rank / perLine);
             const y = (rank % perLine) * fontHeight;
-            this._ctx.fillText(`\u2714 ${marble.name} #${rank + 1}`, startX + line * lineWidth, 20 + y);
+
+            this._ctx.fillText(`${rank === winnerRank ? '☆':'\u2714'} ${marble.name} #${rank + 1}`, startX + line * lineWidth, 20 + y);
         });
         this._ctx.font = '10pt sans-serif';
         marbles.forEach((marble, rank) => {
@@ -203,8 +206,8 @@ export class RouletteRenderer {
         this._ctx.restore();
     }
 
-    private _renderWinner({winners}: RenderParameters) {
-        if (winners.length === 0) return;
+    private _renderWinner({winners, winnerRank}: RenderParameters) {
+        if (winners.length <= winnerRank) return;
         this._ctx.save();
         this._ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         this._ctx.fillRect(this._canvas.width / 2, this._canvas.height - 168, this._canvas.width / 2, 168);
@@ -213,8 +216,8 @@ export class RouletteRenderer {
         this._ctx.textAlign = 'right';
         this._ctx.fillText('Winner', this._canvas.width - 10, this._canvas.height - 120);
         this._ctx.font = 'bold 72px sans-serif';
-        this._ctx.fillStyle = winners[0].color;
-        this._ctx.fillText(winners[0].name, this._canvas.width - 10, this._canvas.height - 55);
+        this._ctx.fillStyle = winners[winnerRank].color;
+        this._ctx.fillText(winners[winnerRank].name, this._canvas.width - 10, this._canvas.height - 55);
         this._ctx.restore();
     }
 }

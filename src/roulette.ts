@@ -8,6 +8,7 @@ import {Camera} from './camera';
 import {RouletteRenderer} from './rouletteRenderer';
 import {SkillEffect} from './skillEffect';
 import {GameObject} from './gameObject';
+import options from './options';
 
 export class Roulette extends EventTarget {
     private _update: () => void;
@@ -29,6 +30,9 @@ export class Roulette extends EventTarget {
     private _renderer: RouletteRenderer = new RouletteRenderer();
 
     private _effects: GameObject[] = [];
+
+    private _winnerRank = 0;
+    private _goalDist: number = Infinity;
 
     constructor() {
         super();
@@ -63,7 +67,12 @@ export class Roulette extends EventTarget {
         }
 
         if (this._stage) {
-            this._camera.update({marbles: this._marbles, stage: this._stage, needToZoom: !this._winners.length});
+            this._camera.update({
+                marbles: this._marbles,
+                stage: this._stage,
+                needToZoom: this._goalDist < zoomThreshold,
+                targetIndex: this._winners.length > 0 ? this._winnerRank - this._winners.length : 0,
+            });
         }
 
         this._render();
@@ -108,7 +117,7 @@ export class Roulette extends EventTarget {
             }
             if (marble.y > this._stage.goalY) {
                 this._winners.push(marble);
-                if (this._winners.length === 1) {
+                if (this._winners.length === this._winnerRank + 1) {
                     this.dispatchEvent(new CustomEvent('goal', {detail: {winner: marble.name}}));
                     this._particleManager.shot(this._renderer.width, this._renderer.height);
                 }
@@ -118,11 +127,12 @@ export class Roulette extends EventTarget {
             }
         }
 
-        const topY = this._marbles[0] ? this._marbles[0].y : 0;
-        const goalDist = Math.abs(this._stage.zoomY - topY);
-        if (this._winners.length === 0 && goalDist < zoomThreshold) {
-            if (this._marbles[1] && this._marbles[1].y > this._stage.zoomY - (zoomThreshold*1.2)) {
-                this._timeScale = Math.max(0.2, (goalDist / zoomThreshold));
+        const targetIndex = this._winnerRank - this._winners.length;
+        const topY = this._marbles[targetIndex] ? this._marbles[targetIndex].y : 0;
+        this._goalDist = Math.abs(this._stage.zoomY - topY);
+        if (this._winners.length < this._winnerRank + 1 && this._goalDist < zoomThreshold) {
+            if (this._marbles[targetIndex + 1] && this._marbles[targetIndex].y > this._stage.zoomY - (zoomThreshold*1.2)) {
+                this._timeScale = Math.max(0.2, (this._goalDist / zoomThreshold));
             } else {
                 this._timeScale = 1;
             }
@@ -148,6 +158,7 @@ export class Roulette extends EventTarget {
             winners: this._winners,
             particleManager: this._particleManager,
             effects: this._effects,
+            winnerRank: this._winnerRank,
         });
     }
 
@@ -194,7 +205,15 @@ export class Roulette extends EventTarget {
     }
 
     public start() {
+        this._winnerRank = options.winningRank;
+        if (this._winnerRank >= this._marbles.length) {
+            this._winnerRank = this._marbles.length - 1;
+        }
         this._marbles.forEach(marble => marble.body.setActive(true));
+    }
+
+    public setWinningRank(rank: number) {
+        this._winnerRank = rank;
     }
 
     public setMarbles(names: string[]) {
@@ -247,5 +266,6 @@ export class Roulette extends EventTarget {
         this.clearMarbles();
         this._clearMap();
         this._loadMap();
+        this._goalDist = Infinity;
     }
 }

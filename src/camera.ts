@@ -33,9 +33,9 @@ export class Camera {
         return this._targetPosition.set(v);
     }
 
-    update({marbles, stage, needToZoom}: {marbles: Marble[], stage: StageDef, needToZoom: boolean}) {
+    update({marbles, stage, needToZoom, targetIndex}: {marbles: Marble[], stage: StageDef, needToZoom: boolean, targetIndex: number}) {
         // set target position
-        this._calcTargetPositionAndZoom(marbles, stage, needToZoom);
+        this._calcTargetPositionAndZoom(marbles, stage, needToZoom, targetIndex);
 
         // interpolate position
         this._position.x = this._interpolation(this.x, this._targetPosition.x);
@@ -45,11 +45,12 @@ export class Camera {
         this._zoom = this._interpolation(this._zoom, this._targetZoom);
     }
 
-    private _calcTargetPositionAndZoom(marbles: Marble[], stage: StageDef, needToZoom: boolean) {
+    private _calcTargetPositionAndZoom(marbles: Marble[], stage: StageDef, needToZoom: boolean, targetIndex: number) {
         if (marbles.length > 0) {
-            this.setPosition(marbles[0].position);
+            const targetMarble = marbles[targetIndex] ? marbles[targetIndex] : marbles[0];
+            this.setPosition(targetMarble.position);
             if (needToZoom) {
-                const goalDist = Math.abs(stage.zoomY - marbles[0].y);
+                const goalDist = Math.abs(stage.zoomY - this._position.y);
                 this.zoom = Math.max(1, (1 - (goalDist / zoomThreshold)) * 4);
             } else {
                 this.zoom = 1;
@@ -65,7 +66,8 @@ export class Camera {
         if (Math.abs(d) < (1 / initialZoom)) {
             return target;
         }
-        return current + (d / 2);
+
+        return current + (d / 10);
     }
 
     renderScene(ctx: CanvasRenderingContext2D, callback: (ctx: CanvasRenderingContext2D) => void) {

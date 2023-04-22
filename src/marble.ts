@@ -91,7 +91,7 @@ export class Marble {
         }
     }
 
-    render(ctx: CanvasRenderingContext2D, zoom: number, isMinimap: boolean = false) {
+    render(ctx: CanvasRenderingContext2D, zoom: number, showStar: boolean, isMinimap: boolean = false) {
         ctx.save();
 
         if (!isMinimap) {
@@ -118,6 +118,16 @@ export class Marble {
             ctx.strokeText(this.name, 0, 0);
             ctx.fillText(this.name, 0, 0);
             ctx.restore();
+
+            if (showStar) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2 / zoom;
+                ctx.arc(this.x, this.y, isMinimap ? this.size : this.size / 2, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
 
             if (options.useSkills) {
                 this._renderCooltime(ctx, zoom);
