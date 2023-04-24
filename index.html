@@ -143,6 +143,12 @@
 		ready = names.length > 0;
 	}
 
+	function setWinnerRank(rank) {
+		document.querySelector('#in_winningRank').value = rank;
+		window.options.winningRank = rank - 1;
+		window.roullete.setWinningRank(window.options.winningRank);
+	}
+
 	let ready = false;
 
 	document.addEventListener('DOMContentLoaded', () => {
@@ -198,7 +204,13 @@
 
 		document.querySelector('#in_winningRank').addEventListener('change', (e) => {
 			const v = parseInt(e.target.value, 10);
-			window.options.winningRank = isNaN(v) ? 0 : v - 1;
+			setWinnerRank(isNaN(v) ? 0 : v);
+		});
+
+		document.querySelector('#btnRandomWinner').addEventListener('click', () => {
+			const total = window.roullete.getCount();
+			const rank = Math.floor(Math.random() * total + 1);
+			setWinnerRank(rank);
 		});
 
 		window.roullete.addEventListener('goal', () => {
@@ -220,6 +232,7 @@
 		<label>
 			The winner is #<input type="number" id="in_winningRank" value="1" min="1" />
 		</label>
+		<button id="btnRandomWinner">Random Winner</button>
 		<label>
 			<input type="checkbox" id="chkSkill" checked />
 			Using skills

@@ -268,4 +268,8 @@ export class Roulette extends EventTarget {
         this._loadMap();
         this._goalDist = Infinity;
     }
+
+    public getCount() {
+        return this._marbles.length;
+    }
 }
