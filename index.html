@@ -193,6 +193,11 @@
 
 		document.querySelector('#btnStart').addEventListener('click', () => {
 			if (!ready) return;
+			gtag('event', 'start', {
+				'event_category': 'roulette',
+				'event_label': 'start',
+				'value': window.roullete.getCount(),
+			});
 			window.roullete.start();
 			document.querySelector('#settings').classList.add('hide');
 		});
