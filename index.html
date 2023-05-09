@@ -104,13 +104,27 @@
 		@media screen and (min-width: 768px) {
 			.settings {
 				top: auto;
-				bottom: 1rem;
+				bottom: 24px;
 				max-width: 50%;
 			}
 			.settings .actions label {
 				margin: 0 0.5rem 0;
 				display: inline-block;
 			}
+		}
+
+		div.copyright {
+			position: fixed;
+			bottom: 0;
+			left: 50%;
+			transform: translateX(-50%);
+			color: white;
+			font-size: 12px;
+			z-index: 999;
+		}
+
+		div.copyright a {
+			color: white;
 		}
 	</style>
 </head>
@@ -247,5 +261,6 @@
 		<button id="btnShuffle">Shuffle</button>
 	</div>
 </div>
+<div class="copyright">&copy; 2023.<a href="https://lazygyu.net" target="_blank">lazygyu</a></div>
 </body>
 </html>
