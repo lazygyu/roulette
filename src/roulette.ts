@@ -130,17 +130,22 @@ export class Roulette extends EventTarget {
         const targetIndex = this._winnerRank - this._winners.length;
         const topY = this._marbles[targetIndex] ? this._marbles[targetIndex].y : 0;
         this._goalDist = Math.abs(this._stage.zoomY - topY);
-        if (this._winners.length < this._winnerRank + 1 && this._goalDist < zoomThreshold) {
-            if (this._marbles[targetIndex + 1] && this._marbles[targetIndex].y > this._stage.zoomY - (zoomThreshold*1.2)) {
-                this._timeScale = Math.max(0.2, (this._goalDist / zoomThreshold));
-            } else {
-                this._timeScale = 1;
-            }
-        } else {
-            this._timeScale = 1;
-        }
+        this._timeScale = this._calcTimeScale();
 
         this._marbles = this._marbles.filter(marble => marble.y <= this._stage!.goalY);
+    }
+
+    private _calcTimeScale(): number {
+        if (!this._stage) return 1;
+        const targetIndex = this._winnerRank - this._winners.length;
+        if (this._winners.length < this._winnerRank + 1 && this._goalDist < zoomThreshold) {
+            if ( this._marbles[targetIndex].y > this._stage.zoomY - (zoomThreshold*1.2) &&
+                (this._marbles[targetIndex - 1] || this._marbles[targetIndex + 1])
+            ) {
+                return Math.max(0.2, (this._goalDist / zoomThreshold));
+            }
+        }
+        return 1;
     }
 
     private _updateEffects(deltaTime: number) {
