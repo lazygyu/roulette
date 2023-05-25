@@ -18,6 +18,5 @@ export class ParticleManager {
         for (let i = 0; i < 200; i++) {
             this._particles.push(new Particle(x, y));
         }
-        console.log('shot: ', this._particles.length);
     }
 }
