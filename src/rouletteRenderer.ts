@@ -1,6 +1,6 @@
-import {canvasHeight, canvasWidth, initialZoom} from './constants';
+import {canvasHeight, canvasWidth, initialZoom} from './data/constants';
 import {Camera} from './camera';
-import {StageDef} from './maps';
+import {StageDef} from './data/maps';
 import { Body } from 'planck';
 import {Marble} from './marble';
 import {ParticleManager} from './particleManager';

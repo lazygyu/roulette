@@ -6,4 +6,4 @@ export const zoomThreshold = 5;
 export enum Skills {
     None,
     Impact,
-};
+}

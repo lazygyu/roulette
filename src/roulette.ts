@@ -1,8 +1,8 @@
 import * as planck from 'planck';
 import {Marble} from './marble';
-import {Skills, zoomThreshold} from './constants';
+import {Skills, zoomThreshold} from './data/constants';
 import {ParticleManager} from './particleManager';
-import {StageDef, stages} from './maps';
+import {StageDef, stages} from './data/maps';
 import { createBox, createJumper, createMover, parseName } from './utils/utils';
 import {Camera} from './camera';
 import {RouletteRenderer} from './rouletteRenderer';

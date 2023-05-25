@@ -1,5 +1,5 @@
 import * as planck from 'planck';
-import {Skills} from './constants';
+import {Skills} from './data/constants';
 import {rad} from './utils/utils';
 import options from './options';
 

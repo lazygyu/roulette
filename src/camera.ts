@@ -1,7 +1,7 @@
 import {Marble} from './marble';
-import {StageDef} from './maps';
+import {StageDef} from './data/maps';
 import {Vec2} from 'planck';
-import {initialZoom, zoomThreshold} from './constants';
+import {initialZoom, zoomThreshold} from './data/constants';
 
 export class Camera {
     private _position: Vec2 = new Vec2();
