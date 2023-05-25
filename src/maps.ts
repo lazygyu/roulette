@@ -1,4 +1,4 @@
-import {rad} from './utils';
+import {rad} from './utils/utils';
 
 type WallDef = [x: number, y: number];
 type BoxDef = [x: number, y: number, angle: number, width: number, height: number];

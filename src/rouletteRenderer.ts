@@ -21,6 +21,8 @@ export class RouletteRenderer {
     private _canvas!: HTMLCanvasElement;
     private _ctx!: CanvasRenderingContext2D;
 
+    private _buffers: HTMLCanvasElement[] = [];
+
     constructor() {
     }
 
@@ -38,6 +40,9 @@ export class RouletteRenderer {
         this._canvas.height = canvasHeight;
         this._ctx = this._canvas.getContext('2d', {alpha: false}) as CanvasRenderingContext2D;
 
+        this._buffers.push(document.createElement('canvas'));
+        this._buffers.push(document.createElement('canvas'));
+
         document.body.appendChild(this._canvas);
 
         const resizing = (entries?: ResizeObserverEntry[]) => {
@@ -46,6 +51,17 @@ export class RouletteRenderer {
             const height = (width / realSize.width) * realSize.height;
             this._canvas.width = width;
             this._canvas.height = height;
+            if (width > height) {
+                this._buffers.forEach(buffer => {
+                    buffer.width = width / 2;
+                    buffer.height = height;
+                });
+            } else {
+                this._buffers.forEach(buffer => {
+                    buffer.width = width;
+                    buffer.height = height / 2;
+                });
+            }
         }
 
         const resizeObserver = new ResizeObserver(resizing);

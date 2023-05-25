@@ -3,15 +3,15 @@ import {Marble} from './marble';
 import {Skills, zoomThreshold} from './constants';
 import {ParticleManager} from './particleManager';
 import {StageDef, stages} from './maps';
-import { createBox, createJumper, createMover, parseName } from './utils';
+import { createBox, createJumper, createMover, parseName } from './utils/utils';
 import {Camera} from './camera';
 import {RouletteRenderer} from './rouletteRenderer';
 import {SkillEffect} from './skillEffect';
 import {GameObject} from './gameObject';
 import options from './options';
+import { bound } from './utils/bound.decorator';
 
 export class Roulette extends EventTarget {
-    private _update: () => void;
     private _world!: planck.World;
     private _marbles: Marble[] = [];
 
@@ -36,16 +36,13 @@ export class Roulette extends EventTarget {
 
     constructor() {
         super();
-        this._update = this._updateHandler.bind(this);
-
         this._renderer.init();
-
         this._init();
         this._update();
     }
 
-
-    private _updateHandler() {
+    @bound
+    private _update() {
         if (!this._lastTime) this._lastTime = Date.now();
         const currentTime = Date.now();
 

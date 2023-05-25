@@ -1,5 +1,5 @@
 import * as planck from 'planck';
-import {rad} from './utils';
+import {rad} from './utils/utils';
 
 const lifetime = 3000;
 
