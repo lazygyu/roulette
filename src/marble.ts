@@ -91,48 +91,65 @@ export class Marble {
         }
     }
 
-    render(ctx: CanvasRenderingContext2D, zoom: number, showStar: boolean, isMinimap: boolean = false) {
+    render(ctx: CanvasRenderingContext2D, zoom: number, outline: boolean, isMinimap: boolean = false) {
         ctx.save();
-
-        if (!isMinimap) {
-            ctx.shadowColor = this.color;
-            ctx.shadowBlur = zoom / 2;
-            ctx.fillStyle = `hsl(${this.hue} 100% ${70 + (25 * Math.min(1, this.impact / 500))}%`;
+        if (isMinimap) {
+            this._renderMinimap(ctx);
         } else {
-            ctx.fillStyle = this.color;
+            this._renderNormal(ctx, zoom, outline)
         }
+        ctx.restore();
+    }
 
+    private _renderMinimap(ctx: CanvasRenderingContext2D) {
+        ctx.fillStyle = this.color;
+        this._drawMarbleBody(ctx, true);
+    }
+
+    private _drawMarbleBody(ctx: CanvasRenderingContext2D, isMinimap: boolean) {
         ctx.beginPath();
         ctx.arc(this.x, this.y, isMinimap ? this.size : this.size / 2, 0, Math.PI * 2);
         ctx.fill();
+    }
 
-        if (!isMinimap) {
-            ctx.save();
-            ctx.translate(this.x, this.y+0.25);
-            ctx.scale(1/zoom, 1/zoom);
-            ctx.font = `12pt sans-serif`;
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
-            ctx.fillStyle = this.color;
-            ctx.shadowBlur = 0;
-            ctx.strokeText(this.name, 0, 0);
-            ctx.fillText(this.name, 0, 0);
-            ctx.restore();
+    private _renderNormal(ctx: CanvasRenderingContext2D, zoom: number, outline: boolean) {
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = zoom / 2;
+        ctx.fillStyle = `hsl(${this.hue} 100% ${70 + (25 * Math.min(1, this.impact / 500))}%`;
 
-            if (showStar) {
-                ctx.save();
-                ctx.beginPath();
-                ctx.strokeStyle = 'white';
-                ctx.lineWidth = 2 / zoom;
-                ctx.arc(this.x, this.y, isMinimap ? this.size : this.size / 2, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.restore();
-            }
+        this._drawMarbleBody(ctx, false);
+        this._drawName(ctx, zoom);
 
-            if (options.useSkills) {
-                this._renderCooltime(ctx, zoom);
-            }
+        if (outline) {
+            this._drawOutline(ctx, 2 / zoom);
         }
+
+        if (options.useSkills) {
+            this._renderCooltime(ctx, zoom);
+        }
+    }
+
+    private _drawName(ctx: CanvasRenderingContext2D, zoom: number) {
+        ctx.save();
+        ctx.translate(this.x, this.y+0.25);
+        ctx.scale(1/zoom, 1/zoom);
+        ctx.font = `12pt sans-serif`;
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.fillStyle = this.color;
+        ctx.shadowBlur = 0;
+        ctx.strokeText(this.name, 0, 0);
+        ctx.fillText(this.name, 0, 0);
+        ctx.restore();
+    }
+
+    private _drawOutline(ctx: CanvasRenderingContext2D, lineWidth: number) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = lineWidth;
+        ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
+        ctx.stroke();
         ctx.restore();
     }
 
