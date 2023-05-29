@@ -29,7 +29,14 @@ export class Camera {
         this._targetPosition.y = v;
     }
 
-    setPosition(v: Vec2) {
+    get position() {
+        return this._position;
+    }
+
+    setPosition(v: Vec2, force: boolean = false) {
+        if (force) {
+            return this._position.set(v);
+        }
         return this._targetPosition.set(v);
     }
 
