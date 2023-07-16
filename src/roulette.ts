@@ -23,6 +23,7 @@ export class Roulette extends EventTarget {
 
     private _updateInterval = 10;
     private _timeScale = 1;
+    private _speed = 1;
 
     private _winners: Marble[] = [];
     private _objects: planck.Body[] = [];
@@ -51,7 +52,7 @@ export class Roulette extends EventTarget {
         if (!this._lastTime) this._lastTime = Date.now();
         const currentTime = Date.now();
 
-        this._elapsed += (currentTime - this._lastTime) * this._timeScale;
+        this._elapsed += (currentTime - this._lastTime) * this._speed * this._timeScale;
         this._lastTime = currentTime;
 
         while (this._elapsed >= this._updateInterval) {
@@ -237,6 +238,17 @@ export class Roulette extends EventTarget {
             this._winnerRank = this._marbles.length - 1;
         }
         this._marbles.forEach(marble => marble.body.setActive(true));
+    }
+
+    public setSpeed(value: number) {
+        if (value <= 0) {
+            throw new Error('Speed multiplier must larger than 0');
+        }
+        this._speed = value;
+    }
+
+    public getSpeed() {
+        return this._speed;
     }
 
     public setWinningRank(rank: number) {
