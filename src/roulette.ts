@@ -51,16 +51,14 @@ export class Roulette extends EventTarget {
         if (!this._lastTime) this._lastTime = Date.now();
         const currentTime = Date.now();
 
-        this._elapsed += currentTime - this._lastTime;
+        this._elapsed += (currentTime - this._lastTime) * this._timeScale;
         this._lastTime = currentTime;
 
         while (this._elapsed >= this._updateInterval) {
-            this._world.step((this._updateInterval * this._timeScale) / 1000);
+            this._world.step((this._updateInterval) / 1000);
             this._updateMarbles(this._updateInterval);
             this._particleManager.update(this._updateInterval);
-
             this._updateEffects(this._updateInterval);
-
             this._elapsed -= this._updateInterval;
         }
 
