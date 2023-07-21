@@ -57,7 +57,7 @@
 			font-weight: bold;
 			z-index: 10;
 		}
-		.settings.hide {
+		.hide {
 			display: none;
 		}
 		.settings:focus-within {
@@ -128,6 +128,32 @@
 
 		#btnShake {
 			font-size: 2em;
+		}
+
+		div#notice {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			z-index: 999;
+			background: rgba(255, 255, 255, 0.8);
+			padding: 1em;
+			display: flex;
+			flex-direction: column;
+		}
+		div#notice button {
+			width: 50%;
+			padding: 1em;
+			align-self: flex-end;
+		}
+
+		div#notice dt {
+			font-weight: bold;
+		}
+
+		div#notice dd {
+			list-style: disc;
+			padding-bottom: .5em;
 		}
 	</style>
 </head>
@@ -253,8 +279,35 @@
 		});
 
 		document.querySelector('#btnShuffle').click();
+
+		const currentNotice = 20230721;
+		const closed = parseInt(localStorage.getItem('noticeClose') || '0', 10);
+		console.log('current, closed', currentNotice, closed);
+
+		if (closed < currentNotice) {
+			console.log('open notice');
+			document.querySelector('#notice').classList.remove('hide');
+		}
+
+		document.querySelector('#btnNoticeClose').addEventListener('click', () => {
+			document.querySelector('#notice').classList.add('hide');
+			localStorage.setItem('noticeClose', '20230721');
+		});
 	});
 </script>
+<div id="notice" class="hide">
+	<h3>Change logs</h3>
+	<dl>
+		<dt>2023-07-21</dt>
+		<dd>Show change logs when there is a new update.</dd>
+		<dd>Improve the performance when there are too many marbles in the game.</dd>
+		<dd>Fixed the issue that the slow motion is not smooth.</dd>
+		<dd>Now end the game immediately if only one marble survives and the winning rank is the last.</dd>
+		<dt>2023-05-29</dt>
+		<dd>Now you can shake the game if the marbles are stuck for over 3 seconds.</dd>
+	</dl>
+	<button type="button" id="btnNoticeClose">Close</button>
+</div>
 
 <div id="settings" class="settings">
 	<p class="text">
