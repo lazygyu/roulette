@@ -6,6 +6,9 @@ This is a lucky draw by dropping marbles.
 
 # ChangeLogs
 
+- 2023-07-21:
+  - Fix the issue the slow-motion seems flickering
+  - End the game immediately if only one marble survives and the winning rank is the last.
 - 2023-07-16: 
     - Now you can adjust the game speed.
 - 2023-05-29: Now you can shake the game if the marbles are being stuck for more than 3 seconds.
