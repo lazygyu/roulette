@@ -55,6 +55,9 @@ export class Roulette extends EventTarget {
         const currentTime = Date.now();
 
         this._elapsed += (currentTime - this._lastTime) * this._speed;
+        if (this._elapsed > 100) {
+            this._elapsed %= 100;
+        }
         this._lastTime = currentTime;
 
         const interval = this._updateInterval / 1000 * this._timeScale;

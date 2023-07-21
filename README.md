@@ -7,6 +7,8 @@ This is a lucky draw by dropping marbles.
 # ChangeLogs
 
 - 2023-07-21:
+  - Improve the performance when there are too many marbles in the game.
+- 2023-07-21:
   - Fix the issue the slow-motion seems flickering
   - End the game immediately if only one marble survives and the winning rank is the last.
 - 2023-07-16: 
