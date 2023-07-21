@@ -6,7 +6,6 @@
 		window.dataLayer = window.dataLayer || [];
 		function gtag(){dataLayer.push(arguments);}
 		gtag('js', new Date());
-
 		gtag('config', 'G-5899C1DJM0');
 	</script>
 	<meta charset="UTF-8">
@@ -106,19 +105,6 @@
 			}
 			#inGame {
 				width: fit-content;
-			}
-			#speedAdjust {
-				width: fit-content;
-				display: flex;
-				left: auto;
-				right: 1rem;
-			}
-			#speedAdjust span {
-				font-size: 2rem;
-				padding-right: .5rem;
-			}
-			#speedAdjust button {
-				font-size: 1.5rem;
 			}
 			.settings .actions label {
 				margin: 0 0.5rem 0;
@@ -222,23 +208,6 @@
 			ready = false;
 		});
 
-		const setSpeed = (value) => {
-			window.roullete.setSpeed(value);
-			document.querySelector('#currentSpeed').innerHTML = `x${value}`;
-		}
-
-		document.querySelector('#btnFF').addEventListener('click', () => {
-			let current = window.roullete.getSpeed();
-			if (current < 10) {
-				current *= 2;
-				setSpeed(current);
-			}
-		});
-
-		document.querySelector('#btnResetSpeed').addEventListener('click', () => {
-			setSpeed(1);
-		});
-
 		document.querySelector('#btnStart').addEventListener('click', () => {
 			if (!ready) return;
 			gtag('event', 'start', {
@@ -248,7 +217,6 @@
 			});
 			window.roullete.start();
 			document.querySelector('#settings').classList.add('hide');
-			document.querySelector('#speedAdjust').classList.remove('hide');
 		});
 
 		document.querySelector('#chkSkill').addEventListener('change', (e) => {
@@ -307,11 +275,6 @@
 		<button id="btnStart">Start</button>
 		<button id="btnShuffle">Shuffle</button>
 	</div>
-</div>
-<div id="speedAdjust" class="settings hide">
-	<span id="currentSpeed">x1</span>
-	<button id="btnResetSpeed">&olarr;</button>
-	<button id="btnFF">⏩</button>
 </div>
 <div id="inGame" class="settings hide">
 	<button id="btnShake">Shake!</button>
