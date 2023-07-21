@@ -37,8 +37,10 @@ export class Roulette extends EventTarget {
     private _effects: GameObject[] = [];
 
     private _winnerRank = 0;
+    private _totalMarbleCount = 0;
     private _goalDist: number = Infinity;
     private _isRunning: boolean = false;
+    private _winner: Marble | null = null;
 
     constructor() {
         super();
@@ -126,8 +128,15 @@ export class Roulette extends EventTarget {
             }
             if (marble.y > this._stage.goalY) {
                 this._winners.push(marble);
-                if (this._winners.length === this._winnerRank + 1) {
+                if (this._isRunning && this._winners.length === this._winnerRank + 1) {
                     this.dispatchEvent(new CustomEvent('goal', {detail: {winner: marble.name}}));
+                    this._winner = marble;
+                    this._isRunning = false;
+                    this._particleManager.shot(this._renderer.width, this._renderer.height);
+                } else if (this._isRunning && this._winnerRank === this._winners.length && this._winnerRank === this._totalMarbleCount - 1) {
+                    console.log('only one left', this._marbles[i+1]);
+                    this.dispatchEvent(new CustomEvent('goal', {detail: {winner: this._marbles[i + 1].name}}));
+                    this._winner = this._marbles[i+1];
                     this._isRunning = false;
                     this._particleManager.shot(this._renderer.width, this._renderer.height);
                 }
@@ -180,6 +189,7 @@ export class Roulette extends EventTarget {
             particleManager: this._particleManager,
             effects: this._effects,
             winnerRank: this._winnerRank,
+            winner: this._winner,
         });
     }
 
@@ -229,6 +239,7 @@ export class Roulette extends EventTarget {
         this._marbles.forEach(marble => {
             this._world.destroyBody(marble.body);
         });
+        this._winner = null;
         this._winners = [];
         this._marbles = [];
     }
@@ -293,6 +304,7 @@ export class Roulette extends EventTarget {
                 }
             }
         });
+        this._totalMarbleCount = totalCount;
     }
 
     private _clearMap() {

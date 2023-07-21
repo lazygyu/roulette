@@ -15,6 +15,7 @@ export type RenderParameters = {
     particleManager: ParticleManager,
     effects: GameObject[],
     winnerRank: number,
+    winner: Marble | null,
 };
 
 export class RouletteRenderer {
@@ -222,8 +223,8 @@ export class RouletteRenderer {
         this._ctx.restore();
     }
 
-    private _renderWinner({winners, winnerRank}: RenderParameters) {
-        if (winners.length <= winnerRank) return;
+    private _renderWinner({winner}: RenderParameters) {
+        if (!winner) return;
         this._ctx.save();
         this._ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         this._ctx.fillRect(this._canvas.width / 2, this._canvas.height - 168, this._canvas.width / 2, 168);
@@ -232,8 +233,8 @@ export class RouletteRenderer {
         this._ctx.textAlign = 'right';
         this._ctx.fillText('Winner', this._canvas.width - 10, this._canvas.height - 120);
         this._ctx.font = 'bold 72px sans-serif';
-        this._ctx.fillStyle = winners[winnerRank].color;
-        this._ctx.fillText(winners[winnerRank].name, this._canvas.width - 10, this._canvas.height - 55);
+        this._ctx.fillStyle = winner.color;
+        this._ctx.fillText(winner.name, this._canvas.width - 10, this._canvas.height - 55);
         this._ctx.restore();
     }
 }
