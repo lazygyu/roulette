@@ -282,24 +282,24 @@
 
 		document.querySelector('#btnShuffle').click();
 
-		const currentNotice = 20230721;
+		const currentNotice = 20230729;
 		const closed = parseInt(localStorage.getItem('noticeClose') || '0', 10);
-		console.log('current, closed', currentNotice, closed);
 
 		if (closed < currentNotice) {
-			console.log('open notice');
 			document.querySelector('#notice').classList.remove('hide');
 		}
 
 		document.querySelector('#btnNoticeClose').addEventListener('click', () => {
 			document.querySelector('#notice').classList.add('hide');
-			localStorage.setItem('noticeClose', '20230721');
+			localStorage.setItem('noticeClose', String(currentNotice));
 		});
 	});
 </script>
 <div id="notice" class="hide">
 	<h3>Change logs</h3>
 	<dl>
+		<dt>2023-07-29</dt>
+		<dd>Adjusted the map to prevent a marble stays too long in a specific place.</dd>
 		<dt>2023-07-21</dt>
 		<dd>Show change logs when there is a new update.</dd>
 		<dd>Improve the performance when there are too many marbles in the game.</dd>
