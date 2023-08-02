@@ -5,6 +5,7 @@ import { Body } from 'planck';
 import {Marble} from './marble';
 import {ParticleManager} from './particleManager';
 import {GameObject} from './gameObject';
+import { UIObject } from './UIObject';
 
 export type RenderParameters = {
     camera: Camera,
@@ -33,6 +34,10 @@ export class RouletteRenderer {
 
     get height() {
         return this._canvas.height;
+    }
+
+    get canvas() {
+        return this._canvas;
     }
 
     init() {
@@ -71,7 +76,7 @@ export class RouletteRenderer {
         resizing();
     }
 
-    render(renderParameters: RenderParameters) {
+    render(renderParameters: RenderParameters, uiObjects: UIObject[]) {
         this._ctx.fillStyle = 'black';
         this._ctx.fillRect(0, 0, this._canvas.width, this._canvas.height);
 
@@ -91,9 +96,9 @@ export class RouletteRenderer {
         });
         this._ctx.restore();
 
+        uiObjects.forEach(obj => obj.render(this._ctx, renderParameters, this._canvas.width, this._canvas.height));
         this._renderMinimap(renderParameters);
         renderParameters.particleManager.render(this._ctx);
-        this._renderRanking(renderParameters);
         this._renderWinner(renderParameters);
     }
 
@@ -191,35 +196,6 @@ export class RouletteRenderer {
         this._renderWalls({...params, isMinimap: true});
         this._renderObjects({...params, isMinimap: true});
         this._renderMarbles({...params, isMinimap: true});
-        this._ctx.restore();
-    }
-
-    private _renderRanking({winners, marbles, winnerRank}: RenderParameters) {
-        const lineWidth = 100;
-        const totalCount = winners.length + marbles.length;
-        const fontHeight = 16;
-        const lineHeight = (this._canvas.height - 20);
-
-        const lines = Math.ceil((totalCount * fontHeight) / lineHeight);
-        const perLine = Math.ceil((winners.length + marbles.length) / lines);
-        const startX = this._canvas.width - 5 - ((lines - 1) * lineWidth);
-
-        this._ctx.save();
-        this._ctx.font = 'bold 11pt sans-serif';
-        this._ctx.textAlign = 'right';
-        winners.forEach((marble, rank) => {
-            this._ctx.fillStyle = marble.color;
-            const line = Math.floor(rank / perLine);
-            const y = (rank % perLine) * fontHeight;
-
-            this._ctx.fillText(`${rank === winnerRank ? '☆':'\u2714'} ${marble.name} #${rank + 1}`, startX + line * lineWidth, 20 + y);
-        });
-        this._ctx.font = '10pt sans-serif';
-        marbles.forEach((marble, rank) => {
-            this._ctx.fillStyle = marble.color;
-            const y = ((rank + winners.length) % perLine) * fontHeight;
-            this._ctx.fillText(`${marble.name} #${rank + 1 + winners.length}`, startX + Math.floor((rank + winners.length) / perLine) * lineWidth, 20 + y);
-        });
         this._ctx.restore();
     }
 

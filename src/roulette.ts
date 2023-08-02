@@ -11,6 +11,8 @@ import {GameObject} from './gameObject';
 import options from './options';
 import { bound } from './utils/bound.decorator';
 import {Vec2} from 'planck';
+import { UIObject } from './UIObject';
+import { RankRenderer } from './rankRenderer';
 
 export class Roulette extends EventTarget {
     private _world!: planck.World;
@@ -42,11 +44,20 @@ export class Roulette extends EventTarget {
     private _isRunning: boolean = false;
     private _winner: Marble | null = null;
 
+    private _uiObjects: UIObject[] = [];
+
     constructor() {
         super();
         this._renderer.init();
         this._init();
         this._update();
+    }
+
+    private addUiObject(obj: UIObject) {
+        this._uiObjects.push(obj);
+        if (obj.onWheel) {
+            this._renderer.canvas.addEventListener('wheel', obj.onWheel);
+        }
     }
 
     @bound
@@ -68,11 +79,13 @@ export class Roulette extends EventTarget {
             this._particleManager.update(this._updateInterval);
             this._updateEffects(this._updateInterval);
             this._elapsed -= this._updateInterval;
+            this._uiObjects.forEach(obj => obj.update(this._updateInterval));
         }
 
         if (this._marbles.length > 1) {
             this._marbles.sort((a, b) => b.y - a.y);
         }
+
 
         if (this._stage) {
             this._camera.update({
@@ -183,7 +196,7 @@ export class Roulette extends EventTarget {
 
     private _render() {
         if (!this._stage) return;
-        this._renderer.render({
+        const renderParams = {
             camera: this._camera,
             stage: this._stage,
             objects: this._objects,
@@ -193,7 +206,8 @@ export class Roulette extends EventTarget {
             effects: this._effects,
             winnerRank: this._winnerRank,
             winner: this._winner,
-        });
+        };
+        this._renderer.render(renderParams, this._uiObjects);
     }
 
     private _init() {
@@ -201,6 +215,7 @@ export class Roulette extends EventTarget {
             gravity: new planck.Vec2(0, 10),
         });
 
+        this.addUiObject(new RankRenderer());
         this._loadMap();
     }
 
