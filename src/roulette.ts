@@ -206,6 +206,7 @@ export class Roulette extends EventTarget {
             effects: this._effects,
             winnerRank: this._winnerRank,
             winner: this._winner,
+            size: Vec2(this._renderer.width, this._renderer.height),
         };
         this._renderer.render(renderParams, this._uiObjects);
     }
