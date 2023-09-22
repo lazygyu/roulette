@@ -6,6 +6,12 @@ This is a lucky draw by dropping marbles.
 
 # ChangeLogs
 
+- 2023-09-22:
+  - Add a button that sets the last one to the winner.
+- 2023-08-02:
+  - Now the names will not cover the whole screen if there are many. You can scroll the names with your mouse wheel.
+- 2023-07-29:
+  - Adjusted the map to prevent a marble stays too long in a specific place.
 - 2023-07-21:
   - Improve the performance when there are too many marbles in the game.
 - 2023-07-21:
@@ -13,7 +19,8 @@ This is a lucky draw by dropping marbles.
   - End the game immediately if only one marble survives and the winning rank is the last.
 - 2023-07-16: 
     - Now you can adjust the game speed.
-- 2023-05-29: Now you can shake the game if the marbles are being stuck for more than 3 seconds.
+- 2023-05-29: 
+  - Now you can shake the game if the marbles are being stuck for more than 3 seconds.
 
 # Requirements
 
