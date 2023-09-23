@@ -1,6 +1,7 @@
 import { RenderParameters } from './rouletteRenderer';
 import { UIObject } from './UIObject';
 import { bound } from './utils/bound.decorator';
+import {Rect} from './types/rect.type';
 
 export class RankRenderer implements UIObject {
   private _currentY = 0;
@@ -19,7 +20,6 @@ export class RankRenderer implements UIObject {
       this._targetY = this.maxY;
     }
     this._userMoved = 2000;
-    console.log(this._targetY, this._currentY);
   }
 
   render(ctx: CanvasRenderingContext2D, {winners, marbles, winnerRank}: RenderParameters, width: number, height: number) {
@@ -63,5 +63,9 @@ export class RankRenderer implements UIObject {
     if (Math.abs(this._currentY - this._targetY) < 1) {
       this._currentY = this._targetY;
     }
+  }
+
+  getBoundingBox(): Rect | null {
+    return null;
   }
 }

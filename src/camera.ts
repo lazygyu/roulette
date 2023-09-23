@@ -8,6 +8,7 @@ export class Camera {
     private _targetPosition: Vec2 = new Vec2();
     private _zoom: number = 1;
     private _targetZoom: number = 1;
+    private _locked = false;
 
     get zoom() {
         return this._zoom;
@@ -40,9 +41,15 @@ export class Camera {
         return this._targetPosition.set(v);
     }
 
+    lock(v: boolean) {
+        this._locked = v;
+    }
+
     update({marbles, stage, needToZoom, targetIndex}: {marbles: Marble[], stage: StageDef, needToZoom: boolean, targetIndex: number}) {
         // set target position
-        this._calcTargetPositionAndZoom(marbles, stage, needToZoom, targetIndex);
+        if (!this._locked) {
+            this._calcTargetPositionAndZoom(marbles, stage, needToZoom, targetIndex);
+        }
 
         // interpolate position
         this._position.x = this._interpolation(this.x, this._targetPosition.x);
