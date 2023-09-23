@@ -1,15 +1,65 @@
 import {RenderParameters} from './rouletteRenderer';
 import {initialZoom} from './data/constants';
+import {UIObject} from './UIObject';
+import {bound} from './utils/bound.decorator';
+import {Vec2} from 'planck';
+import { Rect } from './types/rect.type';
 
-export class Minimap {
+export class Minimap implements UIObject {
     private ctx!: CanvasRenderingContext2D;
+    private lastParams: RenderParameters | null = null;
+
+    private _onViewportChangeHandler: ((pos?: Vec2) => void) | null = null;
+    private boundingBox: Rect;
+    private mousePosition: {x: number, y: number} | null = null;
+
     constructor() {
+        this.boundingBox = {
+            x: 10,
+            y: 10,
+            w: 26 * 4,
+            h: 0,
+        };
+    }
+
+    getBoundingBox(): Rect | null {
+        return this.boundingBox;
+    }
+
+    onViewportChange(callback: (pos?: Vec2) => void) {
+        this._onViewportChangeHandler = callback;
+    }
+
+    update(deltaTime: number): void {
+        // nothing to do
+    }
+
+    @bound
+    onMouseMove(e?: { x: number; y: number; }) {
+        if (!e) {
+            this.mousePosition = null;
+            if (this._onViewportChangeHandler) {
+                this._onViewportChangeHandler();
+            }
+            return;
+        }
+        if (!this.lastParams) return;
+        this.mousePosition = {
+            x: e.x,
+            y: e.y,
+        };
+        if (this._onViewportChangeHandler) {
+            this._onViewportChangeHandler(new Vec2(this.mousePosition.x / 4, this.mousePosition.y / 4));
+        }
     }
 
     render(ctx: CanvasRenderingContext2D, params: RenderParameters) {
         if (!ctx) return;
         const {stage} = params;
         if (!stage) return;
+        this.boundingBox.h = stage.goalY * 4;
+
+        this.lastParams = params;
 
         this.ctx = ctx;
         ctx.save();
@@ -23,6 +73,11 @@ export class Minimap {
         this.drawMarbles(params);
         this.drawViewport(params);
 
+        ctx.restore();
+        ctx.save();
+        ctx.strokeStyle = 'green';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(this.boundingBox.x, this.boundingBox.y, this.boundingBox.w, this.boundingBox.h);
         ctx.restore();
     }
 
@@ -92,10 +147,9 @@ export class Minimap {
     }
 
     private drawMarbles(params: RenderParameters) {
-        const {marbles, winners, winnerRank} = params;
-        const winnerIndex = winnerRank - winners.length;
-        marbles.forEach((marble, i) => {
-            marble.render(this.ctx, 1, i === winnerIndex, true);
+        const {marbles} = params;
+        marbles.forEach((marble) => {
+            marble.render(this.ctx, 1, false, true);
         });
     }
 }

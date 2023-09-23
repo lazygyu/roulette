@@ -287,7 +287,7 @@
 
 		document.querySelector('#btnShuffle').click();
 
-		const currentNotice = 20230922;
+		const currentNotice = 20230923;
 		const closed = parseInt(localStorage.getItem('noticeClose') || '0', 10);
 
 		if (closed < currentNotice) {
@@ -303,6 +303,8 @@
 <div id="notice" class="hide">
 	<h3>Change logs</h3>
 	<dl>
+		<dt>2023-09-23</dt>
+			<dd>You can move the viewport by dragging your cursor on the minimap.</dd>
 		<dt>2023-09-22</dt>
 			<dd>Add a button that sets the last one to the winner.</dd>
 		<dt>2023-08-02</dt>

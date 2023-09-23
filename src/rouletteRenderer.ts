@@ -6,7 +6,6 @@ import {Marble} from './marble';
 import {ParticleManager} from './particleManager';
 import {GameObject} from './gameObject';
 import { UIObject } from './UIObject';
-import {Minimap} from './minimap';
 
 export type RenderParameters = {
     camera: Camera,
@@ -24,9 +23,7 @@ export type RenderParameters = {
 export class RouletteRenderer {
     private _canvas!: HTMLCanvasElement;
     private _ctx!: CanvasRenderingContext2D;
-
-
-    private minimap = new Minimap();
+    public sizeFactor = 1;
 
     constructor() {
     }
@@ -58,6 +55,7 @@ export class RouletteRenderer {
             const height = (width / realSize.width) * realSize.height;
             this._canvas.width = width;
             this._canvas.height = height;
+            this.sizeFactor = (width / realSize.width);
         }
 
         const resizeObserver = new ResizeObserver(resizing);
@@ -86,8 +84,6 @@ export class RouletteRenderer {
         this._ctx.restore();
 
         uiObjects.forEach(obj => obj.render(this._ctx, renderParameters, this._canvas.width, this._canvas.height));
-        // this._renderMinimap(renderParameters);
-        this.minimap.render(this._ctx, renderParameters);
         renderParameters.particleManager.render(this._ctx);
         this._renderWinner(renderParameters);
     }

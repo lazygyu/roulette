@@ -6,6 +6,8 @@ This is a lucky draw by dropping marbles.
 
 # ChangeLogs
 
+- 2023-09-23:
+  - You can move the viewport by dragging your cursor on the minimap.
 - 2023-09-22:
   - Add a button that sets the last one to the winner.
 - 2023-08-02:
