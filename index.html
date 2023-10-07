@@ -186,6 +186,7 @@
 		const names = getNames();
 		window.roullete.setMarbles(names);
 		ready = names.length > 0;
+		localStorage.setItem('mbr_names', names.join(','));
 	}
 
 	function setWinnerRank(rank) {
@@ -197,6 +198,10 @@
 	let ready = false;
 
 	document.addEventListener('DOMContentLoaded', () => {
+		const savedNames = localStorage.getItem('mbr_names');
+		if (savedNames) {
+			document.querySelector('#in_names').value = savedNames;
+		}
 		document.querySelector('#in_names').addEventListener('input', () => {
 			getReady();
 		});
@@ -292,7 +297,7 @@
 
 		document.querySelector('#btnShuffle').click();
 
-		const currentNotice = 20230923;
+		const currentNotice = 20231008;
 		const closed = parseInt(localStorage.getItem('noticeClose') || '0', 10);
 
 		if (closed < currentNotice) {
@@ -308,6 +313,8 @@
 <div id="notice" class="hide">
 	<h3>Change logs</h3>
 	<dl>
+		<dt>2023-10-08</dt>
+			<dd>Save names automatically.</dd>
 		<dt>2023-09-23</dt>
 			<dd>You can move the viewport by dragging your cursor on the minimap.</dd>
 		<dt>2023-09-22</dt>

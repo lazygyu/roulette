@@ -6,6 +6,8 @@ This is a lucky draw by dropping marbles.
 
 # ChangeLogs
 
+- 2023-10-08:
+  - Save names in the local storage automatically. 
 - 2023-09-23:
   - You can move the viewport by dragging your cursor on the minimap.
 - 2023-09-22:
