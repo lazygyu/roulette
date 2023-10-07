@@ -223,8 +223,13 @@
 				}
 			});
 
-			document.querySelector('#in_names').value = result.join(',');
-			getReady();
+			const oldValue = document.querySelector('#in_names').value;
+			const newValue = result.join(',');
+
+			if (oldValue !== newValue) {
+				document.querySelector('#in_names').value = newValue;
+				getReady();
+			}
 		});
 
 		document.querySelector('#btnShuffle').addEventListener('click', () => {
