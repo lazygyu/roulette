@@ -6,6 +6,8 @@ This is a lucky draw by dropping marbles.
 
 # ChangeLogs
 
+- 2023-11-24:
+  - Force move the marble randomly if it stays still over 1 second.
 - 2023-10-08:
   - Save names in the local storage automatically. 
 - 2023-09-23:

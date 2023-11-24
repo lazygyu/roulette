@@ -1,7 +1,8 @@
 import * as planck from 'planck';
-import {Skills} from './data/constants';
+import {Skills, STUCK_DELAY} from './data/constants';
 import {rad} from './utils/utils';
 import options from './options';
+import {Vec2} from 'planck';
 
 export class Marble {
     type: 'marble' = 'marble';
@@ -16,6 +17,8 @@ export class Marble {
     private _skillRate = 0.0005;
     private _coolTime = 5000;
     private _maxCoolTime = 5000;
+    private _stuckTime = 0;
+    private lastPosition: Vec2 = Vec2(0, 0);
 
     get position() {
         return this.body.getPosition();
@@ -70,6 +73,17 @@ export class Marble {
     }
 
     update(deltaTime: number) {
+        if (this.body.isActive() && this.lastPosition.sub(this.position).length() < 0.001) {
+            this._stuckTime += deltaTime;
+
+            if (this._stuckTime > STUCK_DELAY) {
+                this.body.applyForceToCenter(Vec2(Math.random() * 10 - 5, Math.random() * 10 - 5), true);
+            }
+        } else {
+            this._stuckTime = 0;
+        }
+        this.lastPosition = this.position.clone();
+
         this.skill = Skills.None;
         if (this.impact) {
             this.impact = Math.max(0, this.impact - deltaTime);

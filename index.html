@@ -297,7 +297,7 @@
 
 		document.querySelector('#btnShuffle').click();
 
-		const currentNotice = 20231008;
+		const currentNotice = 20231124;
 		const closed = parseInt(localStorage.getItem('noticeClose') || '0', 10);
 
 		if (closed < currentNotice) {
@@ -313,6 +313,8 @@
 <div id="notice" class="hide">
 	<h3>Change logs</h3>
 	<dl>
+		<dt>2023-11-24</dt>
+			<dd>Force move the marble randomly if it stays still over 1 second.</dd>
 		<dt>2023-10-08</dt>
 			<dd>Save names automatically.</dd>
 		<dt>2023-09-23</dt>
@@ -325,7 +327,7 @@
 			<dd>Adjusted the map to prevent a marble stays too long in a specific place.</dd>
 		<dt>2023-07-21</dt>
 			<dd>Show change logs when there is a new update.</dd>
-		<dd>Improve the performance when there are too many marbles in the game.</dd>
+			<dd>Improve the performance when there are too many marbles in the game.</dd>
 			<dd>Fixed the issue that the slow motion is not smooth.</dd>
 			<dd>Now end the game immediately if only one marble survives and the winning rank is the last.</dd>
 		<dt>2023-05-29</dt>
@@ -339,7 +341,7 @@
 		You can set weight values for each member by putting a number after each name with a slash. (ex: Tom/2, Jane/5)<br />
 		You can set the count of each member by putting a number after each name with a star. (ex: Tom*2, Jane*5)
 	</p>
-	<textarea id="in_names" placeholder="Input names saparated by commas or line feed here">짱구*5, 짱아*10, 오리꿍*3</textarea>
+	<textarea id="in_names" placeholder="Input names separated by commas or line feed here">짱구*5, 짱아*10, 스신*3</textarea>
 	<div class="actions">
 		<label>
 			The winner is #<input type="number" id="in_winningRank" value="1" min="1" />
