@@ -6,6 +6,8 @@ This is a lucky draw by dropping marbles.
 
 # ChangeLogs
 
+- 2024-01-18:
+  - A new map has added.
 - 2023-11-24:
   - Force move the marble randomly if it stays still over 1 second.
 - 2023-10-08:
