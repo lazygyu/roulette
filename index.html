@@ -74,8 +74,13 @@
 		}
 		.settings .actions {
 			font-size: 0.8rem;
-			text-align: right;
+
 		}
+
+		.settings .actions .left {
+			flex-grow: 1;
+		}
+
 		.settings .actions label {
 			margin-bottom: 0.5rem;
 			display: block;
@@ -109,6 +114,15 @@
 			.settings .actions label {
 				margin: 0 0.5rem 0;
 				display: inline-block;
+			}
+
+			.settings .actions {
+				display: flex;
+				flex-direction: row;
+			}
+
+			.settings .actions .right {
+				text-align: right;
 			}
 		}
 
@@ -308,11 +322,26 @@
 			document.querySelector('#notice').classList.add('hide');
 			localStorage.setItem('noticeClose', String(currentNotice));
 		});
+
+		const maps = window.roullete.getMaps();
+		const mapSelector = document.querySelector('#sltMap');
+		maps.forEach((map) => {
+			const option = document.createElement('option');
+			option.value = map.index;
+			option.innerHTML = map.title;
+			mapSelector.append(option);
+		});
+		mapSelector.addEventListener('change', (e) => {
+			const index = e.target.value;
+			window.roullete.setMap(index);
+		});
 	});
 </script>
 <div id="notice" class="hide">
 	<h3>Change logs</h3>
 	<dl>
+		<dt>2024-02-14</dt>
+			<dd>Now the map can be changed separately</dd>
 		<dt>2024-01-18</dt>
 			<dd>A new map has added.</dd>
 		<dt>2023-11-24</dt>
@@ -327,13 +356,6 @@
 			<dd>Now the names will not cover the whole screen if there are many. You can scroll the names with your mouse wheel.</dd>
 		<dt>2023-07-29</dt>
 			<dd>Adjusted the map to prevent a marble stays too long in a specific place.</dd>
-		<dt>2023-07-21</dt>
-			<dd>Show change logs when there is a new update.</dd>
-			<dd>Improve the performance when there are too many marbles in the game.</dd>
-			<dd>Fixed the issue that the slow motion is not smooth.</dd>
-			<dd>Now end the game immediately if only one marble survives and the winning rank is the last.</dd>
-		<dt>2023-05-29</dt>
-			<dd>Now you can shake the game if the marbles are stuck for over 3 seconds.</dd>
 	</dl>
 	<button type="button" id="btnNoticeClose">Close</button>
 </div>
@@ -345,18 +367,26 @@
 	</p>
 	<textarea id="in_names" placeholder="Input names separated by commas or line feed here">짱구*5, 짱아*10, 봉미선*3</textarea>
 	<div class="actions">
-		<label>
-			The winner is #<input type="number" id="in_winningRank" value="1" min="1" />
-		</label>
-		<button id="btnRandomWinner">Random</button>
-		<button id="btnLastWinner">Last</button>
-		<label>
-			<input type="checkbox" id="chkSkill" checked />
-			Using skills
-		</label>
-		<button id="btnStop">Stop</button>
-		<button id="btnStart">Start</button>
-		<button id="btnShuffle">Shuffle</button>
+		<div class="left">
+			<label>
+				Map
+				<select id="sltMap"></select>
+			</label>
+		</div>
+		<div class="right">
+			<label>
+				The winner is #<input type="number" id="in_winningRank" value="1" min="1" />
+			</label>
+			<button id="btnRandomWinner">Random</button>
+			<button id="btnLastWinner">Last</button>
+			<label>
+				<input type="checkbox" id="chkSkill" checked />
+				Using skills
+			</label>
+			<button id="btnStop">Stop</button>
+			<button id="btnStart">Start</button>
+			<button id="btnShuffle">Shuffle</button>
+		</div>
 	</div>
 </div>
 <div id="inGame" class="settings hide">
