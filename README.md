@@ -6,6 +6,8 @@ This is a lucky draw by dropping marbles.
 
 # ChangeLogs
 
+- 2024-02-14:
+  - Add a map selector.
 - 2024-01-18:
   - A new map has added.
 - 2023-11-24:

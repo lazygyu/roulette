@@ -232,6 +232,7 @@ export class Roulette extends EventTarget {
             }
         });
         this.addUiObject(minimap);
+        this._stage = stages[0];
         this._loadMap();
     }
 
@@ -254,7 +255,9 @@ export class Roulette extends EventTarget {
     }
 
     private _loadMap() {
-        this._stage = stages[Math.floor(Math.random() * stages.length)];
+        if (!this._stage) {
+            throw new Error('No map has been selected');
+        }
         this._stageObjects = [];
         const {walls, boxes, wheels, jumpers} = this._stage;
         walls.forEach((wallDef) => {
@@ -400,5 +403,23 @@ export class Roulette extends EventTarget {
             }
         });
         this._camera.setPosition(this._camera.position.add(power));
+    }
+
+    public getMaps() {
+        return stages.map((stage, index) => {
+            return {
+                index,
+                title: stage.title
+            };
+        });
+    }
+
+    public setMap(index: number) {
+        if (index < 0 || index > stages.length - 1) {
+            throw new Error('Incorrect map number');
+        }
+        const names = this._marbles.map((marble) => marble.name);
+        this._stage = stages[index];
+        this.setMarbles(names);
     }
 }
