@@ -6,6 +6,7 @@ type WheelDef = [x: number, y: number, power: number, centerX?: number, centerY?
 type JumperDef = [x: number, y: number, size: number, temporary?: boolean];
 
 export type StageDef = {
+    title: string;
     walls: WallDef[][];
     boxes: BoxDef[];
     wheels: WheelDef[];
@@ -16,6 +17,7 @@ export type StageDef = {
 
 export const stages: StageDef[] = [
     {
+        title: 'BubblePop',
         goalY: 83,
         zoomY: 78,
         walls: [
@@ -145,6 +147,7 @@ export const stages: StageDef[] = [
         ]
     },
     {
+        title: 'Pot of greed',
         goalY: 111,
         zoomY: 110,
         walls: [
@@ -256,6 +259,7 @@ export const stages: StageDef[] = [
     },
 
     { // the long one
+        title: 'Wheel of fortune',
         goalY: 111,
         zoomY: 106.75,
         walls: [
