@@ -14,6 +14,7 @@ import {Vec2} from 'planck';
 import { UIObject } from './UIObject';
 import { RankRenderer } from './rankRenderer';
 import {Minimap} from './minimap';
+import {VideoRecorder} from './utils/videoRecorder';
 
 export class Roulette extends EventTarget {
     private _world!: planck.World;
@@ -46,6 +47,8 @@ export class Roulette extends EventTarget {
     private _winner: Marble | null = null;
 
     private _uiObjects: UIObject[] = [];
+
+    private _recorder!: VideoRecorder;
 
     constructor() {
         super();
@@ -154,11 +157,13 @@ export class Roulette extends EventTarget {
                     this._winner = marble;
                     this._isRunning = false;
                     this._particleManager.shot(this._renderer.width, this._renderer.height);
+                    setTimeout(() => { this._recorder.stop(); }, 1000);
                 } else if (this._isRunning && this._winnerRank === this._winners.length && this._winnerRank === this._totalMarbleCount - 1) {
                     this.dispatchEvent(new CustomEvent('goal', {detail: {winner: this._marbles[i + 1].name}}));
                     this._winner = this._marbles[i+1];
                     this._isRunning = false;
                     this._particleManager.shot(this._renderer.width, this._renderer.height);
+                    setTimeout(() => { this._recorder.stop(); }, 1000);
                 }
                 setTimeout(() => {
                     this._world.destroyBody(marble.body);
@@ -216,6 +221,7 @@ export class Roulette extends EventTarget {
     }
 
     private _init() {
+        this._recorder = new VideoRecorder(this._renderer.canvas);
         this._world = new planck.World({
             gravity: new planck.Vec2(0, 10),
         });
@@ -305,7 +311,9 @@ export class Roulette extends EventTarget {
         if (this._winnerRank >= this._marbles.length) {
             this._winnerRank = this._marbles.length - 1;
         }
-        this._marbles.forEach(marble => marble.body.setActive(true));
+        this._recorder.start().then(() => {
+            this._marbles.forEach(marble => marble.body.setActive(true));
+        });
     }
 
     public setSpeed(value: number) {
