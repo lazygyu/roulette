@@ -124,6 +124,10 @@
 			.settings .actions .right {
 				text-align: right;
 			}
+
+			.settings .actions .left {
+				display: flex;
+			}
 		}
 
 		div.copyright {
@@ -142,34 +146,6 @@
 
 		#btnShake {
 			font-size: 2em;
-		}
-
-		div#notice {
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
-			z-index: 999;
-			background: rgba(255, 255, 255, 0.8);
-			padding: 1em;
-			display: flex;
-			flex-direction: column;
-			max-width: 100%;
-			width: 40em;
-		}
-		div#notice button {
-			width: 50%;
-			padding: 1em;
-			align-self: flex-end;
-		}
-
-		div#notice dt {
-			font-weight: bold;
-		}
-
-		div#notice dd {
-			list-style: disc;
-			padding-bottom: .5em;
 		}
 	</style>
 </head>
@@ -208,6 +184,7 @@
 		window.options.winningRank = rank - 1;
 		window.roullete.setWinningRank(window.options.winningRank);
 	}
+
 
 	let ready = false;
 
@@ -255,11 +232,6 @@
 			getReady();
 		});
 
-		document.querySelector('#btnStop').addEventListener('click', () => {
-			window.roullete.reset();
-			ready = false;
-		});
-
 		document.querySelector('#btnStart').addEventListener('click', () => {
 			if (!ready) return;
 			gtag('event', 'start', {
@@ -269,6 +241,11 @@
 			});
 			window.roullete.start();
 			document.querySelector('#settings').classList.add('hide');
+		});
+
+		document.querySelector('#chkAutoRecording').addEventListener('change', (e) => {
+			window.options.autoRecording = e.target.matches(':checked');
+			window.roullete.setAutoRecording(window.options.autoRecording);
 		});
 
 		document.querySelector('#chkSkill').addEventListener('change', (e) => {
@@ -311,18 +288,6 @@
 
 		document.querySelector('#btnShuffle').click();
 
-		const currentNotice = 20240118;
-		const closed = parseInt(localStorage.getItem('noticeClose') || '0', 10);
-
-		if (closed < currentNotice) {
-			document.querySelector('#notice').classList.remove('hide');
-		}
-
-		document.querySelector('#btnNoticeClose').addEventListener('click', () => {
-			document.querySelector('#notice').classList.add('hide');
-			localStorage.setItem('noticeClose', String(currentNotice));
-		});
-
 		const maps = window.roullete.getMaps();
 		const mapSelector = document.querySelector('#sltMap');
 		maps.forEach((map) => {
@@ -337,33 +302,9 @@
 		});
 	});
 </script>
-<div id="notice" class="hide">
-	<h3>Change logs</h3>
-	<dl>
-		<dt>2024-02-14</dt>
-			<dd>Now the map can be changed separately</dd>
-		<dt>2024-01-18</dt>
-			<dd>A new map has added.</dd>
-		<dt>2023-11-24</dt>
-			<dd>Force move the marble randomly if it stays still over 1 second.</dd>
-		<dt>2023-10-08</dt>
-			<dd>Save names automatically.</dd>
-		<dt>2023-09-23</dt>
-			<dd>You can move the viewport by dragging your cursor on the minimap.</dd>
-		<dt>2023-09-22</dt>
-			<dd>Add a button that sets the last one to the winner.</dd>
-		<dt>2023-08-02</dt>
-			<dd>Now the names will not cover the whole screen if there are many. You can scroll the names with your mouse wheel.</dd>
-		<dt>2023-07-29</dt>
-			<dd>Adjusted the map to prevent a marble stays too long in a specific place.</dd>
-	</dl>
-	<button type="button" id="btnNoticeClose">Close</button>
-</div>
-
 <div id="settings" class="settings">
 	<p class="text">
-		You can set weight values for each member by putting a number after each name with a slash. (ex: Tom/2, Jane/5)<br />
-		You can set the count of each member by putting a number after each name with a star. (ex: Tom*2, Jane*5)
+		Enter names below
 	</p>
 	<textarea id="in_names" placeholder="Input names separated by commas or line feed here">짱구*5, 짱아*10, 봉미선*3</textarea>
 	<div class="actions">
@@ -371,6 +312,10 @@
 			<label>
 				Map
 				<select id="sltMap"></select>
+			</label>
+			<label>
+				Recording
+				<input type="checkbox" id="chkAutoRecording" />
 			</label>
 		</div>
 		<div class="right">
@@ -383,7 +328,6 @@
 				<input type="checkbox" id="chkSkill" checked />
 				Using skills
 			</label>
-			<button id="btnStop">Stop</button>
 			<button id="btnStart">Start</button>
 			<button id="btnShuffle">Shuffle</button>
 		</div>
@@ -392,6 +336,6 @@
 <div id="inGame" class="settings hide">
 	<button id="btnShake">Shake!</button>
 </div>
-<div class="copyright">&copy; 2023.<a href="https://lazygyu.net" target="_blank">lazygyu</a></div>
+<div class="copyright">&copy; 2024.<a href="https://lazygyu.net" target="_blank">lazygyu</a></div>
 </body>
 </html>

@@ -48,6 +48,7 @@ export class Roulette extends EventTarget {
 
     private _uiObjects: UIObject[] = [];
 
+    private _autoRecording: boolean = false;
     private _recorder!: VideoRecorder;
 
     constructor() {
@@ -311,9 +312,13 @@ export class Roulette extends EventTarget {
         if (this._winnerRank >= this._marbles.length) {
             this._winnerRank = this._marbles.length - 1;
         }
-        this._recorder.start().then(() => {
+        if (this._autoRecording) {
+            this._recorder.start().then(() => {
+                this._marbles.forEach(marble => marble.body.setActive(true));
+            });
+        } else {
             this._marbles.forEach(marble => marble.body.setActive(true));
-        });
+        }
     }
 
     public setSpeed(value: number) {
@@ -329,6 +334,10 @@ export class Roulette extends EventTarget {
 
     public setWinningRank(rank: number) {
         this._winnerRank = rank;
+    }
+
+    public setAutoRecording(value: boolean) {
+        this._autoRecording = value;
     }
 
     public setMarbles(names: string[]) {

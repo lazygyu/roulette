@@ -1,3 +1,5 @@
+import {pad} from './utils';
+
 export class VideoRecorder {
     private targetCanvas: HTMLCanvasElement;
     private mediaRecorder: MediaRecorder;
@@ -19,18 +21,16 @@ export class VideoRecorder {
         return new Promise<void>((rs) => {
             this.chunks = [];
             this.mediaRecorder.ondataavailable = (e: BlobEvent) => {
-                if (this.stopping) {
-                    console.log('data available occurred');
-                }
                 this.chunks.push(e.data);
             }
             this.mediaRecorder.onstop = () => {
-                console.log('mediarecorder stop handler');
                 const blob = new Blob(this.chunks, {'type': 'video/webm'});
                 const videoUrl = URL.createObjectURL(blob);
                 const downloadLink = document.createElement('a');
+                const d = new Date();
+
                 downloadLink.href = videoUrl;
-                downloadLink.download = `${new Date().toDateString()}.webm`;
+                downloadLink.download = `marble_roulette_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.webm`;
                 downloadLink.click();
                 downloadLink.remove();
                 URL.revokeObjectURL(videoUrl);
@@ -44,8 +44,9 @@ export class VideoRecorder {
 
     public stop() {
         this.stopping = true;
-        console.log('mediarecorder stop');
-        this.mediaRecorder.stop();
+        if (this.mediaRecorder.state === 'recording') {
+            this.mediaRecorder.stop();
+        }
     }
 
 }
