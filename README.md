@@ -6,6 +6,8 @@ This is a lucky draw by dropping marbles.
 
 # ChangeLogs
 
+- 2024-02-19:
+  - Improved the UI design
 - 2024-02-16:
   - Add a feature for recording video
 - 2024-02-14:
