@@ -29,7 +29,7 @@
 	<meta name="msapplication-TileImage" content="assets/ms-icon-144x144.png">
 	<meta name="theme-color" content="#ffffff">
 	<title>Marble Roulette</title>
-	<style>
+	<style type="text/scss">
 		* {
 			box-sizing: border-box;
 		}
@@ -39,95 +39,6 @@
 			inset: 0;
 			width: 100%;
 			height: 100%;
-		}
-
-		.settings {
-			position: absolute;
-			inset: 1rem;
-			bottom: auto;
-			padding: 1rem;
-			border-radius: 0.75em;
-			box-shadow: inset 0 0 6rem 4px green;
-			border: 2px solid lightgreen;
-			background: rgba(0, 0, 0, 0.4);
-			backdrop-filter: blur(10px);
-			color: #fff;
-			font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-			font-size: 1rem;
-			font-weight: bold;
-			z-index: 10;
-		}
-		.hide {
-			display: none !important;
-		}
-		.settings:focus-within {
-			box-shadow: inset 0 0 2rem 4px green;
-		}
-		.settings textarea {
-			width: 100%;
-			min-height: 4rem;
-			background-color: transparent;
-			border: none;
-			outline: none;
-			font: inherit;
-			color: inherit;
-		}
-		.settings .actions {
-			font-size: 0.8rem;
-
-		}
-
-		.settings .actions .left {
-			flex-grow: 1;
-		}
-
-		.settings .actions label {
-			margin-bottom: 0.5rem;
-			display: block;
-		}
-		.settings .text {
-			margin-top: 0;
-			font-size: 0.8rem;
-			font-weight: normal;
-			color: lightgreen;
-		}
-
-		input[type=number] {
-			width: 3rem;
-			text-align: center;
-			background-color: transparent;
-			border: none;
-			outline: none;
-			font: inherit;
-			color: inherit;
-		}
-
-		@media screen and (min-width: 768px) {
-			.settings {
-				top: auto;
-				bottom: 24px;
-				max-width: 50%;
-			}
-			#inGame {
-				width: fit-content;
-			}
-			.settings .actions label {
-				margin: 0 0.5rem 0;
-				display: inline-block;
-			}
-
-			.settings .actions {
-				display: flex;
-				flex-direction: row;
-			}
-
-			.settings .actions .right {
-				text-align: right;
-			}
-
-			.settings .actions .left {
-				display: flex;
-			}
 		}
 
 		div.copyright {
@@ -144,8 +55,232 @@
 			color: white;
 		}
 
-		#btnShake {
-			font-size: 2em;
+		#settings {
+			position: fixed;
+			bottom: 1rem;
+			left: 1rem;
+			background: #666;
+			border-radius: 10px;
+			padding: 10px;
+			z-index: 999;
+			min-width: 50%;
+
+			display: flex;
+			&.hide {
+				display: none;
+			}
+
+			h3 {
+				padding:0;
+				margin: 0;
+				font-size: 12pt;
+				color: #fefefe;
+			}
+
+			textarea {
+				width: 100%;
+				min-height: 5rem;
+				border: none;
+				background: #999;
+				font-size: 14pt;
+			}
+
+			button {
+				color: #fefefe;
+				background: #222;
+				border: none;
+				border-radius: 5px;
+				padding: 5px 10px;
+				position: relative;
+				overflow: hidden;
+				&:active:after {
+					content: '';
+					position: absolute;
+					left: 0;
+					top: 0;
+					right: 0;
+					bottom: 0;
+					background: rgba(0, 0, 0, 0.5);
+				}
+			}
+
+			.icon {
+				background: currentColor;
+				mask-repeat: no-repeat;
+				mask-position: center center;
+				mask-size: contain;
+				display: inline-block;
+				width: 25px;
+				height: 25px;
+				vertical-align: middle;
+				&.play {
+					mask-image: url('assets/images/play.svg');
+				}
+				&.shuffle {
+					mask-image: url('assets/images/shuffle.svg');
+				}
+				&.record {
+					mask-image: url('assets/images/record.svg');
+				}
+				&.map {
+					mask-image: url('assets/images/map.svg');
+				}
+				&.trophy {
+					mask-image: url('assets/images/trophy.svg');
+				}
+				&.bomb {
+					mask-image: url('assets/images/bomb.svg');
+				}
+			}
+
+			div.left {
+				flex-grow: 1;
+				flex-shrink: 1;
+				order: 1;
+				.actions {
+					text-align: right;
+				}
+			}
+			div.right {
+				order: 2;
+				flex-grow: 0;
+				flex-shrink: 0;
+
+				div.row {
+					display: flex;
+					align-items: center;
+					height: 35px;
+					label {
+						width: 150px;
+						flex-grow: 0;
+						flex-shrink: 0;
+						padding-left: 1rem;
+						color: white;
+					}
+				}
+			}
+
+			select {
+				height: 25px;
+				width: 100%;
+				border-radius: 5px;
+				background: #999;
+			}
+
+			input[type=checkbox] {
+				width: 0;
+				height: 25px;
+				position: relative;
+				vertical-align: middle;
+				&:before {
+					position: absolute;
+					content: '';
+					display: inline-block;
+					width: 50px;
+					height: 25px;
+					border-radius: 25px;
+					background: #999;
+					top: 0;
+					left: 0;
+				}
+				&:after {
+					position: absolute;
+					top: 0;
+					left: 0;
+					content: '';
+					border-radius: 25px;
+					width: 25px;
+					height: 25px;
+					background: #ccc;
+					transition: transform .2s;
+				}
+				&:checked:after {
+					transform: translateX(100%);
+					background: white;
+				}
+				&:checked:before {
+					content: '';
+					background: #00baff;
+				}
+
+			}
+
+			.btn-group {
+				display: flex;
+				justify-content: stretch;
+				&>* {
+					box-sizing: border-box;
+					flex: 1;
+					overflow: hidden;
+					height: 25px;
+					border-radius: 0;
+					background: #999;
+					border: none;
+					padding: 0;
+					color: #fefefe;
+
+					display: flex;
+					align-items: center;
+					justify-content: center;
+
+					&:first-child {
+						border-radius: 10px 0 0 10px;
+					}
+					&:last-child {
+						border-radius: 0 10px 10px 0;
+					}
+					&.active:before {
+						content: '';
+						width: 15px;
+						height: 15px;
+						display: inline-block;
+						vertical-align: middle;
+						mask-image: url('assets/images/check.svg');
+						mask-repeat: no-repeat;
+						background: white;
+					}
+					&.active {
+						background: #333;
+					}
+				}
+				input[type=number] {
+					box-sizing: border-box;
+					text-align: center;
+				}
+			}
+		}
+
+		@media screen and (max-width: 750px) {
+			#settings {
+				bottom: unset;
+				top: 1rem;
+				display: block;
+				min-width: 0;
+				max-width: 100%;
+				width: calc(100% - 2rem);
+				overflow: hidden;
+				&.hide {
+					display: none;
+				}
+				div.right div.row {
+					height: auto;
+					display: block;
+					border-bottom: 1px solid #555;
+					padding: .5rem 0;
+
+					label {
+						width: 100%;
+						margin-bottom: .5rem;
+						padding-left: 0;
+						display: block;
+					}
+
+					.icon {
+						width: 15px;
+						height: 15px;
+					}
+				}
+			}
 		}
 	</style>
 </head>
@@ -177,16 +312,40 @@
 		window.roullete.setMarbles(names);
 		ready = names.length > 0;
 		localStorage.setItem('mbr_names', names.join(','));
+		switch(winnerType) {
+			case 'first':
+				setWinnerRank(1);
+				break;
+			case 'last':
+				const total = window.roullete.getCount();
+				setWinnerRank(total);
+				break;
+		}
 	}
 
 	function setWinnerRank(rank) {
 		document.querySelector('#in_winningRank').value = rank;
 		window.options.winningRank = rank - 1;
 		window.roullete.setWinningRank(window.options.winningRank);
+
+		if (winnerType === 'first') {
+			document.querySelector('.btn-first-winner').classList.toggle('active', true);
+			document.querySelector('.btn-last-winner').classList.toggle('active', false);
+			document.querySelector('#in_winningRank').classList.toggle('active', false);
+		} else if (winnerType === 'last') {
+			document.querySelector('.btn-first-winner').classList.toggle('active', false);
+			document.querySelector('.btn-last-winner').classList.toggle('active', true);
+			document.querySelector('#in_winningRank').classList.toggle('active', false);
+		} else if (winnerType === 'custom') {
+			document.querySelector('.btn-first-winner').classList.toggle('active', false);
+			document.querySelector('.btn-last-winner').classList.toggle('active', false);
+			document.querySelector('#in_winningRank').classList.toggle('active', true);
+		}
 	}
 
 
 	let ready = false;
+	let winnerType = 'first';
 
 	document.addEventListener('DOMContentLoaded', () => {
 		const savedNames = localStorage.getItem('mbr_names');
@@ -255,18 +414,18 @@
 
 		document.querySelector('#in_winningRank').addEventListener('change', (e) => {
 			const v = parseInt(e.target.value, 10);
+			winnerType = 'custom';
 			setWinnerRank(isNaN(v) ? 0 : v);
 		});
 
-		document.querySelector('#btnRandomWinner').addEventListener('click', () => {
+		document.querySelector('.btn-last-winner').addEventListener('click', () => {
 			const total = window.roullete.getCount();
-			const rank = Math.floor(Math.random() * total + 1);
-			setWinnerRank(rank);
-		});
-
-		document.querySelector('#btnLastWinner').addEventListener('click', () => {
-			const total = window.roullete.getCount();
+			winnerType = 'last';
 			setWinnerRank(total);
+		});
+		document.querySelector('.btn-first-winner').addEventListener('click', () => {
+			winnerType = 'first';
+			setWinnerRank(1);
 		});
 
 		document.querySelector('#btnShake').addEventListener('click', () => {
@@ -303,33 +462,52 @@
 	});
 </script>
 <div id="settings" class="settings">
-	<p class="text">
-		Enter names below
-	</p>
-	<textarea id="in_names" placeholder="Input names separated by commas or line feed here">짱구*5, 짱아*10, 봉미선*3</textarea>
-	<div class="actions">
-		<div class="left">
+	<div class="right">
+		<div class="row">
 			<label>
+				<i class="icon map"></i>
 				Map
-				<select id="sltMap"></select>
 			</label>
-			<label>
-				Recording
-				<input type="checkbox" id="chkAutoRecording" />
-			</label>
+			<select id="sltMap"></select>
 		</div>
-		<div class="right">
+		<div class="row">
 			<label>
-				The winner is #<input type="number" id="in_winningRank" value="1" min="1" />
+				<i class="icon record"></i>
+				Recording
 			</label>
-			<button id="btnRandomWinner">Random</button>
-			<button id="btnLastWinner">Last</button>
+			<input type="checkbox" id="chkAutoRecording" />
+		</div>
+		<div class="row">
 			<label>
-				<input type="checkbox" id="chkSkill" checked />
+				<i class="icon trophy"></i>
+				The winner is
+			</label>
+			<div class="btn-group">
+				<button class="btn-winner btn-first-winner active">First</button>
+				<button class="btn-winner btn-last-winner">Last</button>
+				<input type="number" id="in_winningRank" value="1" min="1" />
+			</div>
+		</div>
+		<div class="row">
+			<label>
+				<i class="icon bomb"></i>
 				Using skills
 			</label>
-			<button id="btnStart">Start</button>
-			<button id="btnShuffle">Shuffle</button>
+			<input type="checkbox" id="chkSkill" checked />
+		</div>
+	</div>
+	<div class="left">
+		<h3>Enter names below</h3>
+		<textarea id="in_names" placeholder="Input names separated by commas or line feed here">짱구*5, 짱아*10, 봉미선*3</textarea>
+		<div class="actions">
+			<button id="btnShuffle">
+				<i class="icon shuffle"></i>
+				Shuffle
+			</button>
+			<button id="btnStart">
+				<i class="icon play"></i>
+				Start
+			</button>
 		</div>
 	</div>
 </div>
