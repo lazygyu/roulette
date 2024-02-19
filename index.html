@@ -393,7 +393,7 @@
 
 		document.querySelector('#btnStart').addEventListener('click', () => {
 			if (!ready) return;
-			gtag('event', 'start', {
+			gtag && gtag('event', 'start', {
 				'event_category': 'roulette',
 				'event_label': 'start',
 				'value': window.roullete.getCount(),
