@@ -3,10 +3,6 @@
 <head>
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-5899C1DJM0"></script>
 	<script>
-		window.dataLayer = window.dataLayer || [];
-		function gtag(){dataLayer.push(arguments);}
-		gtag('js', new Date());
-		gtag('config', 'G-5899C1DJM0');
 	</script>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -287,6 +283,11 @@
 <body>
 <script type="module" src="./src/index.ts"></script>
 <script type="text/javascript">
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-5899C1DJM0');
+
 	function getNames() {
 		const value = document.querySelector('#in_names').value.trim();
 		return value.split(/[,\r\n]/g).map(v => v.trim()).filter(v => !!v);
