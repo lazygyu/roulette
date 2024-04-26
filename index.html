@@ -202,7 +202,6 @@
 					content: '';
 					background: #00baff;
 				}
-
 			}
 
 			.btn-group {
@@ -250,9 +249,26 @@
 			}
 		}
 
+		#donate {
+			position: fixed;
+			bottom: calc(160px + 1.5rem);
+			left: 1rem;
+			z-index: 999;
+			visibility: visible;
+			opacity: 1;
+			transition: visibility 0s, opacity 1s linear;
+			&.hide {
+				opacity: 0;
+				visibility: hidden;
+			}
+		}
+
 		@media screen and (max-width: 750px) {
-			#settings {
+			#donate {
 				bottom: 1rem;
+			}
+			#settings {
+				bottom: calc(1.5rem + 60px);
 				display: block;
 				min-width: 0;
 				max-width: 100%;
@@ -408,6 +424,7 @@
 			});
 			window.roullete.start();
 			document.querySelector('#settings').classList.add('hide');
+			document.querySelector('#donate').classList.add('hide');
 		});
 
 		document.querySelector('#chkAutoRecording').addEventListener('change', (e) => {
@@ -447,7 +464,10 @@
 
 		window.roullete.addEventListener('goal', () => {
 			ready = false;
-			document.querySelector('#settings').classList.remove('hide');
+			setTimeout(() => {
+				document.querySelector('#settings').classList.remove('hide');
+				document.querySelector('#donate').classList.remove('hide');
+			}, 3000);
 		});
 		window.roullete.addEventListener('shakeAvailableChanged', (e) => {
 			document.querySelector('#inGame').classList.toggle('hide', !e.detail);
@@ -518,6 +538,9 @@
 			</button>
 		</div>
 	</div>
+</div>
+<div id="donate">
+	<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="lazygyu" data-color="#FFDD00" data-emoji=""  data-font="Cookie" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
 </div>
 <div id="inGame" class="settings hide">
 	<button id="btnShake">Shake!</button>
