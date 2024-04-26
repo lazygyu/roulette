@@ -62,8 +62,12 @@
 			min-width: 50%;
 
 			display: flex;
+			visibility: visible;
+			opacity: 1;
+			transition: visibility 0s, opacity 1s linear;
 			&.hide {
-				display: none;
+				opacity: 0;
+				visibility: hidden;
 			}
 
 			h3 {
@@ -248,15 +252,18 @@
 
 		@media screen and (max-width: 750px) {
 			#settings {
-				bottom: unset;
-				top: 1rem;
+				bottom: 1rem;
 				display: block;
 				min-width: 0;
 				max-width: 100%;
 				width: calc(100% - 2rem);
 				overflow: hidden;
+				opacity: 1;
+				visibility: visible;
+				transition: visibility 0s, opacity 1s linear;
 				&.hide {
-					display: none;
+					opacity: 0;
+					visibility: hidden;
 				}
 				div.right div.row {
 					height: auto;
