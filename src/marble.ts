@@ -1,8 +1,9 @@
-import * as planck from 'planck';
 import {Skills, STUCK_DELAY} from './data/constants';
 import {rad} from './utils/utils';
 import options from './options';
-import {Vec2} from 'planck';
+import {Physics} from './physics';
+import {VectorLike} from './types/VectorLike';
+import {Vector} from './utils/Vector';
 
 export class Marble {
     type: 'marble' = 'marble';
@@ -13,15 +14,20 @@ export class Marble {
     impact: number = 0;
     weight: number = 1;
     skill: Skills = Skills.None;
+    isActive: boolean = false;
 
     private _skillRate = 0.0005;
     private _coolTime = 5000;
     private _maxCoolTime = 5000;
     private _stuckTime = 0;
-    private lastPosition: Vec2 = Vec2(0, 0);
+    private lastPosition: VectorLike = {x: 0, y: 0};
+
+    private physics: Physics;
+
+    id: number;
 
     get position() {
-        return this.body.getPosition();
+        return this.physics.getMarblePosition(this.id) || {x: 0, y: 0};
     }
 
     get x() {
@@ -40,21 +46,10 @@ export class Marble {
         this.position.y = v;
     }
 
-    body: planck.Body;
-
-    constructor(world: planck.World, order: number, max: number, name?: string, weight: number = 1) {
+    constructor(physics: Physics, order: number, max: number, name?: string, weight: number = 1) {
         this.name = name || `M${order}`;
-        this.body = world.createBody({
-            type: 'dynamic',
-            allowSleep: false,
-            awake: true,
-            active: false,
-            linearDamping: 0,
-            angularDamping: 0.01,
-            linearVelocity: new planck.Vec2(0, 0.0),
-        });
-
         this.weight = weight;
+        this.physics = physics;
 
         this._maxCoolTime = 1000 + ((1-this.weight) * 4000);
         this._coolTime = this._maxCoolTime * Math.random();
@@ -65,30 +60,29 @@ export class Marble {
         const lineDelta = -Math.max(0, Math.ceil(maxLine - 5));
         this.hue = 360 / max * order;
         this.color = `hsl(${this.hue} 100% 70%)`;
+        this.id = order;
 
-        const circle = planck.Circle(new planck.Vec2(0, 0), this.size / 2);
-        this.body.createFixture({shape: circle, density: Math.random() + 1, restitution: 0.2});
-        this.body.setPosition(new planck.Vec2(10.25 + ((order % 10) * 0.6), maxLine - line + lineDelta));
-        this.body.setUserData(this);
+        physics.createMarble(order, 10.25 + ((order % 10) * 0.6), maxLine - line + lineDelta);
     }
 
     update(deltaTime: number) {
-        if (this.body.isActive() && this.lastPosition.sub(this.position).length() < 0.001) {
+        if (this.isActive && Vector.lenSq(Vector.sub(this.lastPosition, this.position)) < 0.00001) {
             this._stuckTime += deltaTime;
 
             if (this._stuckTime > STUCK_DELAY) {
-                this.body.applyForceToCenter(Vec2(Math.random() * 10 - 5, Math.random() * 10 - 5), true);
+                this.physics.shakeMarble(this.id);
+                this._stuckTime = 0;
             }
         } else {
             this._stuckTime = 0;
         }
-        this.lastPosition = this.position.clone();
+        this.lastPosition = {x: this.position.x, y: this.position.y };
 
         this.skill = Skills.None;
         if (this.impact) {
             this.impact = Math.max(0, this.impact - deltaTime);
         }
-        if (!this.body.isActive()) return;
+        if (!this.isActive) return;
         if (options.useSkills) {
             this._updateSkillInformation(deltaTime);
         }
@@ -128,6 +122,9 @@ export class Marble {
 
     private _renderNormal(ctx: CanvasRenderingContext2D, zoom: number, outline: boolean) {
         ctx.fillStyle = `hsl(${this.hue} 100% ${70 + (25 * Math.min(1, this.impact / 500))}%`;
+        if (this._stuckTime > 0) {
+            ctx.fillStyle = `hsl(${this.hue} 100% ${70 + (25 * Math.min(1, this._stuckTime / STUCK_DELAY))}%`;
+        }
 
         ctx.shadowColor = this.color;
         ctx.shadowBlur = zoom / 2;
@@ -144,6 +141,7 @@ export class Marble {
         if (options.useSkills) {
             this._renderCooltime(ctx, zoom);
         }
+        // this._renderStuck(ctx, zoom); // for debug
     }
 
     private _drawName(ctx: CanvasRenderingContext2D, zoom: number) {
@@ -175,6 +173,14 @@ export class Marble {
         ctx.lineWidth = 1 / zoom;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size / 2 + (2 / zoom), rad(270), rad(270 + 360 * this._coolTime / this._maxCoolTime));
+        ctx.stroke();
+    }
+
+    private _renderStuck(ctx: CanvasRenderingContext2D, zoom: number) {
+        ctx.strokeStyle = 'green';
+        ctx.lineWidth = 1 / zoom;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size / 2 + (3/zoom), rad(270), rad(270 + 360 * (1 - (this._stuckTime / STUCK_DELAY))));
         ctx.stroke();
     }
 }

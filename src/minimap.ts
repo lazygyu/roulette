@@ -2,14 +2,17 @@ import {RenderParameters} from './rouletteRenderer';
 import {initialZoom} from './data/constants';
 import {UIObject} from './UIObject';
 import {bound} from './utils/bound.decorator';
-import {Vec2} from 'planck';
 import { Rect } from './types/rect.type';
+import {WheelState} from './types/WheelState';
+import {BoxState} from './types/BoxState';
+import {JumperState} from './types/JumperState';
+import {VectorLike} from './types/VectorLike';
 
 export class Minimap implements UIObject {
     private ctx!: CanvasRenderingContext2D;
     private lastParams: RenderParameters | null = null;
 
-    private _onViewportChangeHandler: ((pos?: Vec2) => void) | null = null;
+    private _onViewportChangeHandler: ((pos?: VectorLike) => void) | null = null;
     private boundingBox: Rect;
     private mousePosition: {x: number, y: number} | null = null;
 
@@ -26,7 +29,7 @@ export class Minimap implements UIObject {
         return this.boundingBox;
     }
 
-    onViewportChange(callback: (pos?: Vec2) => void) {
+    onViewportChange(callback: (pos?: VectorLike) => void) {
         this._onViewportChangeHandler = callback;
     }
 
@@ -49,7 +52,7 @@ export class Minimap implements UIObject {
             y: e.y,
         };
         if (this._onViewportChangeHandler) {
-            this._onViewportChangeHandler(new Vec2(this.mousePosition.x / 4, this.mousePosition.y / 4));
+            this._onViewportChangeHandler({ x: this.mousePosition.x / 4, y: this.mousePosition.y / 4});
         }
     }
 
@@ -68,8 +71,11 @@ export class Minimap implements UIObject {
         ctx.scale(4, 4);
         ctx.fillRect(0, 0, 26, stage.goalY);
 
+        this.ctx.lineWidth = 3 / (params.camera.zoom + initialZoom);
         this.drawWalls(params);
-        this.drawObjects(params);
+        this.drawWheels(params.wheels);
+        this.drawBoxes(params.boxes);
+        this.drawJumpers(params.jumpers);
         this.drawMarbles(params);
         this.drawViewport(params);
 
@@ -110,37 +116,45 @@ export class Minimap implements UIObject {
         this.ctx.restore();
     }
 
-    private drawObjects(params: RenderParameters) {
-        const {objects} = params;
-        if (!objects) return;
+    private drawWheels(wheels: WheelState[]) {
         this.ctx.save();
-        this.ctx.fillStyle = 'black';
-        this.ctx.lineWidth = 1;
-        objects.forEach(obj => {
+        this.ctx.fillStyle = '#94d5ed';
+        wheels.forEach((wheel) => {
             this.ctx.save();
-            const pos = obj.getPosition();
-            const ang = obj.getAngle();
-            this.ctx.translate(pos.x, pos.y);
-            this.ctx.rotate(ang);
-            for(let fixture = obj.getFixtureList(); fixture; fixture = fixture.getNext()) {
-                const shape = fixture.getShape() as planck.Polygon;
-                this.ctx.beginPath();
-                if (shape.getType() === 'circle') {
-                    this.ctx.strokeStyle = 'yellow';
-                    this.ctx.arc(0, 0, shape.m_radius, 0, Math.PI * 2);
-                } else {
-                    this.ctx.strokeStyle = '#94d5ed';
-                    const vertices = shape.m_vertices;
-                    this.ctx.moveTo(vertices[0].x, vertices[0].y);
-                    for (let i = 1; i < vertices.length; i++) {
-                        const vertex = vertices[i];
-                        this.ctx.lineTo(vertex.x, vertex.y);
-                    }
-                    this.ctx.closePath();
-                }
-                this.ctx.fill();
-                this.ctx.closePath();
-            }
+            this.ctx.translate(wheel.x, wheel.y);
+            this.ctx.rotate(wheel.angle);
+            this.ctx.fillRect(-wheel.size, -0.05, wheel.size * 2, 0.1);
+            this.ctx.restore();
+        });
+        this.ctx.restore();
+    }
+
+    private drawBoxes(boxes: BoxState[]) {
+        this.ctx.save();
+        this.ctx.fillStyle = '#94d5ed';
+        this.ctx.strokeStyle = '#94d5ed';
+
+        boxes.forEach((box) => {
+            this.ctx.save();
+            this.ctx.translate(box.x, box.y);
+            this.ctx.rotate(box.angle);
+            this.ctx.fillRect(-box.width / 2, -box.height / 2, box.width, box.height);
+            this.ctx.strokeRect(-box.width / 2, -box.height / 2, box.width, box.height);
+            this.ctx.restore();
+        });
+        this.ctx.restore();
+    }
+
+    private drawJumpers(jumpers: JumperState[]) {
+        this.ctx.save();
+        this.ctx.fillStyle = 'yellow';
+        this.ctx.strokeStyle = 'yellow';
+        jumpers.forEach((jumper) => {
+            this.ctx.save();
+            this.ctx.translate(jumper.x, jumper.y);
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, jumper.radius, 0, Math.PI * 2, false);
+            this.ctx.stroke();
             this.ctx.restore();
         });
         this.ctx.restore();

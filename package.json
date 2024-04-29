@@ -4,8 +4,8 @@
   "license": "MIT",
   "devDependencies": {
     "@parcel/packager-raw-url": "^2.11.0",
-    "@parcel/transformer-webmanifest": "^2.11.0",
     "@parcel/transformer-sass": "^2.11.0",
+    "@parcel/transformer-webmanifest": "^2.11.0",
     "parcel": "^2.11.0",
     "planck": "^1.0.0-alpha.4",
     "tsup": "^6.2.3",
@@ -14,5 +14,8 @@
   "scripts": {
     "dev": "parcel index.html",
     "build": "parcel build index.html --public-url /roulette/"
+  },
+  "dependencies": {
+    "@dimforge/rapier2d": "^0.12.0"
   }
 }

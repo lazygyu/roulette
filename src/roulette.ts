@@ -1,23 +1,21 @@
-import * as planck from 'planck';
 import {Marble} from './marble';
 import {initialZoom, Skills, zoomThreshold} from './data/constants';
 import {ParticleManager} from './particleManager';
 import {StageDef, stages} from './data/maps';
-import { createBox, createJumper, createMover, parseName } from './utils/utils';
+import {parseName} from './utils/utils';
 import {Camera} from './camera';
 import {RouletteRenderer} from './rouletteRenderer';
 import {SkillEffect} from './skillEffect';
 import {GameObject} from './gameObject';
 import options from './options';
-import { bound } from './utils/bound.decorator';
-import {Vec2} from 'planck';
-import { UIObject } from './UIObject';
-import { RankRenderer } from './rankRenderer';
+import {bound} from './utils/bound.decorator';
+import {UIObject} from './UIObject';
+import {RankRenderer} from './rankRenderer';
 import {Minimap} from './minimap';
 import {VideoRecorder} from './utils/videoRecorder';
+import {Physics} from './physics';
 
 export class Roulette extends EventTarget {
-    private _world!: planck.World;
     private _marbles: Marble[] = [];
 
     private _lastTime: number = 0;
@@ -30,8 +28,6 @@ export class Roulette extends EventTarget {
     private _speed = 1;
 
     private _winners: Marble[] = [];
-    private _objects: planck.Body[] = [];
-    private _stageObjects: planck.Body[] = [];
     private _particleManager = new ParticleManager();
     private _stage: StageDef | null = null;
 
@@ -50,6 +46,8 @@ export class Roulette extends EventTarget {
 
     private _autoRecording: boolean = false;
     private _recorder!: VideoRecorder;
+
+    private physics!: Physics;
 
     constructor() {
         super();
@@ -83,7 +81,7 @@ export class Roulette extends EventTarget {
         const interval = this._updateInterval / 1000 * this._timeScale;
 
         while (this._elapsed >= this._updateInterval) {
-            this._world.step(interval);
+            this.physics.step(interval);
             this._updateMarbles(this._updateInterval);
             this._particleManager.update(this._updateInterval);
             this._updateEffects(this._updateInterval);
@@ -118,38 +116,12 @@ export class Roulette extends EventTarget {
     private _updateMarbles(deltaTime: number) {
         if (!this._stage) return;
 
-        for (let contact = this._world.getContactList(); contact; contact = contact.getNext()) {
-            if (!contact.isTouching()) continue;
-            let fixtures = [contact.getFixtureA(), contact.getFixtureB()];
-            fixtures.forEach(fixture => {
-                const body = fixture.getBody();
-                const userData = body.getUserData() as any;
-                if (userData) {
-                    if (userData instanceof Marble) {
-                        userData.impact += 200;
-                        if (userData.impact > 500) userData.impact = 500;
-                    } else if ('isTemporary' in userData && userData.isTemporary) {
-                        this._world.destroyBody(body);
-                        this._objects = this._objects.filter(obj => obj !== body);
-                    }
-                }
-            });
-        }
-
         for (let i = 0; i < this._marbles.length; i++) {
             const marble = this._marbles[i];
             marble.update(deltaTime);
             if (marble.skill === Skills.Impact) {
                 this._effects.push(new SkillEffect(marble.x, marble.y));
-                this._marbles
-                    .filter(target => target !== marble && target.position.clone().sub(marble.position).lengthSquared() < 100)
-                    .forEach(target => {
-                        const v = target.position.clone().sub(marble.position);
-                        const norm = v.clone(); norm.normalize();
-                        const power = (1-(v.length()/10));
-                        norm.mul(power * power * 5);
-                        target.body.applyLinearImpulse(norm, marble.position);
-                    });
+                this.physics.impact(marble.id);
             }
             if (marble.y > this._stage.goalY) {
                 this._winners.push(marble);
@@ -167,7 +139,7 @@ export class Roulette extends EventTarget {
                     setTimeout(() => { this._recorder.stop(); }, 1000);
                 }
                 setTimeout(() => {
-                    this._world.destroyBody(marble.body);
+                    this.physics.removeMarble(marble.id);
                 }, 500);
             }
         }
@@ -178,12 +150,6 @@ export class Roulette extends EventTarget {
         this._timeScale = this._calcTimeScale();
 
         this._marbles = this._marbles.filter(marble => marble.y <= this._stage!.goalY);
-        const maximumForce = this._marbles.reduce((p, c) => Math.max(p, c.body.getLinearVelocity().length()), 0);
-        if (maximumForce < 0.1) {
-            this._noMoveDuration += deltaTime;
-        } else {
-            this._noMoveDuration = 0;
-        }
     }
 
     private _calcTimeScale(): number {
@@ -209,23 +175,25 @@ export class Roulette extends EventTarget {
         const renderParams = {
             camera: this._camera,
             stage: this._stage,
-            objects: this._objects,
+            wheels: this.physics.getWheels(),
+            boxes: this.physics.getBoxes(),
+            jumpers: this.physics.getJumpers(),
             marbles: this._marbles,
             winners: this._winners,
             particleManager: this._particleManager,
             effects: this._effects,
             winnerRank: this._winnerRank,
             winner: this._winner,
-            size: Vec2(this._renderer.width, this._renderer.height),
+            size: { x: this._renderer.width, y: this._renderer.height},
         };
         this._renderer.render(renderParams, this._uiObjects);
     }
 
     private _init() {
         this._recorder = new VideoRecorder(this._renderer.canvas);
-        this._world = new planck.World({
-            gravity: new planck.Vec2(0, 10),
-        });
+
+        this.physics = new Physics();
+        this.physics.init();
 
         this.addUiObject(new RankRenderer());
         this.attachEvent();
@@ -265,42 +233,19 @@ export class Roulette extends EventTarget {
         if (!this._stage) {
             throw new Error('No map has been selected');
         }
-        this._stageObjects = [];
         const {walls, boxes, wheels, jumpers} = this._stage;
-        walls.forEach((wallDef) => {
-            const wall = this._world.createBody({type: 'static'});
-            wall.setPosition(new planck.Vec2(0, 0));
-            wall.createFixture({
-                shape: planck.Chain(wallDef.map(pos => new planck.Vec2(...pos)), false),
-            });
-            this._stageObjects.push(wall);
-        });
 
-        wheels.forEach((wheelDef) => {
-            const item = createMover(this._world, new planck.Vec2(wheelDef[0], wheelDef[1]), wheelDef[2], (wheelDef[3] !== undefined && wheelDef[4] !== undefined) ? new planck.Vec2(wheelDef[3], wheelDef[4]) : undefined, wheelDef[5] ?? undefined);
-            this._objects.push(item);
-            this._stageObjects.push(item);
-        });
-
-        boxes.forEach(boxDef => {
-            const item = createBox(this._world, new planck.Vec2(boxDef[0], boxDef[1]), boxDef[2], boxDef[3], boxDef[4]);
-            this._objects.push(item);
-            this._stageObjects.push(item);
-        });
-
+        this.physics.createWalls(walls);
+        this.physics.createWheels(wheels);
+        this.physics.createBoxes(boxes);
         if (jumpers) {
-            jumpers.forEach(jumperDef => {
-                const item = createJumper(this._world, new planck.Vec2(jumperDef[0], jumperDef[1]), jumperDef[2], jumperDef[3]);
-                this._objects.push(item);
-                this._stageObjects.push(item);
-            });
+            this.physics.createJumpers(jumpers);
         }
+
     }
 
     public clearMarbles() {
-        this._marbles.forEach(marble => {
-            this._world.destroyBody(marble.body);
-        });
+        this.physics.clearMarbles();
         this._winner = null;
         this._winners = [];
         this._marbles = [];
@@ -314,10 +259,12 @@ export class Roulette extends EventTarget {
         }
         if (this._autoRecording) {
             this._recorder.start().then(() => {
-                this._marbles.forEach(marble => marble.body.setActive(true));
+                this.physics.start();
+                this._marbles.forEach(marble => marble.isActive = true);
             });
         } else {
-            this._marbles.forEach(marble => marble.body.setActive(true));
+            this.physics.start();
+            this._marbles.forEach(marble => marble.isActive = true);
         }
     }
 
@@ -372,7 +319,7 @@ export class Roulette extends EventTarget {
             if (member) {
                 for (let j = 0; j < member.count; j++) {
                     const order = orders.pop() || 0;
-                    this._marbles.push(new Marble(this._world, order, totalCount, member.name, member.weight));
+                    this._marbles.push(new Marble(this.physics, order, totalCount, member.name, member.weight));
                 }
             }
         });
@@ -380,10 +327,7 @@ export class Roulette extends EventTarget {
     }
 
     private _clearMap() {
-        for(let body = this._world.getBodyList(); body; body = body.getNext()) {
-            this._world.destroyBody(body);
-        }
-        this._objects = [];
+        this.physics.clear();
         this._marbles = [];
     }
 
@@ -407,19 +351,6 @@ export class Roulette extends EventTarget {
 
     public shake() {
         if (!this._shakeAvailable) return;
-        const xPower = (Math.random() - 0.5) * 4;
-        const yPower = (Math.random() - 0.5) * 4;
-        const power = new Vec2(xPower, yPower);
-        this._stageObjects.forEach(obj => {
-            let contact = obj.getContactList();
-            while(contact) {
-                if (contact.other) {
-                    contact.other.applyLinearImpulse(power, contact.other.getPosition());
-                }
-                contact = contact.next || null;
-            }
-        });
-        this._camera.setPosition(this._camera.position.add(power));
     }
 
     public getMaps() {
