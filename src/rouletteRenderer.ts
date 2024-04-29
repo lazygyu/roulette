@@ -1,28 +1,33 @@
 import {canvasHeight, canvasWidth, initialZoom} from './data/constants';
 import {Camera} from './camera';
 import {StageDef} from './data/maps';
-import {Body, Vec2} from 'planck';
 import {Marble} from './marble';
 import {ParticleManager} from './particleManager';
 import {GameObject} from './gameObject';
-import { UIObject } from './UIObject';
+import {UIObject} from './UIObject';
+import {WheelState} from './types/WheelState';
+import {BoxState} from './types/BoxState';
+import {JumperState} from './types/JumperState';
+import {VectorLike} from './types/VectorLike';
 
 export type RenderParameters = {
     camera: Camera,
     stage: StageDef,
-    objects: Body[],
+    wheels: WheelState[],
+    boxes: BoxState[],
+    jumpers: JumperState[],
     marbles: Marble[],
     winners: Marble[],
     particleManager: ParticleManager,
     effects: GameObject[],
     winnerRank: number,
     winner: Marble | null,
-    size: Vec2,
+    size: VectorLike,
 };
 
 export class RouletteRenderer {
     private _canvas!: HTMLCanvasElement;
-    private _ctx!: CanvasRenderingContext2D;
+    private ctx!: CanvasRenderingContext2D;
     public sizeFactor = 1;
 
     constructor() {
@@ -44,7 +49,7 @@ export class RouletteRenderer {
         this._canvas = document.createElement('canvas');
         this._canvas.width = canvasWidth;
         this._canvas.height = canvasHeight;
-        this._ctx = this._canvas.getContext('2d', {alpha: false}) as CanvasRenderingContext2D;
+        this.ctx = this._canvas.getContext('2d', {alpha: false}) as CanvasRenderingContext2D;
 
 
         document.body.appendChild(this._canvas);
@@ -65,118 +70,124 @@ export class RouletteRenderer {
     }
 
     render(renderParameters: RenderParameters, uiObjects: UIObject[]) {
-        this._ctx.fillStyle = 'black';
-        this._ctx.fillRect(0, 0, this._canvas.width, this._canvas.height);
+        this.ctx.fillStyle = 'black';
+        this.ctx.fillRect(0, 0, this._canvas.width, this._canvas.height);
 
-        this._ctx.save();
-        this._ctx.scale(initialZoom, initialZoom);
-        this._ctx.textAlign = 'left';
-        this._ctx.textBaseline = 'top';
-        this._ctx.font = '0.4pt sans-serif';
-        renderParameters.camera.renderScene(this._ctx, () => {
+        this.ctx.save();
+        this.ctx.scale(initialZoom, initialZoom);
+        this.ctx.textAlign = 'left';
+        this.ctx.textBaseline = 'top';
+        this.ctx.font = '0.4pt sans-serif';
+        this.ctx.lineWidth = 3 / (renderParameters.camera.zoom + initialZoom);
+        renderParameters.camera.renderScene(this.ctx, () => {
             this._renderWalls({...renderParameters});
-            this._renderObjects({
-                ...renderParameters,
-            });
-            this._renderEffects(renderParameters);
-            this._renderMarbles(renderParameters);
+            this.renderBoxes(renderParameters.boxes);
+            this.renderWheels(renderParameters.wheels);
+            this.renderJumpers(renderParameters.jumpers);
+            this.renderEffects(renderParameters);
+            this.renderMarbles(renderParameters);
         });
-        this._ctx.restore();
+        this.ctx.restore();
 
-        uiObjects.forEach(obj => obj.render(this._ctx, renderParameters, this._canvas.width, this._canvas.height));
-        renderParameters.particleManager.render(this._ctx);
-        this._renderWinner(renderParameters);
+        uiObjects.forEach(obj => obj.render(this.ctx, renderParameters, this._canvas.width, this._canvas.height));
+        renderParameters.particleManager.render(this.ctx);
+        this.renderWinner(renderParameters);
     }
 
     private _renderWalls({stage, camera}: { stage: StageDef, camera: Camera}) {
         if (!stage) return;
-        this._ctx.save();
-        this._ctx.strokeStyle = 'white';
-        this._ctx.lineWidth = 5 / (camera.zoom + initialZoom);
-        this._ctx.beginPath();
+        this.ctx.save();
+        this.ctx.strokeStyle = 'white';
+        this.ctx.lineWidth = 5 / (camera.zoom + initialZoom);
+        this.ctx.beginPath();
         stage.walls.forEach((wallDef) => {
-            this._ctx.moveTo(wallDef[0][0], wallDef[0][1]);
+            this.ctx.moveTo(wallDef[0][0], wallDef[0][1]);
             for (let i = 1; i < wallDef.length; i++) {
-                this._ctx.lineTo(wallDef[i][0], wallDef[i][1]);
+                this.ctx.lineTo(wallDef[i][0], wallDef[i][1]);
             }
         });
-        this._ctx.shadowColor = 'cyan';
-        this._ctx.shadowBlur = 15;
-        this._ctx.stroke();
-        this._ctx.closePath();
-        this._ctx.restore();
+        this.ctx.shadowColor = 'cyan';
+        this.ctx.shadowBlur = 15;
+        this.ctx.stroke();
+        this.ctx.closePath();
+        this.ctx.restore();
     }
 
-    private _renderObjects({
-                               objects,
-                               camera,
-                           }: { objects: Body[], camera: Camera }) {
-        this._ctx.save();
-        this._ctx.fillStyle = 'black';
-        this._ctx.lineWidth = 3 / (camera.zoom + initialZoom);
-        objects.forEach(obj => {
-            this._ctx.save();
-            const pos = obj.getPosition();
-            const ang = obj.getAngle();
-            this._ctx.translate(pos.x, pos.y);
-            this._ctx.rotate(ang);
-            for (let fixture = obj.getFixtureList(); fixture; fixture = fixture.getNext()) {
-                const shape = fixture.getShape() as planck.Polygon;
-                this._ctx.beginPath();
-                switch(shape.getType()) {
-                    case 'circle':
-                        this._ctx.strokeStyle = 'yellow';
-                        this._ctx.arc(0, 0, shape.m_radius, 0, Math.PI * 2);
-                        break;
-                    default:
-                        this._ctx.strokeStyle = '#94d5ed';
-                        const vertices = shape.m_vertices;
-                        this._ctx.moveTo(vertices[0].x, vertices[0].y);
-                        for (let i = 1; i < vertices.length; i++) {
-                            const vert = vertices[i];
-                            this._ctx.lineTo(vert.x, vert.y);
-                        }
-                        this._ctx.closePath();
-                        break;
-                }
-                this._ctx.fill();
-
-                this._ctx.save();
-                this._ctx.shadowBlur = 15;
-                this._ctx.shadowColor = 'cyan';
-                this._ctx.stroke();
-                this._ctx.restore();
-
-                this._ctx.closePath();
-            }
-            this._ctx.restore();
+    private renderWheels(wheels: WheelState[]) {
+        this.ctx.save();
+        this.ctx.fillStyle = '#94d5ed';
+        this.ctx.strokeStyle = '#94d5ed';
+        this.ctx.shadowBlur = 15;
+        this.ctx.shadowColor = 'cyan';
+        wheels.forEach((wheel) => {
+            this.ctx.save();
+            this.ctx.translate(wheel.x, wheel.y);
+            this.ctx.rotate(wheel.angle);
+            this.ctx.fillRect(-wheel.size, -0.05, wheel.size * 2, 0.1);
+            this.ctx.strokeRect(-wheel.size, -0.05, wheel.size * 2, 0.1);
+            this.ctx.restore();
         });
-        this._ctx.restore();
+        this.ctx.restore();
     }
 
-    private _renderEffects({effects, camera}: RenderParameters) {
-        effects.forEach(effect => effect.render(this._ctx, camera.zoom * initialZoom));
+    private renderBoxes(boxes: BoxState[]) {
+        this.ctx.save();
+        this.ctx.fillStyle = '#94d5ed';
+        this.ctx.strokeStyle = '#94d5ed';
+
+        boxes.forEach((box) => {
+            this.ctx.save();
+            this.ctx.translate(box.x, box.y);
+            this.ctx.rotate(box.angle);
+            this.ctx.fillRect(-box.width / 2, -box.height / 2, box.width, box.height);
+            this.ctx.shadowBlur = 15;
+            this.ctx.shadowColor = 'cyan';
+            this.ctx.strokeRect(-box.width / 2, -box.height / 2, box.width, box.height);
+            this.ctx.restore();
+        });
+        this.ctx.restore();
     }
 
-    private _renderMarbles({marbles, camera, winnerRank, winners}: RenderParameters) {
+    private renderJumpers(jumpers: JumperState[]) {
+        this.ctx.save();
+        this.ctx.fillStyle = 'yellow';
+        this.ctx.strokeStyle = 'yellow';
+        jumpers.forEach((jumper) => {
+            this.ctx.save();
+            this.ctx.translate(jumper.x, jumper.y);
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, jumper.radius, 0, Math.PI * 2, false);
+            this.ctx.shadowBlur = 15;
+            this.ctx.shadowColor = 'yellow';
+            this.ctx.stroke();
+            this.ctx.restore();
+        });
+        this.ctx.restore();
+    }
+
+    private renderEffects({effects, camera}: RenderParameters) {
+        effects.forEach(effect => effect.render(this.ctx, camera.zoom * initialZoom));
+    }
+
+    private renderMarbles({marbles, camera, winnerRank, winners}: RenderParameters) {
         const winnerIndex = winnerRank - winners.length;
         marbles.forEach((marble, i) => {
-            marble.render(this._ctx, camera.zoom * initialZoom, i === winnerIndex, false);
+            marble.render(this.ctx, camera.zoom * initialZoom, i === winnerIndex, false);
         });
     }
 
-    private _renderWinner({winner}: RenderParameters) {
+    private renderWinner({winner}: RenderParameters) {
         if (!winner) return;
-        this._ctx.save();
-        this._ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        this._ctx.fillRect(this._canvas.width / 2, this._canvas.height - 168, this._canvas.width / 2, 168);
-        this._ctx.fillStyle = 'white';
-        this._ctx.font = 'bold 48px sans-serif';
-        this._ctx.textAlign = 'right';
-        this._ctx.fillText('Winner', this._canvas.width - 10, this._canvas.height - 120);
-        this._ctx.font = 'bold 72px sans-serif';
-        this._ctx.fillStyle = winner.color;
-        this._ctx.fillText(winner.name, this._canvas.width - 10, this._canvas.height - 55);
-        this._ctx.restore();
+        this.ctx.save();
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        this.ctx.fillRect(this._canvas.width / 2, this._canvas.height - 168, this._canvas.width / 2, 168);
+        this.ctx.fillStyle = 'white';
+        this.ctx.font = 'bold 48px sans-serif';
+        this.ctx.textAlign = 'right';
+        this.ctx.fillText('Winner', this._canvas.width - 10, this._canvas.height - 120);
+        this.ctx.font = 'bold 72px sans-serif';
+        this.ctx.fillStyle = winner.color;
+        this.ctx.fillText(winner.name, this._canvas.width - 10, this._canvas.height - 55);
+        this.ctx.restore();
     }
 }

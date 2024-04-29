@@ -1,11 +1,11 @@
 import {Marble} from './marble';
 import {StageDef} from './data/maps';
-import {Vec2} from 'planck';
 import {initialZoom, zoomThreshold} from './data/constants';
+import {VectorLike} from './types/VectorLike';
 
 export class Camera {
-    private _position: Vec2 = new Vec2();
-    private _targetPosition: Vec2 = new Vec2();
+    private _position: VectorLike = {x: 0, y: 0};
+    private _targetPosition: VectorLike = {x: 0, y: 0};
     private _zoom: number = 1;
     private _targetZoom: number = 1;
     private _locked = false;
@@ -34,11 +34,11 @@ export class Camera {
         return this._position;
     }
 
-    setPosition(v: Vec2, force: boolean = false) {
+    setPosition(v: VectorLike, force: boolean = false) {
         if (force) {
-            return this._position.set(v);
+            return this._position = {x: v.x, y: v.y};
         }
-        return this._targetPosition.set(v);
+        return this._targetPosition = { x: v.x, y: v.y };
     }
 
     lock(v: boolean) {
@@ -70,7 +70,7 @@ export class Camera {
                 this.zoom = 1;
             }
         } else {
-            this.setPosition(new Vec2(0,0));
+            this.setPosition({x: 0,y: 0});
             this.zoom = 1;
         }
     }
