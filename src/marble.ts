@@ -127,11 +127,14 @@ export class Marble {
     }
 
     private _renderNormal(ctx: CanvasRenderingContext2D, zoom: number, outline: boolean) {
-        ctx.shadowColor = this.color;
-        ctx.shadowBlur = zoom / 2;
         ctx.fillStyle = `hsl(${this.hue} 100% ${70 + (25 * Math.min(1, this.impact / 500))}%`;
 
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = zoom / 2;
         this._drawMarbleBody(ctx, false);
+
+        ctx.shadowColor = '';
+        ctx.shadowBlur = 0;
         this._drawName(ctx, zoom);
 
         if (outline) {

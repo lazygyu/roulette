@@ -34,16 +34,18 @@ export class RankRenderer implements UIObject {
     ctx.textAlign = 'right';
     winners.forEach((marble: { color: any; name: any; }, rank: number) => {
       const y = rank * this.fontHeight;
-      if (y >= startY) {
+      if (y >= startY && y <= startY + ctx.canvas.height) {
         ctx.fillStyle = marble.color;
         ctx.fillText(`${rank === winnerRank ? '☆':'\u2714'} ${marble.name} #${rank + 1}`, startX, 20 + y);
       }
     });
     ctx.font = '10pt sans-serif';
     marbles.forEach((marble: { color: any; name: any; }, rank: number) => {
-      ctx.fillStyle = marble.color;
       const y = ((rank + winners.length)) * this.fontHeight;
-      ctx.fillText(`${marble.name} #${rank + 1 + winners.length}`, startX, 20 + y);
+      if (y >= startY && y <= startY + ctx.canvas.height) {
+        ctx.fillStyle = marble.color;
+        ctx.fillText(`${marble.name} #${rank + 1 + winners.length}`, startX, 20 + y);
+      }
     });
     ctx.restore();
   }
