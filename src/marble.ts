@@ -1,9 +1,9 @@
 import {Skills, STUCK_DELAY} from './data/constants';
 import {rad} from './utils/utils';
 import options from './options';
-import {Physics} from './physics';
 import {VectorLike} from './types/VectorLike';
 import {Vector} from './utils/Vector';
+import {IPhysics} from './IPhysics';
 
 export class Marble {
     type: 'marble' = 'marble';
@@ -22,7 +22,7 @@ export class Marble {
     private _stuckTime = 0;
     private lastPosition: VectorLike = {x: 0, y: 0};
 
-    private physics: Physics;
+    private physics: IPhysics;
 
     id: number;
 
@@ -46,7 +46,7 @@ export class Marble {
         this.position.y = v;
     }
 
-    constructor(physics: Physics, order: number, max: number, name?: string, weight: number = 1) {
+    constructor(physics: IPhysics, order: number, max: number, name?: string, weight: number = 1) {
         this.name = name || `M${order}`;
         this.weight = weight;
         this.physics = physics;

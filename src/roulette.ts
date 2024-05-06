@@ -14,6 +14,7 @@ import {RankRenderer} from './rankRenderer';
 import {Minimap} from './minimap';
 import {VideoRecorder} from './utils/videoRecorder';
 import {Physics} from './physics';
+import {IPhysics} from './IPhysics';
 
 export class Roulette extends EventTarget {
     private _marbles: Marble[] = [];
@@ -47,7 +48,7 @@ export class Roulette extends EventTarget {
     private _autoRecording: boolean = false;
     private _recorder!: VideoRecorder;
 
-    private physics!: Physics;
+    private physics!: IPhysics;
 
     constructor() {
         super();
@@ -233,15 +234,8 @@ export class Roulette extends EventTarget {
         if (!this._stage) {
             throw new Error('No map has been selected');
         }
-        const {walls, boxes, wheels, jumpers} = this._stage;
 
-        this.physics.createWalls(walls);
-        this.physics.createWheels(wheels);
-        this.physics.createBoxes(boxes);
-        if (jumpers) {
-            this.physics.createJumpers(jumpers);
-        }
-
+        this.physics.createStage(this._stage);
     }
 
     public clearMarbles() {
