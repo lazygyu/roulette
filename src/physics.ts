@@ -1,12 +1,13 @@
 import * as planck from 'planck';
+import {Vec2} from 'planck';
 import {StageDef} from './data/maps';
 import {VectorLike} from './types/VectorLike';
-import {Vec2} from 'planck';
 import {WheelState} from './types/WheelState';
 import {BoxState} from './types/BoxState';
 import {JumperState} from './types/JumperState';
+import {IPhysics} from './IPhysics';
 
-export class Physics {
+export class Physics implements IPhysics {
     private world: planck.World;
     private walls: planck.Body[] = [];
     private marbles: Map<number, planck.Body> = new Map();
@@ -19,7 +20,15 @@ export class Physics {
         });
     }
 
-    init() {
+    createStage(stage: StageDef): void {
+        console.log('create stage');
+        this.createWalls(stage.walls);
+        this.createWheels(stage.wheels);
+        this.createBoxes(stage.boxes);
+        this.createJumpers(stage.jumpers);
+    }
+
+    async init() {
 
     }
 
@@ -104,12 +113,12 @@ export class Physics {
             return;
         }
         jumpers.forEach(jumperDef => {
-            const jumper = this.world.createBody({position: new planck.Vec2(jumperDef[0], jumperDef[1]) });
+            const jumper = this.world.createBody({position: new planck.Vec2(jumperDef[0], jumperDef[1])});
             jumper.createFixture({
                 shape: new planck.Circle(new Vec2(), jumperDef[2]),
                 restitution: 1.5,
             });
-            jumper.setUserData({ isTemporary: jumperDef[3], radius: jumperDef[2] });
+            jumper.setUserData({isTemporary: jumperDef[3], radius: jumperDef[2]});
             this.jumpers.push(jumper);
         });
     }
@@ -150,12 +159,14 @@ export class Physics {
         if (marble) {
             const pos = marble.getPosition();
             return {x: pos.x, y: pos.y};
+        } else {
+            throw new Error(`marble not found (id: ${id})`);
         }
     }
 
     getWheels(): WheelState[] {
         return this.wheels.map((wheel) => {
-            const userData = wheel.getUserData() as {size: number, center: VectorLike};
+            const userData = wheel.getUserData() as { size: number, center: VectorLike };
             return {
                 ...wheel.getWorldCenter(),
                 size: userData.size,
@@ -166,7 +177,7 @@ export class Physics {
 
     getBoxes(): BoxState[] {
         return this.boxes.map((box) => {
-            const userData = box.getUserData() as {width: number, height: number};
+            const userData = box.getUserData() as { width: number, height: number };
             return {
                 ...box.getWorldCenter(),
                 width: userData.width,
@@ -205,7 +216,7 @@ export class Physics {
 
     start() {
         this.marbles.forEach(marble => {
-           marble.setActive(true);
+            marble.setActive(true);
         });
     }
 
@@ -223,7 +234,7 @@ export class Physics {
         for (let i = this.jumpers.length - 1; i >= 0; i--) {
             const jumper = this.jumpers[i];
             let contact = jumper.getContactList();
-            while(contact) {
+            while (contact) {
                 if (contact.contact && contact.contact.isTouching()) {
 
                     this.delteCandidates.push(...this.jumpers.splice(i, 1));
