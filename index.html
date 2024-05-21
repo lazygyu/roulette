@@ -372,6 +372,16 @@
 	let winnerType = 'first';
 
 	document.addEventListener('DOMContentLoaded', () => {
+		initialize();
+	});
+	function initialize() {
+		if (!window.roullete || !window.roullete.isReady) {
+			console.log('does not loaded yet');
+			setTimeout(initialize, 100);
+			return;
+		}
+		console.log('initializing start');
+
 		const savedNames = localStorage.getItem('mbr_names');
 		if (savedNames) {
 			document.querySelector('#in_names').value = savedNames;
@@ -487,7 +497,7 @@
 			const index = e.target.value;
 			window.roullete.setMap(index);
 		});
-	});
+	}
 </script>
 <div id="settings" class="settings">
 	<div class="right">

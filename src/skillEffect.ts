@@ -1,17 +1,16 @@
-import * as planck from 'planck';
 import {GameObject} from './gameObject';
-import {Vec2} from 'planck';
+import {VectorLike} from './types/VectorLike';
 
 const lifetime = 500;
 
 export class SkillEffect implements GameObject {
     private _size: number = 0;
-    position: Vec2;
+    position: VectorLike;
     private _elapsed: number = 0;
     isDestroy: boolean = false;
 
     constructor(x: number, y: number) {
-        this.position = new planck.Vec2(x, y);
+        this.position = {x, y};
     }
 
     update(deltaTime: number) {
