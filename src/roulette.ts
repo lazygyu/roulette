@@ -13,8 +13,8 @@ import {UIObject} from './UIObject';
 import {RankRenderer} from './rankRenderer';
 import {Minimap} from './minimap';
 import {VideoRecorder} from './utils/videoRecorder';
-import {Physics} from './physics';
 import {IPhysics} from './IPhysics';
+import {Box2dPhysics} from './physics-box2d';
 
 export class Roulette extends EventTarget {
     private _marbles: Marble[] = [];
@@ -50,11 +50,18 @@ export class Roulette extends EventTarget {
 
     private physics!: IPhysics;
 
+    private _isReady: boolean = false;
+    get isReady() {
+        return this._isReady;
+    }
+
     constructor() {
         super();
         this._renderer.init();
-        this._init();
-        this._update();
+        this._init().then(() => {
+            this._isReady = true;
+            this._update();
+        });
     }
 
     public getZoom() {
@@ -190,11 +197,11 @@ export class Roulette extends EventTarget {
         this._renderer.render(renderParams, this._uiObjects);
     }
 
-    private _init() {
+    private async _init() {
         this._recorder = new VideoRecorder(this._renderer.canvas);
 
-        this.physics = new Physics();
-        this.physics.init();
+        this.physics = new Box2dPhysics();
+        await this.physics.init();
 
         this.addUiObject(new RankRenderer());
         this.attachEvent();

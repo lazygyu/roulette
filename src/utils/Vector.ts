@@ -12,4 +12,12 @@ export class Vector {
     static len(v: VectorLike) {
         return Math.sqrt(this.lenSq(v));
     }
+
+    static mul(v: VectorLike, scalar: number) {
+        return {x: v.x * scalar, y: v.y * scalar};
+    }
+
+    static add(v1: VectorLike, v2: VectorLike) {
+        return {x: v1.x + v2.x, y: v1.y + v2.y};
+    }
 }
