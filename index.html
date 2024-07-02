@@ -2,8 +2,6 @@
 <html lang="en">
 <head>
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-5899C1DJM0"></script>
-	<script>
-	</script>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
@@ -25,7 +23,7 @@
 	<meta name="msapplication-TileImage" content="assets/ms-icon-144x144.png">
 	<meta name="theme-color" content="#ffffff">
 	<title>Marble Roulette</title>
-	<style type="text/scss">
+	<style lang="scss">
 		* {
 			box-sizing: border-box;
 		}
@@ -491,12 +489,26 @@
 			const option = document.createElement('option');
 			option.value = map.index;
 			option.innerHTML = map.title;
+			option.setAttribute('data-trans', '');
+			window.translateElement(option);
 			mapSelector.append(option);
 		});
 		mapSelector.addEventListener('change', (e) => {
 			const index = e.target.value;
 			window.roullete.setMap(index);
 		});
+
+		const checkDonateButtonLoaded = () => {
+			const btn = document.querySelector('span.bmc-btn-text');
+			if (!btn) {
+				setTimeout(checkDonateButtonLoaded, 100);
+			} else {
+				console.log('donation button has been loaded');
+				btn.setAttribute('data-trans', '');
+				window.translateElement(btn);
+			}
+		};
+		setTimeout(checkDonateButtonLoaded, 100);
 	}
 </script>
 <div id="settings" class="settings">
@@ -504,56 +516,58 @@
 		<div class="row">
 			<label>
 				<i class="icon map"></i>
-				Map
+				<span data-trans>Map</span>
 			</label>
 			<select id="sltMap"></select>
 		</div>
 		<div class="row">
 			<label>
 				<i class="icon record"></i>
-				Recording
+				<span data-trans>Recording</span>
 			</label>
 			<input type="checkbox" id="chkAutoRecording" />
 		</div>
 		<div class="row">
 			<label>
 				<i class="icon trophy"></i>
-				The winner is
+				<span data-trans>The winner is</span>
 			</label>
 			<div class="btn-group">
-				<button class="btn-winner btn-first-winner active">First</button>
-				<button class="btn-winner btn-last-winner">Last</button>
+				<button class="btn-winner btn-first-winner active" data-trans>First</button>
+				<button class="btn-winner btn-last-winner" data-trans>Last</button>
 				<input type="number" id="in_winningRank" value="1" min="1" />
 			</div>
 		</div>
 		<div class="row">
 			<label>
 				<i class="icon bomb"></i>
-				Using skills
+				<span data-trans>Using skills</span>
 			</label>
 			<input type="checkbox" id="chkSkill" checked />
 		</div>
 	</div>
 	<div class="left">
-		<h3>Enter names below</h3>
-		<textarea id="in_names" placeholder="Input names separated by commas or line feed here">짱구*5, 짱아*10, 봉미선*3</textarea>
+		<h3 data-trans>Enter names below</h3>
+		<textarea id="in_names" placeholder="Input names separated by commas or line feed here" data-trans="placeholder">짱구*5, 짱아*10, 봉미선*3</textarea>
 		<div class="actions">
 			<button id="btnShuffle">
 				<i class="icon shuffle"></i>
-				Shuffle
+				<span data-trans>Shuffle</span>
 			</button>
 			<button id="btnStart">
 				<i class="icon play"></i>
-				Start
+				<span data-trans>Start</span>
 			</button>
 		</div>
 	</div>
 </div>
 <div id="donate">
-	<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="lazygyu" data-color="#FFDD00" data-emoji=""  data-font="Cookie" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
+	<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
+			data-name="bmc-button" data-slug="lazygyu" data-color="#FFDD00" data-emoji=""
+			data-font="Comic" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
 </div>
 <div id="inGame" class="settings hide">
-	<button id="btnShake">Shake!</button>
+	<button id="btnShake" data-trans>Shake!</button>
 </div>
 <div class="copyright">&copy; 2024.<a href="https://lazygyu.net" target="_blank">lazygyu</a></div>
 </body>
