@@ -1,3 +1,4 @@
+import './localization';
 import {Roulette} from './roulette';
 import options from './options';
 
