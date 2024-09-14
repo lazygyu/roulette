@@ -27,7 +27,7 @@ export class Marble {
     id: number;
 
     get position() {
-        return this.physics.getMarblePosition(this.id) || {x: 0, y: 0};
+        return this.physics.getMarblePosition(this.id) || {x: 0, y: 0, angle: 0};
     }
 
     get x() {
@@ -44,6 +44,10 @@ export class Marble {
 
     set y(v: number) {
         this.position.y = v;
+    }
+
+    get angle() {
+        return this.position.angle;
     }
 
     constructor(physics: IPhysics, order: number, max: number, name?: string, weight: number = 1) {
@@ -99,12 +103,12 @@ export class Marble {
         }
     }
 
-    render(ctx: CanvasRenderingContext2D, zoom: number, outline: boolean, isMinimap: boolean = false) {
+    render(ctx: CanvasRenderingContext2D, zoom: number, outline: boolean, isMinimap: boolean = false, skin?: CanvasImageSource) {
         ctx.save();
         if (isMinimap) {
             this._renderMinimap(ctx);
         } else {
-            this._renderNormal(ctx, zoom, outline)
+            this._renderNormal(ctx, zoom, outline, skin);
         }
         ctx.restore();
     }
@@ -120,7 +124,7 @@ export class Marble {
         ctx.fill();
     }
 
-    private _renderNormal(ctx: CanvasRenderingContext2D, zoom: number, outline: boolean) {
+    private _renderNormal(ctx: CanvasRenderingContext2D, zoom: number, outline: boolean, skin?: CanvasImageSource) {
         ctx.fillStyle = `hsl(${this.hue} 100% ${70 + (25 * Math.min(1, this.impact / 500))}%`;
         if (this._stuckTime > 0) {
             ctx.fillStyle = `hsl(${this.hue} 100% ${70 + (25 * Math.min(1, this._stuckTime / STUCK_DELAY))}%`;
@@ -128,7 +132,17 @@ export class Marble {
 
         ctx.shadowColor = this.color;
         ctx.shadowBlur = zoom / 2;
-        this._drawMarbleBody(ctx, false);
+        if (skin) {
+            const hs = this.size / 2;
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.angle);
+            ctx.drawImage(skin,  -hs, -hs, hs*2, hs*2);
+            ctx.restore();
+            // ctx.arc(this.x, this.y, isMinimap ? this.size : this.size / 2, 0, Math.PI * 2);
+        } else {
+            this._drawMarbleBody(ctx, false);
+        }
 
         ctx.shadowColor = '';
         ctx.shadowBlur = 0;
@@ -173,14 +187,6 @@ export class Marble {
         ctx.lineWidth = 1 / zoom;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size / 2 + (2 / zoom), rad(270), rad(270 + 360 * this._coolTime / this._maxCoolTime));
-        ctx.stroke();
-    }
-
-    private _renderStuck(ctx: CanvasRenderingContext2D, zoom: number) {
-        ctx.strokeStyle = 'green';
-        ctx.lineWidth = 1 / zoom;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size / 2 + (3/zoom), rad(270), rad(270 + 360 * (1 - (this._stuckTime / STUCK_DELAY))));
         ctx.stroke();
     }
 }

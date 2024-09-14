@@ -18,7 +18,7 @@ export interface IPhysics {
 
     removeMarble(id: number): void;
 
-    getMarblePosition(id: number): { x: any; y: any };
+    getMarblePosition(id: number): { x: any; y: any, angle: number };
 
     getWheels(): WheelState[];
 

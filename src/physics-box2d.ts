@@ -191,12 +191,13 @@ export class Box2dPhysics implements IPhysics {
             delete this.marbleMap[id];
         }
     }
-    getMarblePosition(id: number): { x: any; y: any; } {
+    getMarblePosition(id: number): { x: any; y: any; angle: number } {
         const marble = this.marbleMap[id];
         if (marble) {
-            return marble.GetPosition();
+            const pos = marble.GetPosition();
+            return { x: pos.x, y: pos.y, angle: marble.GetAngle() };
         } else {
-            return {x: 0, y: 0}
+            return {x: 0, y: 0, angle: 0}
         }
     }
     getWheels(): WheelState[] {
