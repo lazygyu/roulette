@@ -29,7 +29,6 @@ export class RouletteRenderer {
     private _canvas!: HTMLCanvasElement;
     private ctx!: CanvasRenderingContext2D;
     public sizeFactor = 1;
-    private _image!: HTMLImageElement;
 
     constructor() {
     }
@@ -46,10 +45,7 @@ export class RouletteRenderer {
         return this._canvas;
     }
 
-    async init() {
-
-        await this._load();
-
+    init() {
         this._canvas = document.createElement('canvas');
         this._canvas.width = canvasWidth;
         this._canvas.height = canvasHeight;
@@ -71,17 +67,6 @@ export class RouletteRenderer {
 
         resizeObserver.observe(this._canvas);
         resizing();
-    }
-
-    private async _load(): Promise<void> {
-        return new Promise((rs) => {
-            const imageUrl = new URL('/assets/images/moon.png', import.meta.url);
-            this._image = new Image();
-            this._image.src = imageUrl.toString();
-            this._image.addEventListener('load', () => {
-                rs();
-            });
-        });
     }
 
     render(renderParameters: RenderParameters, uiObjects: UIObject[]) {
@@ -187,7 +172,7 @@ export class RouletteRenderer {
     private renderMarbles({marbles, camera, winnerRank, winners}: RenderParameters) {
         const winnerIndex = winnerRank - winners.length;
         marbles.forEach((marble, i) => {
-            marble.render(this.ctx, camera.zoom * initialZoom, i === winnerIndex, false, this._image);
+            marble.render(this.ctx, camera.zoom * initialZoom, i === winnerIndex, false);
         });
     }
 

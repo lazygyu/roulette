@@ -57,11 +57,10 @@ export class Roulette extends EventTarget {
 
     constructor() {
         super();
-        this._renderer.init().then(() => {
-            this._init().then(() => {
-                this._isReady = true;
-                this._update();
-            });
+        this._renderer.init();
+        this._init().then(() => {
+            this._isReady = true;
+            this._update();
         });
     }
 
