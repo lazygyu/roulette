@@ -1,4 +1,4 @@
 export interface VectorLike {
-    x: number;
-    y: number;
+  x: number;
+  y: number;
 }

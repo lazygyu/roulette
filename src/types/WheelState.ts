@@ -1,1 +1,6 @@
-export interface WheelState {x: number, y: number, size: number, angle: number}
+export interface WheelState {
+  x: number;
+  y: number;
+  size: number;
+  angle: number;
+}
