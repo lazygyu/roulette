@@ -1,11 +1,10 @@
 import typescriptEslint from 'typescript-eslint';
-import eslintPluginPrettier from 'eslint-plugin-prettier';
 import eslintCongigPrettier from 'eslint-config-prettier';
 
 export default typescriptEslint.config(typescriptEslint.configs.recommended, {
   files: ['**/*.ts'],
   // Prettier 규칙을 ESLint 통합
-  plugins: { prettier: eslintPluginPrettier },
+  plugins: ['prettier'],
   extends: [
     eslintCongigPrettier, // ESLint와 Prettier 충돌 방지
   ],

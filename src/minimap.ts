@@ -3,9 +3,6 @@ import { DefaultEntityColor, initialZoom } from './data/constants';
 import { UIObject } from './UIObject';
 import { bound } from './utils/bound.decorator';
 import { Rect } from './types/rect.type';
-import { WheelState } from './types/WheelState';
-import { BoxState } from './types/BoxState';
-import { JumperState } from './types/JumperState';
 import { VectorLike } from './types/VectorLike';
 import { MapEntityState } from './types/MapEntity.type';
 
@@ -77,9 +74,6 @@ export class Minimap implements UIObject {
 
     this.ctx.lineWidth = 3 / (params.camera.zoom + initialZoom);
     this.drawWalls(params);
-    this.drawWheels(params.wheels);
-    this.drawBoxes(params.boxes);
-    this.drawJumpers(params.jumpers);
     this.drawEntities(params.entities);
     this.drawMarbles(params);
     this.drawViewport(params);
@@ -123,55 +117,6 @@ export class Minimap implements UIObject {
     });
     this.ctx.stroke();
     this.ctx.closePath();
-    this.ctx.restore();
-  }
-
-  private drawWheels(wheels: WheelState[]) {
-    this.ctx.save();
-    this.ctx.fillStyle = '#94d5ed';
-    wheels.forEach((wheel) => {
-      this.ctx.save();
-      this.ctx.translate(wheel.x, wheel.y);
-      this.ctx.rotate(wheel.angle);
-      this.ctx.fillRect(-wheel.size, -0.05, wheel.size * 2, 0.1);
-      this.ctx.restore();
-    });
-    this.ctx.restore();
-  }
-
-  private drawBoxes(boxes: BoxState[]) {
-    this.ctx.save();
-    this.ctx.fillStyle = '#94d5ed';
-    this.ctx.strokeStyle = '#94d5ed';
-
-    boxes.forEach((box) => {
-      this.ctx.save();
-      this.ctx.translate(box.x, box.y);
-      this.ctx.rotate(box.angle);
-      this.ctx.fillRect(-box.width / 2, -box.height / 2, box.width, box.height);
-      this.ctx.strokeRect(
-        -box.width / 2,
-        -box.height / 2,
-        box.width,
-        box.height,
-      );
-      this.ctx.restore();
-    });
-    this.ctx.restore();
-  }
-
-  private drawJumpers(jumpers: JumperState[]) {
-    this.ctx.save();
-    this.ctx.fillStyle = 'yellow';
-    this.ctx.strokeStyle = 'yellow';
-    jumpers.forEach((jumper) => {
-      this.ctx.save();
-      this.ctx.translate(jumper.x, jumper.y);
-      this.ctx.beginPath();
-      this.ctx.arc(0, 0, jumper.radius, 0, Math.PI * 2, false);
-      this.ctx.stroke();
-      this.ctx.restore();
-    });
     this.ctx.restore();
   }
 

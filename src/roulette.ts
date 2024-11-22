@@ -141,13 +141,13 @@ export class Roulette extends EventTarget {
         this._winners.push(marble);
         if (this._isRunning && this._winners.length === this._winnerRank + 1) {
           this.dispatchEvent(
-            new CustomEvent('goal', { detail: { winner: marble.name } })
+            new CustomEvent('goal', { detail: { winner: marble.name } }),
           );
           this._winner = marble;
           this._isRunning = false;
           this._particleManager.shot(
             this._renderer.width,
-            this._renderer.height
+            this._renderer.height,
           );
           setTimeout(() => {
             this._recorder.stop();
@@ -160,13 +160,13 @@ export class Roulette extends EventTarget {
           this.dispatchEvent(
             new CustomEvent('goal', {
               detail: { winner: this._marbles[i + 1].name },
-            })
+            }),
           );
           this._winner = this._marbles[i + 1];
           this._isRunning = false;
           this._particleManager.shot(
             this._renderer.width,
-            this._renderer.height
+            this._renderer.height,
           );
           setTimeout(() => {
             this._recorder.stop();
@@ -184,7 +184,7 @@ export class Roulette extends EventTarget {
     this._timeScale = this._calcTimeScale();
 
     this._marbles = this._marbles.filter(
-      (marble) => marble.y <= this._stage!.goalY
+      (marble) => marble.y <= this._stage!.goalY,
     );
   }
 
@@ -197,7 +197,7 @@ export class Roulette extends EventTarget {
     ) {
       if (
         this._marbles[targetIndex].y >
-          this._stage.zoomY - zoomThreshold * 1.2 &&
+        this._stage.zoomY - zoomThreshold * 1.2 &&
         (this._marbles[targetIndex - 1] || this._marbles[targetIndex + 1])
       ) {
         return Math.max(0.2, this._goalDist / zoomThreshold);
@@ -216,9 +216,6 @@ export class Roulette extends EventTarget {
     const renderParams = {
       camera: this._camera,
       stage: this._stage,
-      wheels: this.physics.getWheels(),
-      boxes: this.physics.getBoxes(),
-      jumpers: this.physics.getJumpers(),
       entities: this.physics.getEntities(),
       marbles: this._marbles,
       winners: this._winners,
@@ -370,8 +367,8 @@ export class Roulette extends EventTarget {
               order,
               totalCount,
               member.name,
-              member.weight
-            )
+              member.weight,
+            ),
           );
         }
       }
@@ -399,7 +396,7 @@ export class Roulette extends EventTarget {
     if (this._shakeAvailable !== v) {
       this._shakeAvailable = v;
       this.dispatchEvent(
-        new CustomEvent('shakeAvailableChanged', { detail: v })
+        new CustomEvent('shakeAvailableChanged', { detail: v }),
       );
     }
   }

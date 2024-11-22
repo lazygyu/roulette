@@ -5,18 +5,12 @@ import { Marble } from './marble';
 import { ParticleManager } from './particleManager';
 import { GameObject } from './gameObject';
 import { UIObject } from './UIObject';
-import { WheelState } from './types/WheelState';
-import { BoxState } from './types/BoxState';
-import { JumperState } from './types/JumperState';
 import { VectorLike } from './types/VectorLike';
 import { MapEntityState } from './types/MapEntity.type';
 
 export type RenderParameters = {
   camera: Camera;
   stage: StageDef;
-  wheels: WheelState[];
-  boxes: BoxState[];
-  jumpers: JumperState[];
   entities: MapEntityState[];
   marbles: Marble[];
   winners: Marble[];
@@ -86,9 +80,6 @@ export class RouletteRenderer {
     this.ctx.lineWidth = 3 / (renderParameters.camera.zoom + initialZoom);
     renderParameters.camera.renderScene(this.ctx, () => {
       this._renderWalls({ ...renderParameters });
-      this.renderBoxes(renderParameters.boxes);
-      this.renderWheels(renderParameters.wheels);
-      this.renderJumpers(renderParameters.jumpers);
       this.renderEntities(renderParameters.entities);
       this.renderEffects(renderParameters);
       this.renderMarbles(renderParameters);
@@ -123,63 +114,6 @@ export class RouletteRenderer {
     this.ctx.shadowBlur = 15;
     this.ctx.stroke();
     this.ctx.closePath();
-    this.ctx.restore();
-  }
-
-  private renderWheels(wheels: WheelState[]) {
-    this.ctx.save();
-    this.ctx.fillStyle = '#94d5ed';
-    this.ctx.strokeStyle = '#94d5ed';
-    this.ctx.shadowBlur = 15;
-    this.ctx.shadowColor = 'cyan';
-    wheels.forEach((wheel) => {
-      this.ctx.save();
-      this.ctx.translate(wheel.x, wheel.y);
-      this.ctx.rotate(wheel.angle);
-      this.ctx.fillRect(-wheel.size, -0.05, wheel.size * 2, 0.1);
-      this.ctx.strokeRect(-wheel.size, -0.05, wheel.size * 2, 0.1);
-      this.ctx.restore();
-    });
-    this.ctx.restore();
-  }
-
-  private renderBoxes(boxes: BoxState[]) {
-    this.ctx.save();
-    this.ctx.fillStyle = '#94d5ed';
-    this.ctx.strokeStyle = '#94d5ed';
-
-    boxes.forEach((box) => {
-      this.ctx.save();
-      this.ctx.translate(box.x, box.y);
-      this.ctx.rotate(box.angle);
-      this.ctx.fillRect(-box.width / 2, -box.height / 2, box.width, box.height);
-      this.ctx.shadowBlur = 15;
-      this.ctx.shadowColor = 'cyan';
-      this.ctx.strokeRect(
-        -box.width / 2,
-        -box.height / 2,
-        box.width,
-        box.height,
-      );
-      this.ctx.restore();
-    });
-    this.ctx.restore();
-  }
-
-  private renderJumpers(jumpers: JumperState[]) {
-    this.ctx.save();
-    this.ctx.fillStyle = 'yellow';
-    this.ctx.strokeStyle = 'yellow';
-    jumpers.forEach((jumper) => {
-      this.ctx.save();
-      this.ctx.translate(jumper.x, jumper.y);
-      this.ctx.beginPath();
-      this.ctx.arc(0, 0, jumper.radius, 0, Math.PI * 2, false);
-      this.ctx.shadowBlur = 15;
-      this.ctx.shadowColor = 'yellow';
-      this.ctx.stroke();
-      this.ctx.restore();
-    });
     this.ctx.restore();
   }
 
