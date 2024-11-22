@@ -1,4 +1,9 @@
-export function bound<T extends Function>(target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<T>): TypedPropertyDescriptor<T> {
+export function bound<T extends Function>(
+  // eslint-disable-next-line
+  target: any,
+  propertyKey: string,
+  descriptor: TypedPropertyDescriptor<T>
+): TypedPropertyDescriptor<T> {
   return {
     configurable: true,
     get(this: T): T {
@@ -9,6 +14,6 @@ export function bound<T extends Function>(target: any, propertyKey: string, desc
         writable: true,
       });
       return boundMethod;
-    }
+    },
   };
 }
