@@ -1,5 +1,5 @@
 import { RenderParameters } from './rouletteRenderer';
-import { initialZoom } from './data/constants';
+import { DefaultEntityColor, initialZoom } from './data/constants';
 import { UIObject } from './UIObject';
 import { bound } from './utils/bound.decorator';
 import { Rect } from './types/rect.type';
@@ -7,6 +7,7 @@ import { WheelState } from './types/WheelState';
 import { BoxState } from './types/BoxState';
 import { JumperState } from './types/JumperState';
 import { VectorLike } from './types/VectorLike';
+import { MapEntityState } from './types/MapEntity.type';
 
 export class Minimap implements UIObject {
   private ctx!: CanvasRenderingContext2D;
@@ -79,6 +80,7 @@ export class Minimap implements UIObject {
     this.drawWheels(params.wheels);
     this.drawBoxes(params.boxes);
     this.drawJumpers(params.jumpers);
+    this.drawEntities(params.entities);
     this.drawMarbles(params);
     this.drawViewport(params);
 
@@ -90,7 +92,7 @@ export class Minimap implements UIObject {
       this.boundingBox.x,
       this.boundingBox.y,
       this.boundingBox.w,
-      this.boundingBox.h
+      this.boundingBox.h,
     );
     ctx.restore();
   }
@@ -151,7 +153,7 @@ export class Minimap implements UIObject {
         -box.width / 2,
         -box.height / 2,
         box.width,
-        box.height
+        box.height,
       );
       this.ctx.restore();
     });
@@ -168,6 +170,36 @@ export class Minimap implements UIObject {
       this.ctx.beginPath();
       this.ctx.arc(0, 0, jumper.radius, 0, Math.PI * 2, false);
       this.ctx.stroke();
+      this.ctx.restore();
+    });
+    this.ctx.restore();
+  }
+
+  private drawEntities(entities: MapEntityState[]) {
+    this.ctx.save();
+    entities.forEach((entity) => {
+      this.ctx.save();
+      this.ctx.fillStyle = DefaultEntityColor[entity.shape.type];
+      this.ctx.strokeStyle = DefaultEntityColor[entity.shape.type];
+      this.ctx.translate(entity.x, entity.y);
+      this.ctx.rotate(entity.angle);
+
+      this.ctx.save();
+      const shape = entity.shape;
+      switch (shape.type) {
+        case 'box':
+          const w = shape.width * 2;
+          const h = shape.height * 2;
+          this.ctx.rotate(shape.rotation);
+          this.ctx.fillRect(-w / 2, -h / 2, w, h);
+          break;
+        case 'circle':
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, shape.radius, 0, Math.PI * 2, false);
+          this.ctx.stroke();
+          break;
+      }
+      this.ctx.restore();
       this.ctx.restore();
     });
     this.ctx.restore();

@@ -75,7 +75,7 @@ export class Box2dPhysics implements IPhysics {
             entity.shape.width,
             entity.shape.height,
             0,
-            entity.shape.rotation
+            entity.shape.rotation,
           );
           break;
         case 'circle':
@@ -89,7 +89,7 @@ export class Box2dPhysics implements IPhysics {
       body.SetAngularVelocity(entity.props.angularVelocity);
       body.SetTransform(
         new this.Box2D.b2Vec2(entity.position.x, entity.position.y),
-        0
+        0,
       );
       this.entities.push({
         body,
@@ -97,6 +97,7 @@ export class Box2dPhysics implements IPhysics {
         y: entity.position.y,
         angle: 0,
         shape: entity.shape,
+        life: entity.props.life ?? -1,
       });
     });
   }
@@ -251,10 +252,11 @@ export class Box2dPhysics implements IPhysics {
     if (body) {
       body.ApplyLinearImpulseToCenter(
         new this.Box2D.b2Vec2(Math.random() * 10 - 5, Math.random() * 10 - 5),
-        true
+        true,
       );
     }
   }
+
   removeMarble(id: number): void {
     const marble = this.marbleMap[id];
     if (marble) {
@@ -262,6 +264,7 @@ export class Box2dPhysics implements IPhysics {
       delete this.marbleMap[id];
     }
   }
+
   getMarblePosition(id: number): { x: number; y: number } {
     const marble = this.marbleMap[id];
     if (marble) {
@@ -270,6 +273,7 @@ export class Box2dPhysics implements IPhysics {
       return { x: 0, y: 0 };
     }
   }
+
   getWheels(): WheelState[] {
     return this.wheels.map((wheel) => {
       const pos = wheel.body.GetPosition();
@@ -308,7 +312,7 @@ export class Box2dPhysics implements IPhysics {
 
       const distVector = new this.Box2D.b2Vec2(
         body.GetPosition().x,
-        body.GetPosition().y
+        body.GetPosition().y,
       );
       distVector.op_sub(src.GetPosition());
       const distSq = distVector.LengthSquared();
@@ -321,6 +325,7 @@ export class Box2dPhysics implements IPhysics {
       }
     });
   }
+
   start(): void {
     for (const key in this.marbleMap) {
       const marble = this.marbleMap[key];
@@ -328,6 +333,7 @@ export class Box2dPhysics implements IPhysics {
       marble.SetEnabled(true);
     }
   }
+
   step(deltaSeconds: number): void {
     this.deleteCandidates.forEach((body) => {
       this.world.DestroyBody(body);
@@ -336,12 +342,23 @@ export class Box2dPhysics implements IPhysics {
 
     this.world.Step(deltaSeconds, 6, 2);
 
+    for (let i = this.entities.length - 1; i >= 0; i--) {
+      const entity = this.entities[i];
+      if (entity.life > 0) {
+        const edge = entity.body.GetContactList();
+        if (edge.contact && edge.contact.IsTouching()) {
+          this.deleteCandidates.push(entity.body);
+          this.entities.splice(i, 1);
+        }
+      }
+    }
+
     for (let i = this.jumpers.length - 1; i >= 0; i--) {
       const jumper = this.jumpers[i];
       const edge = jumper.body.GetContactList();
       if (edge.contact && edge.contact.IsTouching()) {
         this.deleteCandidates.push(
-          ...this.jumpers.splice(i, 1).map((j) => j.body)
+          ...this.jumpers.splice(i, 1).map((j) => j.body),
         );
       }
     }
