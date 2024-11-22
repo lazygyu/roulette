@@ -1,8 +1,5 @@
 import { IPhysics } from './IPhysics';
 import { StageDef } from './data/maps';
-import { BoxState } from './types/BoxState';
-import { JumperState } from './types/JumperState';
-import { WheelState } from './types/WheelState';
 import Box2DFactory from 'box2d-wasm';
 import { MapEntity, MapEntityState } from './types/MapEntity.type';
 
@@ -13,9 +10,6 @@ export class Box2dPhysics implements IPhysics {
 
   private marbleMap: { [id: number]: Box2D.b2Body } = {};
   private walls: Box2D.b2Body[] = [];
-  private boxes: ({ body: Box2D.b2Body } & BoxState)[] = [];
-  private wheels: { body: Box2D.b2Body; size: number }[] = [];
-  private jumpers: ({ body: Box2D.b2Body } & JumperState)[] = [];
   private entities: ({ body: Box2D.b2Body } & MapEntityState)[] = [];
 
   private deleteCandidates: Box2D.b2Body[] = [];
@@ -29,9 +23,6 @@ export class Box2dPhysics implements IPhysics {
 
   clear(): void {
     this.clearWalls();
-    this.clearWheels();
-    this.clearBoxes();
-    this.clearJumpers();
     this.clearEntities();
   }
 
@@ -44,9 +35,6 @@ export class Box2dPhysics implements IPhysics {
 
   createStage(stage: StageDef): void {
     this.createWalls(stage.walls);
-    this.createWheels(stage.wheels);
-    this.createBoxes(stage.boxes);
-    this.createJumpers(stage.jumpers);
     this.createEntities(stage.entities);
   }
 
@@ -109,68 +97,6 @@ export class Box2dPhysics implements IPhysics {
     this.entities = [];
   }
 
-  createJumpers(jumpers: StageDef['jumpers']) {
-    if (!jumpers) return;
-
-    jumpers.forEach((jumperDef) => {
-      const [x, y, size, temporary] = jumperDef;
-      const bodyDef = new this.Box2D.b2BodyDef();
-      bodyDef.set_type(this.Box2D.b2_staticBody);
-      const body = this.world.CreateBody(bodyDef);
-      const shape = new this.Box2D.b2CircleShape();
-      shape.set_m_radius(size);
-
-      const fixtureDef = new this.Box2D.b2FixtureDef();
-      fixtureDef.set_density(1);
-      fixtureDef.set_restitution(1.5);
-      fixtureDef.set_shape(shape);
-
-      body.CreateFixture(fixtureDef);
-      body.SetTransform(new this.Box2D.b2Vec2(x, y), 0);
-      this.jumpers.push({ x, y, radius: size, body, isTemporary: !!temporary });
-    });
-  }
-
-  clearJumpers() {
-    this.jumpers.forEach((jumper) => {
-      this.world.DestroyBody(jumper.body);
-    });
-    this.jumpers = [];
-  }
-
-  createWheels(wheels: StageDef['wheels']) {
-    wheels.forEach((wheelDef) => {
-      const pos = { x: wheelDef[0], y: wheelDef[1] };
-      const power = wheelDef[2];
-      const size = wheelDef[5] ?? 2;
-
-      const bodyDef = new this.Box2D.b2BodyDef();
-      bodyDef.set_type(this.Box2D.b2_kinematicBody);
-      // bodyDef.set_position(new this.Box2D.b2Vec2(pos.x, pos.y));
-
-      const body = this.world.CreateBody(bodyDef);
-
-      const shape = new this.Box2D.b2PolygonShape();
-      shape.SetAsBox(size, 0.1);
-
-      const fixtureDef = new this.Box2D.b2FixtureDef();
-      fixtureDef.set_density(1);
-      fixtureDef.set_shape(shape);
-
-      body.CreateFixture(fixtureDef);
-      body.SetAngularVelocity(power);
-      body.SetTransform(new this.Box2D.b2Vec2(pos.x, pos.y), 0);
-
-      this.wheels.push({ body, size });
-    });
-  }
-
-  clearWheels() {
-    this.wheels.forEach((wheel) => {
-      this.world.DestroyBody(wheel.body);
-    });
-    this.wheels = [];
-  }
 
   createWalls(walls: StageDef['walls']) {
     walls.forEach((positions) => {
@@ -197,39 +123,6 @@ export class Box2dPhysics implements IPhysics {
       this.world.DestroyBody(wall);
     });
     this.walls = [];
-  }
-
-  createBoxes(boxes: StageDef['boxes']) {
-    boxes.forEach((boxDef) => {
-      const pos = { x: boxDef[0], y: boxDef[1] };
-      const width = boxDef[3] ?? 0.5;
-      const height = boxDef[4] ?? 0.25;
-      const rotation = boxDef[2] ?? 0;
-
-      const def = new this.Box2D.b2BodyDef();
-      def.set_type(this.Box2D.b2_staticBody);
-      const body = this.world.CreateBody(def);
-
-      const shape = new this.Box2D.b2PolygonShape();
-      shape.SetAsBox(width, height, 0, rotation);
-      body.CreateFixture(shape, 1);
-      body.SetTransform(new this.Box2D.b2Vec2(pos.x, pos.y), 0);
-      this.boxes.push({
-        body,
-        width: width * 2,
-        height: height * 2,
-        x: pos.x,
-        y: pos.y,
-        angle: rotation,
-      });
-    });
-  }
-
-  clearBoxes() {
-    this.boxes.forEach((box) => {
-      this.world.DestroyBody(box.body);
-    });
-    this.boxes = [];
   }
 
   createMarble(id: number, x: number, y: number): void {
@@ -272,26 +165,6 @@ export class Box2dPhysics implements IPhysics {
     } else {
       return { x: 0, y: 0 };
     }
-  }
-
-  getWheels(): WheelState[] {
-    return this.wheels.map((wheel) => {
-      const pos = wheel.body.GetPosition();
-      return {
-        x: pos.x,
-        y: pos.y,
-        size: wheel.size,
-        angle: wheel.body.GetAngle(),
-      };
-    });
-  }
-
-  getBoxes(): BoxState[] {
-    return this.boxes;
-  }
-
-  getJumpers(): JumperState[] {
-    return this.jumpers;
   }
 
   getEntities(): MapEntityState[] {
@@ -350,16 +223,6 @@ export class Box2dPhysics implements IPhysics {
           this.deleteCandidates.push(entity.body);
           this.entities.splice(i, 1);
         }
-      }
-    }
-
-    for (let i = this.jumpers.length - 1; i >= 0; i--) {
-      const jumper = this.jumpers[i];
-      const edge = jumper.body.GetContactList();
-      if (edge.contact && edge.contact.IsTouching()) {
-        this.deleteCandidates.push(
-          ...this.jumpers.splice(i, 1).map((j) => j.body),
-        );
       }
     }
   }

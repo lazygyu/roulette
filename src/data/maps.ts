@@ -1,29 +1,10 @@
 import { MapEntity } from '../types/MapEntity.type';
 
 type WallDef = [x: number, y: number];
-type BoxDef = [
-  x: number,
-  y: number,
-  angle: number,
-  width: number,
-  height: number,
-];
-type WheelDef = [
-  x: number,
-  y: number,
-  power: number,
-  centerX?: number,
-  centerY?: number,
-  size?: number,
-];
-type JumperDef = [x: number, y: number, size: number, temporary?: boolean];
 
 export type StageDef = {
   title: string;
   walls: WallDef[][];
-  boxes: BoxDef[];
-  wheels: WheelDef[];
-  jumpers?: JumperDef[];
   entities?: MapEntity[];
   goalY: number;
   zoomY: number;
@@ -413,8 +394,6 @@ export const stages: StageDef[] = [
         props: { density: 1, angularVelocity: -1.2, restitution: 0 },
       },
     ],
-    boxes: [],
-    wheels: [],
   },
   {
     title: 'BubblePop',
@@ -888,9 +867,6 @@ export const stages: StageDef[] = [
         props: { density: 1, angularVelocity: 0, restitution: 1.5, life: 1 },
       },
     ],
-    wheels: [],
-    boxes: [],
-    jumpers: [],
   },
   {
     title: 'Pot of greed',
@@ -1134,39 +1110,6 @@ export const stages: StageDef[] = [
         shape: { type: 'box', width: 2, height: 0.1, rotation: 0 },
         props: { density: 1, angularVelocity: 10, restitution: 0 },
       },
-    ],
-    boxes: [
-      // x, y, angle, width, height
-      // [13, 20, rad(45), 3, 3],
-      // [13, 55, rad(45), 3, 3],
-      //
-      // [8, 37, rad(45), 2, 2],
-      // [18, 37, rad(45), 2, 2],
-    ],
-    jumpers: [],
-    wheels: [
-      // [11, 12, -3],
-      // [15, 12, 3],
-      //
-      // [8, 104, -10, 0, 0, 1],
-      // [6, 103, -10, 0, 0, 1.5],
-      // [4, 100, -10, 0, 0, 1.5],
-      // [3.5, 95, -10],
-      // [3, 90, -10],
-      // [2.75, 85, -10],
-      // [2.5, 80, -10],
-      // [2.25, 75, -10],
-      // [2, 70, -10],
-      //
-      // [18, 104, 10, 0, 0, 1],
-      // [20, 103, 10, 0, 0, 1.5],
-      // [22, 100, 10, 0, 0, 1.5],
-      // [22.5, 95, 10],
-      // [23, 90, 10],
-      // [23.25, 85, 10],
-      // [23.5, 80, 10],
-      // [23.75, 75, 10],
-      // [24, 70, 10],
     ],
   },
 ];
