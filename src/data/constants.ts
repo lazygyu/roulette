@@ -8,3 +8,8 @@ export enum Skills {
   None,
   Impact,
 }
+
+export const DefaultEntityColor = {
+  box: 'cyan',
+  circle: 'yellow',
+} as const;
