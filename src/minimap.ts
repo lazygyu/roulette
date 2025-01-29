@@ -73,7 +73,6 @@ export class Minimap implements UIObject {
     ctx.fillRect(0, 0, 26, stage.goalY);
 
     this.ctx.lineWidth = 3 / (params.camera.zoom + initialZoom);
-    this.drawWalls(params);
     this.drawEntities(params.entities);
     this.drawMarbles(params);
     this.drawViewport(params);
@@ -103,23 +102,6 @@ export class Minimap implements UIObject {
     this.ctx.restore();
   }
 
-  private drawWalls(params: RenderParameters) {
-    if (!params.stage) return;
-    this.ctx.save();
-    this.ctx.strokeStyle = 'black';
-    this.ctx.lineWidth = 0.5;
-    this.ctx.beginPath();
-    params.stage.walls.forEach((wallDef) => {
-      this.ctx.moveTo(wallDef[0][0], wallDef[0][1]);
-      for (let i = 1; i < wallDef.length; i++) {
-        this.ctx.lineTo(wallDef[i][0], wallDef[i][1]);
-      }
-    });
-    this.ctx.stroke();
-    this.ctx.closePath();
-    this.ctx.restore();
-  }
-
   private drawEntities(entities: MapEntityState[]) {
     this.ctx.save();
     entities.forEach((entity) => {
@@ -142,6 +124,16 @@ export class Minimap implements UIObject {
           this.ctx.beginPath();
           this.ctx.arc(0, 0, shape.radius, 0, Math.PI * 2, false);
           this.ctx.stroke();
+          break;
+        case 'polyline':
+          if (shape.points.length > 0) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(shape.points[0][0], shape.points[0][1]);
+            for(let i = 1; i < shape.points.length; i++) {
+              this.ctx.lineTo(shape.points[i][0], shape.points[i][1]);
+            }
+            this.ctx.stroke();
+          }
           break;
       }
       this.ctx.restore();

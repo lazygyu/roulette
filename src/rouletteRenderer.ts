@@ -1,4 +1,4 @@
-import { canvasHeight, canvasWidth, DefaultEntityColor, initialZoom } from './data/constants';
+import {canvasHeight, canvasWidth, DefaultBloomColor, DefaultEntityColor, initialZoom} from './data/constants';
 import { Camera } from './camera';
 import { StageDef } from './data/maps';
 import { Marble } from './marble';
@@ -94,7 +94,6 @@ export class RouletteRenderer {
     this.ctx.font = '0.4pt sans-serif';
     this.ctx.lineWidth = 3 / (renderParameters.camera.zoom + initialZoom);
     renderParameters.camera.renderScene(this.ctx, () => {
-      this._renderWalls({ ...renderParameters });
       this.renderEntities(renderParameters.entities);
       this.renderEffects(renderParameters);
       this.renderMarbles(renderParameters);
@@ -113,54 +112,41 @@ export class RouletteRenderer {
     this.renderWinner(renderParameters);
   }
 
-  private _renderWalls({ stage, camera }: { stage: StageDef; camera: Camera }) {
-    if (!stage) return;
-    this.ctx.save();
-    this.ctx.strokeStyle = 'white';
-    this.ctx.lineWidth = 5 / (camera.zoom + initialZoom);
-    this.ctx.beginPath();
-    stage.walls.forEach((wallDef) => {
-      this.ctx.moveTo(wallDef[0][0], wallDef[0][1]);
-      for (let i = 1; i < wallDef.length; i++) {
-        this.ctx.lineTo(wallDef[i][0], wallDef[i][1]);
-      }
-    });
-    this.ctx.shadowColor = 'cyan';
-    this.ctx.shadowBlur = 15;
-    this.ctx.stroke();
-    this.ctx.closePath();
-    this.ctx.restore();
-  }
-
   private renderEntities(entities: MapEntityState[]) {
     this.ctx.save();
     entities.forEach((entity) => {
       this.ctx.save();
       this.ctx.translate(entity.x, entity.y);
       this.ctx.rotate(entity.angle);
-      this.ctx.save();
       this.ctx.fillStyle = DefaultEntityColor[entity.shape.type];
       this.ctx.strokeStyle = DefaultEntityColor[entity.shape.type];
+      this.ctx.shadowBlur = 15;
+      this.ctx.shadowColor = DefaultBloomColor[entity.shape.type];
       const shape = entity.shape;
       switch (shape.type) {
+        case 'polyline':
+          if (shape.points.length > 0) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(shape.points[0][0], shape.points[0][1]);
+            for(let i = 1; i < shape.points.length; i++) {
+              this.ctx.lineTo(shape.points[i][0], shape.points[i][1]);
+            }
+            this.ctx.stroke();
+          }
+          break;
         case 'box':
           const w = shape.width * 2;
           const h = shape.height * 2;
           this.ctx.rotate(shape.rotation);
           this.ctx.fillRect(-w / 2, -h / 2, w, h);
-          this.ctx.shadowBlur = 15;
-          this.ctx.shadowColor = DefaultEntityColor[entity.shape.type];
           this.ctx.strokeRect(-w / 2, -h / 2, w, h);
           break;
         case 'circle':
           this.ctx.beginPath();
           this.ctx.arc(0, 0, shape.radius, 0, Math.PI * 2, false);
-          this.ctx.shadowBlur = 15;
-          this.ctx.shadowColor = DefaultEntityColor[entity.shape.type];
           this.ctx.stroke();
           break;
       }
-      this.ctx.restore();
 
       this.ctx.restore();
     });

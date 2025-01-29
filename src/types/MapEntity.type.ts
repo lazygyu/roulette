@@ -1,6 +1,6 @@
 import { VectorLike } from './VectorLike';
 
-export type EntityShapeTypes = 'box' | 'circle';
+export type EntityShapeTypes = 'box' | 'circle' | 'polyline';
 
 export interface EntityShapeBase {
   type: EntityShapeTypes;
@@ -18,7 +18,13 @@ export interface EntityCircleShape extends EntityShapeBase {
   radius: number;
 }
 
-export type EntityShape = EntityBoxShape | EntityCircleShape;
+export interface EntityPolylineShape extends EntityShapeBase {
+  type: 'polyline';
+  rotation: number;
+  points: [number, number][];
+}
+
+export type EntityShape = EntityBoxShape | EntityCircleShape | EntityPolylineShape;
 
 export type EntityPhysicalProps = {
   density: number;

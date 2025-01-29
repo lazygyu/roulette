@@ -9,7 +9,6 @@ export class Box2dPhysics implements IPhysics {
   private world!: Box2D.b2World;
 
   private marbleMap: { [id: number]: Box2D.b2Body } = {};
-  private walls: Box2D.b2Body[] = [];
   private entities: ({ body: Box2D.b2Body } & MapEntityState)[] = [];
 
   private deleteCandidates: Box2D.b2Body[] = [];
@@ -22,7 +21,6 @@ export class Box2dPhysics implements IPhysics {
   }
 
   clear(): void {
-    this.clearWalls();
     this.clearEntities();
   }
 
@@ -34,7 +32,6 @@ export class Box2dPhysics implements IPhysics {
   }
 
   createStage(stage: StageDef): void {
-    this.createWalls(stage.walls);
     this.createEntities(stage.entities);
   }
 
@@ -65,15 +62,29 @@ export class Box2dPhysics implements IPhysics {
             0,
             entity.shape.rotation,
           );
+          fixtureDef.set_shape(shape);
+          body.CreateFixture(fixtureDef);
+          break;
+        case 'polyline':
+          shape = new this.Box2D.b2EdgeShape();
+          for (let i = 0; i < entity.shape.points.length - 1; i++) {
+            const p1 = entity.shape.points[i];
+            const p2 = entity.shape.points[i + 1];
+            const v1 = new this.Box2D.b2Vec2(p1[0], p1[1]);
+            const v2 = new this.Box2D.b2Vec2(p2[0], p2[1]);
+            const edge = new this.Box2D.b2EdgeShape();
+            edge.SetTwoSided(v1, v2);
+            body.CreateFixture(edge, 1);
+          }
           break;
         case 'circle':
           shape = new this.Box2D.b2CircleShape();
           shape.set_m_radius(entity.shape.radius);
+          fixtureDef.set_shape(shape);
+          body.CreateFixture(fixtureDef);
           break;
       }
 
-      fixtureDef.set_shape(shape);
-      body.CreateFixture(fixtureDef);
       body.SetAngularVelocity(entity.props.angularVelocity);
       body.SetTransform(
         new this.Box2D.b2Vec2(entity.position.x, entity.position.y),
@@ -95,34 +106,6 @@ export class Box2dPhysics implements IPhysics {
       this.world.DestroyBody(entity.body);
     });
     this.entities = [];
-  }
-
-
-  createWalls(walls: StageDef['walls']) {
-    walls.forEach((positions) => {
-      const def = new this.Box2D.b2BodyDef();
-      def.set_type(this.Box2D.b2_staticBody);
-
-      const body = this.world.CreateBody(def);
-
-      for (let i = 0; i < positions.length - 1; i++) {
-        const p1 = positions[i];
-        const p2 = positions[i + 1];
-        const v1 = new this.Box2D.b2Vec2(p1[0], p1[1]);
-        const v2 = new this.Box2D.b2Vec2(p2[0], p2[1]);
-        const edge = new this.Box2D.b2EdgeShape();
-        edge.SetTwoSided(v1, v2);
-        body.CreateFixture(edge, 1);
-      }
-      this.walls.push(body);
-    });
-  }
-
-  clearWalls() {
-    this.walls.forEach((wall) => {
-      this.world.DestroyBody(wall);
-    });
-    this.walls = [];
   }
 
   createMarble(id: number, x: number, y: number): void {
