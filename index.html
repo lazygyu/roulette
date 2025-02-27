@@ -1,576 +1,606 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<script async src="https://www.googletagmanager.com/gtag/js?id=G-5899C1DJM0"></script>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta http-equiv="X-UA-Compatible" content="ie=edge">
-	<link rel="apple-touch-icon" sizes="57x57" href="assets/apple-icon-57x57.png">
-	<link rel="apple-touch-icon" sizes="60x60" href="assets/apple-icon-60x60.png">
-	<link rel="apple-touch-icon" sizes="72x72" href="assets/apple-icon-72x72.png">
-	<link rel="apple-touch-icon" sizes="76x76" href="assets/apple-icon-76x76.png">
-	<link rel="apple-touch-icon" sizes="114x114" href="assets/apple-icon-114x114.png">
-	<link rel="apple-touch-icon" sizes="120x120" href="assets/apple-icon-120x120.png">
-	<link rel="apple-touch-icon" sizes="144x144" href="assets/apple-icon-144x144.png">
-	<link rel="apple-touch-icon" sizes="152x152" href="assets/apple-icon-152x152.png">
-	<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-icon-180x180.png">
-	<link rel="icon" type="image/png" sizes="192x192"  href="assets/android-icon-192x192.png">
-	<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
-	<link rel="icon" type="image/png" sizes="96x96" href="assets/favicon-96x96.png">
-	<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
-	<link rel="manifest" href="assets/manifest.json">
-	<meta name="msapplication-TileColor" content="#ffffff">
-	<meta name="msapplication-TileImage" content="assets/ms-icon-144x144.png">
-	<meta name="theme-color" content="#ffffff">
-	<title>Marble Roulette</title>
-	<style lang="scss">
-		* {
-			box-sizing: border-box;
-		}
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5899C1DJM0"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="apple-touch-icon" sizes="57x57" href="assets/apple-icon-57x57.png">
+  <link rel="apple-touch-icon" sizes="60x60" href="assets/apple-icon-60x60.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="assets/apple-icon-72x72.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="assets/apple-icon-76x76.png">
+  <link rel="apple-touch-icon" sizes="114x114" href="assets/apple-icon-114x114.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="assets/apple-icon-120x120.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="assets/apple-icon-144x144.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="assets/apple-icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-icon-180x180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/android-icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="assets/favicon-96x96.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+  <link rel="manifest" href="assets/manifest.json">
+  <meta name="msapplication-TileColor" content="#ffffff">
+  <meta name="msapplication-TileImage" content="assets/ms-icon-144x144.png">
+  <meta name="theme-color" content="#ffffff">
+  <title>Marble Roulette</title>
+  <style lang="scss">
+    * {
+      box-sizing: border-box;
+    }
 
-		canvas {
-			position: fixed;
-			inset: 0;
-			width: 100%;
-			height: 100%;
-		}
+    canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
 
-		div.copyright {
-			position: fixed;
-			bottom: 0;
-			left: 50%;
-			transform: translateX(-50%);
-			color: white;
-			font-size: 12px;
-			z-index: 999;
-		}
+    div.copyright {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 12px;
+      z-index: 999;
+    }
 
-		div.copyright a {
-			color: white;
-		}
+    div.copyright a {
+      color: white;
+    }
 
-		#settings {
-			position: fixed;
-			bottom: 1rem;
-			left: 1rem;
-			background: #666;
-			border-radius: 10px;
-			padding: 10px;
-			z-index: 999;
-			min-width: 50%;
+    #settings {
+      position: fixed;
+      bottom: 1rem;
+      left: 1rem;
+      background: #666;
+      border-radius: 10px;
+      padding: 10px;
+      z-index: 999;
+      min-width: 50%;
 
-			display: flex;
-			visibility: visible;
-			opacity: 1;
-			transition: visibility 0s, opacity 1s linear;
-			&.hide {
-				opacity: 0;
-				visibility: hidden;
-			}
+      display: flex;
+      visibility: visible;
+      opacity: 1;
+      transition: visibility 0s, opacity 1s linear;
 
-			h3 {
-				padding:0;
-				margin: 0;
-				font-size: 12pt;
-				color: #fefefe;
-			}
+      &.hide {
+        opacity: 0;
+        visibility: hidden;
+      }
 
-			textarea {
-				width: 100%;
-				min-height: 5rem;
-				border: none;
-				background: #999;
-				font-size: 14pt;
-			}
+      h3 {
+        padding: 0;
+        margin: 0;
+        font-size: 12pt;
+        color: #fefefe;
+      }
 
-			button {
-				color: #fefefe;
-				background: #222;
-				border: none;
-				border-radius: 5px;
-				padding: 5px 10px;
-				position: relative;
-				overflow: hidden;
-				&:active:after {
-					content: '';
-					position: absolute;
-					left: 0;
-					top: 0;
-					right: 0;
-					bottom: 0;
-					background: rgba(0, 0, 0, 0.5);
-				}
-			}
+      textarea {
+        width: 100%;
+        min-height: 5rem;
+        border: none;
+        background: #999;
+        font-size: 14pt;
+      }
 
-			.icon {
-				background: currentColor;
-				mask-repeat: no-repeat;
-				mask-position: center center;
-				mask-size: contain;
-				display: inline-block;
-				width: 25px;
-				height: 25px;
-				vertical-align: middle;
-				&.play {
-					mask-image: url('assets/images/play.svg');
-				}
-				&.shuffle {
-					mask-image: url('assets/images/shuffle.svg');
-				}
-				&.record {
-					mask-image: url('assets/images/record.svg');
-				}
-				&.map {
-					mask-image: url('assets/images/map.svg');
-				}
-				&.trophy {
-					mask-image: url('assets/images/trophy.svg');
-				}
-				&.bomb {
-					mask-image: url('assets/images/bomb.svg');
-				}
-			}
+      button {
+        color: #fefefe;
+        background: #222;
+        border: none;
+        border-radius: 5px;
+        padding: 5px 10px;
+        position: relative;
+        overflow: hidden;
 
-			div.left {
-				flex-grow: 1;
-				flex-shrink: 1;
-				order: 1;
-				.actions {
-					text-align: right;
-				}
-			}
-			div.right {
-				order: 2;
-				flex-grow: 0;
-				flex-shrink: 0;
+        &:active:after {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+        }
+      }
 
-				div.row {
-					display: flex;
-					align-items: center;
-					height: 35px;
-					label {
-						width: 150px;
-						flex-grow: 0;
-						flex-shrink: 0;
-						padding-left: 1rem;
-						color: white;
-					}
-				}
-			}
+      .icon {
+        background: currentColor;
+        mask-repeat: no-repeat;
+        mask-position: center center;
+        mask-size: contain;
+        display: inline-block;
+        width: 25px;
+        height: 25px;
+        vertical-align: middle;
 
-			select {
-				height: 25px;
-				width: 100%;
-				border-radius: 5px;
-				background: #999;
-			}
+        &.play {
+          mask-image: url('assets/images/play.svg');
+        }
 
-			input[type=checkbox] {
-				width: 0;
-				height: 25px;
-				position: relative;
-				vertical-align: middle;
-				&:before {
-					position: absolute;
-					content: '';
-					display: inline-block;
-					width: 50px;
-					height: 25px;
-					border-radius: 25px;
-					background: #999;
-					top: 0;
-					left: 0;
-				}
-				&:after {
-					position: absolute;
-					top: 0;
-					left: 0;
-					content: '';
-					border-radius: 25px;
-					width: 25px;
-					height: 25px;
-					background: #ccc;
-					transition: transform .2s;
-				}
-				&:checked:after {
-					transform: translateX(100%);
-					background: white;
-				}
-				&:checked:before {
-					content: '';
-					background: #00baff;
-				}
-			}
+        &.shuffle {
+          mask-image: url('assets/images/shuffle.svg');
+        }
 
-			.btn-group {
-				display: flex;
-				justify-content: stretch;
-				&>* {
-					box-sizing: border-box;
-					flex-grow: 0;
-					flex-shrink: 0;
-					overflow: hidden;
-					height: 25px;
-					width: 33%;
-					border-radius: 0;
-					background: #999;
-					border: none;
-					padding: 0;
-					color: #fefefe;
+        &.record {
+          mask-image: url('assets/images/record.svg');
+        }
 
-					display: flex;
-					align-items: center;
-					justify-content: center;
+        &.map {
+          mask-image: url('assets/images/map.svg');
+        }
 
-					&:first-child {
-						border-radius: 10px 0 0 10px;
-					}
-					&:last-child {
-						border-radius: 0 10px 10px 0;
-					}
-					&.active:before {
-						content: '';
-						width: 15px;
-						height: 15px;
-						display: inline-block;
-						vertical-align: middle;
-						mask-image: url('assets/images/check.svg');
-						mask-repeat: no-repeat;
-						background: white;
-					}
-					&.active {
-						background: #333;
-					}
-				}
-				input[type=number] {
-					box-sizing: border-box;
-					text-align: center;
-				}
-			}
-		}
+        &.trophy {
+          mask-image: url('assets/images/trophy.svg');
+        }
 
-		#donate {
-			position: fixed;
-			bottom: calc(160px + 1.5rem);
-			left: 1rem;
-			z-index: 999;
-			visibility: visible;
-			opacity: 1;
-			transition: visibility 0s, opacity 1s linear;
-			&.hide {
-				opacity: 0;
-				visibility: hidden;
-			}
-		}
+        &.bomb {
+          mask-image: url('assets/images/bomb.svg');
+        }
+      }
 
-		@media screen and (max-width: 750px) {
-			#donate {
-				bottom: 1rem;
-			}
-			#settings {
-				bottom: calc(1.5rem + 60px);
-				display: block;
-				min-width: 0;
-				max-width: 100%;
-				width: calc(100% - 2rem);
-				overflow: hidden;
-				opacity: 1;
-				visibility: visible;
-				transition: visibility 0s, opacity 1s linear;
-				&.hide {
-					opacity: 0;
-					visibility: hidden;
-				}
-				div.right div.row {
-					height: auto;
-					display: block;
-					border-bottom: 1px solid #555;
-					padding: .5rem 0;
+      div.left {
+        flex-grow: 1;
+        flex-shrink: 1;
+        order: 1;
 
-					label {
-						width: 100%;
-						margin-bottom: .5rem;
-						padding-left: 0;
-						display: block;
-					}
+        .actions {
+          text-align: right;
+        }
+      }
 
-					.icon {
-						width: 15px;
-						height: 15px;
-					}
-				}
-			}
-		}
-	</style>
+      div.right {
+        order: 2;
+        flex-grow: 0;
+        flex-shrink: 0;
+
+        div.row {
+          display: flex;
+          align-items: center;
+          height: 35px;
+
+          label {
+            width: 150px;
+            flex-grow: 0;
+            flex-shrink: 0;
+            padding-left: 1rem;
+            color: white;
+          }
+        }
+      }
+
+      select {
+        height: 25px;
+        width: 100%;
+        border-radius: 5px;
+        background: #999;
+      }
+
+      input[type=checkbox] {
+        width: 0;
+        height: 25px;
+        position: relative;
+        vertical-align: middle;
+
+        &:before {
+          position: absolute;
+          content: '';
+          display: inline-block;
+          width: 50px;
+          height: 25px;
+          border-radius: 25px;
+          background: #999;
+          top: 0;
+          left: 0;
+        }
+
+        &:after {
+          position: absolute;
+          top: 0;
+          left: 0;
+          content: '';
+          border-radius: 25px;
+          width: 25px;
+          height: 25px;
+          background: #ccc;
+          transition: transform .2s;
+        }
+
+        &:checked:after {
+          transform: translateX(100%);
+          background: white;
+        }
+
+        &:checked:before {
+          content: '';
+          background: #00baff;
+        }
+      }
+
+      .btn-group {
+        display: flex;
+        justify-content: stretch;
+
+        & > * {
+          box-sizing: border-box;
+          flex-grow: 0;
+          flex-shrink: 0;
+          overflow: hidden;
+          height: 25px;
+          width: 33%;
+          border-radius: 0;
+          background: #999;
+          border: none;
+          padding: 0;
+          color: #fefefe;
+
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          &:first-child {
+            border-radius: 10px 0 0 10px;
+          }
+
+          &:last-child {
+            border-radius: 0 10px 10px 0;
+          }
+
+          &.active:before {
+            content: '';
+            width: 15px;
+            height: 15px;
+            display: inline-block;
+            vertical-align: middle;
+            mask-image: url('assets/images/check.svg');
+            mask-repeat: no-repeat;
+            background: white;
+          }
+
+          &.active {
+            background: #333;
+          }
+        }
+
+        input[type=number] {
+          box-sizing: border-box;
+          text-align: center;
+        }
+      }
+    }
+
+    #donate {
+      position: fixed;
+      bottom: calc(160px + 1.5rem);
+      left: 1rem;
+      z-index: 999;
+      visibility: visible;
+      opacity: 1;
+      transition: visibility 0s, opacity 1s linear;
+
+      &.hide {
+        opacity: 0;
+        visibility: hidden;
+      }
+    }
+
+    @media screen and (max-width: 750px) {
+      #donate {
+        bottom: 1rem;
+      }
+
+      #settings {
+        bottom: calc(1.5rem + 60px);
+        display: block;
+        min-width: 0;
+        max-width: 100%;
+        width: calc(100% - 2rem);
+        overflow: hidden;
+        opacity: 1;
+        visibility: visible;
+        transition: visibility 0s, opacity 1s linear;
+
+        &.hide {
+          opacity: 0;
+          visibility: hidden;
+        }
+
+        div.right div.row {
+          height: auto;
+          display: block;
+          border-bottom: 1px solid #555;
+          padding: .5rem 0;
+
+          label {
+            width: 100%;
+            margin-bottom: .5rem;
+            padding-left: 0;
+            display: block;
+          }
+
+          .icon {
+            width: 15px;
+            height: 15px;
+          }
+        }
+      }
+    }
+  </style>
 </head>
 <body>
 <script type="module" src="./src/index.ts"></script>
 <script type="text/javascript">
-	window.dataLayer = window.dataLayer || [];
-	function gtag(){dataLayer.push(arguments);}
-	gtag('js', new Date());
-	gtag('config', 'G-5899C1DJM0');
+  window.dataLayer = window.dataLayer || [];
 
-	function getNames() {
-		const value = document.querySelector('#in_names').value.trim();
-		return value.split(/[,\r\n]/g).map(v => v.trim()).filter(v => !!v);
-	}
+  function gtag() {
+    dataLayer.push(arguments);
+  }
 
-	function parseName(nameStr) {
-		const weightRegex = /(\/\d+)/;
-		const countRegex = /(\*\d+)/;
-		const hasWeight = weightRegex.test(nameStr);
-		const hasCount = countRegex.test(nameStr);
-		const name = /^\s*([^\/*]+)?/.exec(nameStr)[1];
-		const weight = hasWeight ? parseInt(weightRegex.exec(nameStr)[1].replace('/', '')) : 1;
-		const count = hasCount ? parseInt(countRegex.exec(nameStr)[1].replace('*', '')) : 1;
-		return {
-			name,
-			weight,
-			count,
-		};
-	}
+  gtag('js', new Date());
+  gtag('config', 'G-5899C1DJM0');
 
-	function getReady() {
-		const names = getNames();
-		window.roullete.setMarbles(names);
-		ready = names.length > 0;
-		localStorage.setItem('mbr_names', names.join(','));
-		switch(winnerType) {
-			case 'first':
-				setWinnerRank(1);
-				break;
-			case 'last':
-				const total = window.roullete.getCount();
-				setWinnerRank(total);
-				break;
-		}
-	}
+  function getNames() {
+    const value = document.querySelector('#in_names').value.trim();
+    return value.split(/[,\r\n]/g).map(v => v.trim()).filter(v => !!v);
+  }
 
-	function setWinnerRank(rank) {
-		document.querySelector('#in_winningRank').value = rank;
-		window.options.winningRank = rank - 1;
-		window.roullete.setWinningRank(window.options.winningRank);
+  function parseName(nameStr) {
+    const weightRegex = /(\/\d+)/;
+    const countRegex = /(\*\d+)/;
+    const hasWeight = weightRegex.test(nameStr);
+    const hasCount = countRegex.test(nameStr);
+    const name = /^\s*([^\/*]+)?/.exec(nameStr)[1];
+    const weight = hasWeight ? parseInt(weightRegex.exec(nameStr)[1].replace('/', '')) : 1;
+    const count = hasCount ? parseInt(countRegex.exec(nameStr)[1].replace('*', '')) : 1;
+    return {
+      name,
+      weight,
+      count,
+    };
+  }
 
-		if (winnerType === 'first') {
-			document.querySelector('.btn-first-winner').classList.toggle('active', true);
-			document.querySelector('.btn-last-winner').classList.toggle('active', false);
-			document.querySelector('#in_winningRank').classList.toggle('active', false);
-		} else if (winnerType === 'last') {
-			document.querySelector('.btn-first-winner').classList.toggle('active', false);
-			document.querySelector('.btn-last-winner').classList.toggle('active', true);
-			document.querySelector('#in_winningRank').classList.toggle('active', false);
-		} else if (winnerType === 'custom') {
-			document.querySelector('.btn-first-winner').classList.toggle('active', false);
-			document.querySelector('.btn-last-winner').classList.toggle('active', false);
-			document.querySelector('#in_winningRank').classList.toggle('active', true);
-		}
-	}
+  function getReady() {
+    const names = getNames();
+    window.roullete.setMarbles(names);
+    ready = names.length > 0;
+    localStorage.setItem('mbr_names', names.join(','));
+    switch (winnerType) {
+      case 'first':
+        setWinnerRank(1);
+        break;
+      case 'last':
+        const total = window.roullete.getCount();
+        setWinnerRank(total);
+        break;
+    }
+  }
+
+  function setWinnerRank(rank) {
+    document.querySelector('#in_winningRank').value = rank;
+    window.options.winningRank = rank - 1;
+    window.roullete.setWinningRank(window.options.winningRank);
+
+    if (winnerType === 'first') {
+      document.querySelector('.btn-first-winner').classList.toggle('active', true);
+      document.querySelector('.btn-last-winner').classList.toggle('active', false);
+      document.querySelector('#in_winningRank').classList.toggle('active', false);
+    } else if (winnerType === 'last') {
+      document.querySelector('.btn-first-winner').classList.toggle('active', false);
+      document.querySelector('.btn-last-winner').classList.toggle('active', true);
+      document.querySelector('#in_winningRank').classList.toggle('active', false);
+    } else if (winnerType === 'custom') {
+      document.querySelector('.btn-first-winner').classList.toggle('active', false);
+      document.querySelector('.btn-last-winner').classList.toggle('active', false);
+      document.querySelector('#in_winningRank').classList.toggle('active', true);
+    }
+  }
 
 
-	let ready = false;
-	let winnerType = 'first';
+  let ready = false;
+  let winnerType = 'first';
 
-	document.addEventListener('DOMContentLoaded', () => {
-		initialize();
-	});
-	function initialize() {
-		if (!window.roullete || !window.roullete.isReady) {
-			console.log('does not loaded yet');
-			setTimeout(initialize, 100);
-			return;
-		}
-		console.log('initializing start');
+  document.addEventListener('DOMContentLoaded', () => {
+    initialize();
+  });
 
-		const savedNames = localStorage.getItem('mbr_names');
-		if (savedNames) {
-			document.querySelector('#in_names').value = savedNames;
-		}
-		document.querySelector('#in_names').addEventListener('input', () => {
-			getReady();
-		});
+  function initialize() {
+    if (!window.roullete || !window.roullete.isReady) {
+      console.log('does not loaded yet');
+      setTimeout(initialize, 100);
+      return;
+    }
+    console.log('initializing start');
 
-		document.querySelector('#in_names').addEventListener('blur', () => {
-			const nameSource = getNames();
-			const nameSet = new Set();
-			const nameCounts = {};
-			nameSource.forEach(nameSrc => {
-				const name = parseName(nameSrc);
-				const key = name.weight > 1 ? `${name.name}/${name.weight}` : name.name;
-				if (!nameSet.has(key)) {
-					nameSet.add(key);
-					nameCounts[key] = 0;
-				}
-				nameCounts[key] += name.count;
-			});
-			const result = [];
-			Object.keys(nameCounts).forEach(key => {
-				if (nameCounts[key] > 1) {
-					result.push(`${key}*${nameCounts[key]}`);
-				} else {
-					result.push(key);
-				}
-			});
+    const savedNames = localStorage.getItem('mbr_names');
+    if (savedNames) {
+      document.querySelector('#in_names').value = savedNames;
+    }
+    document.querySelector('#in_names').addEventListener('input', () => {
+      getReady();
+    });
 
-			const oldValue = document.querySelector('#in_names').value;
-			const newValue = result.join(',');
+    document.querySelector('#in_names').addEventListener('blur', () => {
+      const nameSource = getNames();
+      const nameSet = new Set();
+      const nameCounts = {};
+      nameSource.forEach(nameSrc => {
+        const name = parseName(nameSrc);
+        const key = name.weight > 1 ? `${name.name}/${name.weight}` : name.name;
+        if (!nameSet.has(key)) {
+          nameSet.add(key);
+          nameCounts[key] = 0;
+        }
+        nameCounts[key] += name.count;
+      });
+      const result = [];
+      Object.keys(nameCounts).forEach(key => {
+        if (nameCounts[key] > 1) {
+          result.push(`${key}*${nameCounts[key]}`);
+        } else {
+          result.push(key);
+        }
+      });
 
-			if (oldValue !== newValue) {
-				document.querySelector('#in_names').value = newValue;
-				getReady();
-			}
-		});
+      const oldValue = document.querySelector('#in_names').value;
+      const newValue = result.join(',');
 
-		document.querySelector('#btnShuffle').addEventListener('click', () => {
-			getReady();
-		});
+      if (oldValue !== newValue) {
+        document.querySelector('#in_names').value = newValue;
+        getReady();
+      }
+    });
 
-		document.querySelector('#btnStart').addEventListener('click', () => {
-			if (!ready) return;
-			gtag && gtag('event', 'start', {
-				'event_category': 'roulette',
-				'event_label': 'start',
-				'value': window.roullete.getCount(),
-			});
-			window.roullete.start();
-			document.querySelector('#settings').classList.add('hide');
-			document.querySelector('#donate').classList.add('hide');
-		});
+    document.querySelector('#btnShuffle').addEventListener('click', () => {
+      getReady();
+    });
 
-		document.querySelector('#chkAutoRecording').addEventListener('change', (e) => {
-			window.options.autoRecording = e.target.matches(':checked');
-			window.roullete.setAutoRecording(window.options.autoRecording);
-		});
+    document.querySelector('#btnStart').addEventListener('click', () => {
+      if (!ready) return;
+      gtag && gtag('event', 'start', {
+        'event_category': 'roulette',
+        'event_label': 'start',
+        'value': window.roullete.getCount(),
+      });
+      window.roullete.start();
+      document.querySelector('#settings').classList.add('hide');
+      document.querySelector('#donate').classList.add('hide');
+    });
 
-		document.querySelector('#chkSkill').addEventListener('change', (e) => {
-			window.options.useSkills = e.target.matches(':checked');
-			window.roullete.setWinningRank(window.options.winningRank);
-		});
+    document.querySelector('#chkAutoRecording').addEventListener('change', (e) => {
+      window.options.autoRecording = e.target.matches(':checked');
+      window.roullete.setAutoRecording(window.options.autoRecording);
+    });
 
-		document.querySelector('#in_winningRank').addEventListener('change', (e) => {
-			const v = parseInt(e.target.value, 10);
-			winnerType = 'custom';
-			setWinnerRank(isNaN(v) ? 0 : v);
-		});
+    document.querySelector('#chkSkill').addEventListener('change', (e) => {
+      window.options.useSkills = e.target.matches(':checked');
+      window.roullete.setWinningRank(window.options.winningRank);
+    });
 
-		document.querySelector('.btn-last-winner').addEventListener('click', () => {
-			const total = window.roullete.getCount();
-			winnerType = 'last';
-			setWinnerRank(total);
-		});
-		document.querySelector('.btn-first-winner').addEventListener('click', () => {
-			winnerType = 'first';
-			setWinnerRank(1);
-		});
+    document.querySelector('#in_winningRank').addEventListener('change', (e) => {
+      const v = parseInt(e.target.value, 10);
+      winnerType = 'custom';
+      setWinnerRank(isNaN(v) ? 0 : v);
+    });
 
-		document.querySelector('#btnShake').addEventListener('click', () => {
-			window.roullete.shake();
-			gtag('event', 'shake', {
-				'event_category': 'roulette',
-				'event_label': 'shake',
-				'value': 1,
-			});
-		});
+    document.querySelector('.btn-last-winner').addEventListener('click', () => {
+      const total = window.roullete.getCount();
+      winnerType = 'last';
+      setWinnerRank(total);
+    });
+    document.querySelector('.btn-first-winner').addEventListener('click', () => {
+      winnerType = 'first';
+      setWinnerRank(1);
+    });
 
-		window.roullete.addEventListener('goal', () => {
-			ready = false;
-			setTimeout(() => {
-				document.querySelector('#settings').classList.remove('hide');
-				document.querySelector('#donate').classList.remove('hide');
-			}, 3000);
-		});
-		window.roullete.addEventListener('shakeAvailableChanged', (e) => {
-			document.querySelector('#inGame').classList.toggle('hide', !e.detail);
-		});
+    document.querySelector('#btnShake').addEventListener('click', () => {
+      window.roullete.shake();
+      gtag('event', 'shake', {
+        'event_category': 'roulette',
+        'event_label': 'shake',
+        'value': 1,
+      });
+    });
 
-		document.querySelector('#btnShuffle').click();
+    window.roullete.addEventListener('goal', () => {
+      ready = false;
+      setTimeout(() => {
+        document.querySelector('#settings').classList.remove('hide');
+        document.querySelector('#donate').classList.remove('hide');
+      }, 3000);
+    });
+    window.roullete.addEventListener('shakeAvailableChanged', (e) => {
+      document.querySelector('#inGame').classList.toggle('hide', !e.detail);
+    });
 
-		const maps = window.roullete.getMaps();
-		const mapSelector = document.querySelector('#sltMap');
-		maps.forEach((map) => {
-			const option = document.createElement('option');
-			option.value = map.index;
-			option.innerHTML = map.title;
-			option.setAttribute('data-trans', '');
-			window.translateElement(option);
-			mapSelector.append(option);
-		});
-		mapSelector.addEventListener('change', (e) => {
-			const index = e.target.value;
-			window.roullete.setMap(index);
-		});
+    document.querySelector('#btnShuffle').click();
 
-		const checkDonateButtonLoaded = () => {
-			const btn = document.querySelector('span.bmc-btn-text');
-			if (!btn) {
-				setTimeout(checkDonateButtonLoaded, 100);
-			} else {
-				console.log('donation button has been loaded');
-				btn.setAttribute('data-trans', '');
-				window.translateElement(btn);
-			}
-		};
-		setTimeout(checkDonateButtonLoaded, 100);
-	}
+    const maps = window.roullete.getMaps();
+    const mapSelector = document.querySelector('#sltMap');
+    maps.forEach((map) => {
+      const option = document.createElement('option');
+      option.value = map.index;
+      option.innerHTML = map.title;
+      option.setAttribute('data-trans', '');
+      window.translateElement(option);
+      mapSelector.append(option);
+    });
+    mapSelector.addEventListener('change', (e) => {
+      const index = e.target.value;
+      window.roullete.setMap(index);
+    });
+
+    const checkDonateButtonLoaded = () => {
+      const btn = document.querySelector('span.bmc-btn-text');
+      if (!btn) {
+        setTimeout(checkDonateButtonLoaded, 100);
+      } else {
+        console.log('donation button has been loaded');
+        btn.setAttribute('data-trans', '');
+        window.translateElement(btn);
+      }
+    };
+    setTimeout(checkDonateButtonLoaded, 100);
+  }
 </script>
 <div id="settings" class="settings">
-	<div class="right">
-		<div class="row">
-			<label>
-				<i class="icon map"></i>
-				<span data-trans>Map</span>
-			</label>
-			<select id="sltMap"></select>
-		</div>
-		<div class="row">
-			<label>
-				<i class="icon record"></i>
-				<span data-trans>Recording</span>
-			</label>
-			<input type="checkbox" id="chkAutoRecording" />
-		</div>
-		<div class="row">
-			<label>
-				<i class="icon trophy"></i>
-				<span data-trans>The winner is</span>
-			</label>
-			<div class="btn-group">
-				<button class="btn-winner btn-first-winner active" data-trans>First</button>
-				<button class="btn-winner btn-last-winner" data-trans>Last</button>
-				<input type="number" id="in_winningRank" value="1" min="1" />
-			</div>
-		</div>
-		<div class="row">
-			<label>
-				<i class="icon bomb"></i>
-				<span data-trans>Using skills</span>
-			</label>
-			<input type="checkbox" id="chkSkill" checked />
-		</div>
-	</div>
-	<div class="left">
-		<h3 data-trans>Enter names below</h3>
-		<textarea id="in_names" placeholder="Input names separated by commas or line feed here" data-trans="placeholder">짱구*5, 짱아*10, 봉미선*3</textarea>
-		<div class="actions">
-			<button id="btnShuffle">
-				<i class="icon shuffle"></i>
-				<span data-trans>Shuffle</span>
-			</button>
-			<button id="btnStart">
-				<i class="icon play"></i>
-				<span data-trans>Start</span>
-			</button>
-		</div>
-	</div>
+  <div class="right">
+    <div class="row">
+      <label>
+        <i class="icon map"></i>
+        <span data-trans>Map</span>
+      </label>
+      <select id="sltMap"></select>
+    </div>
+    <div class="row">
+      <label>
+        <i class="icon record"></i>
+        <span data-trans>Recording</span>
+      </label>
+      <input type="checkbox" id="chkAutoRecording" />
+    </div>
+    <div class="row">
+      <label>
+        <i class="icon trophy"></i>
+        <span data-trans>The winner is</span>
+      </label>
+      <div class="btn-group">
+        <button class="btn-winner btn-first-winner active" data-trans>First</button>
+        <button class="btn-winner btn-last-winner" data-trans>Last</button>
+        <input type="number" id="in_winningRank" value="1" min="1" />
+      </div>
+    </div>
+    <div class="row">
+      <label>
+        <i class="icon bomb"></i>
+        <span data-trans>Using skills</span>
+      </label>
+      <input type="checkbox" id="chkSkill" checked />
+    </div>
+  </div>
+  <div class="left">
+    <h3 data-trans>Enter names below</h3>
+    <textarea id="in_names" placeholder="Input names separated by commas or line feed here" data-trans="placeholder">짱구*5, 짱아*10, 봉미선*3</textarea>
+    <div class="actions">
+      <button id="btnShuffle">
+        <i class="icon shuffle"></i>
+        <span data-trans>Shuffle</span>
+      </button>
+      <button id="btnStart">
+        <i class="icon play"></i>
+        <span data-trans>Start</span>
+      </button>
+    </div>
+  </div>
 </div>
 <div id="donate">
-	<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
-			data-name="bmc-button" data-slug="lazygyu" data-color="#FFDD00" data-emoji=""
-			data-font="Comic" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
+  <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
+          data-name="bmc-button" data-slug="lazygyu" data-color="#FFDD00" data-emoji=""
+          data-font="Comic" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000"
+          data-coffee-color="#ffffff"></script>
 </div>
 <div id="inGame" class="settings hide">
-	<button id="btnShake" data-trans>Shake!</button>
+  <button id="btnShake" data-trans>Shake!</button>
 </div>
-<div class="copyright">&copy; 2024.<a href="https://lazygyu.net" target="_blank">lazygyu</a></div>
+<div class="copyright">&copy; 2025.<a href="https://lazygyu.net" target="_blank">lazygyu</a></div>
 </body>
 </html>
