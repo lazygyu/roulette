@@ -15,7 +15,7 @@ export const stages: StageDef[] = [
     entities: [
       // polyline
       {
-        position: {x: 0, y: 0},
+        position: { x: 0, y: 0 },
         shape: {
           type: 'polyline',
           points: [
@@ -36,14 +36,14 @@ export const stages: StageDef[] = [
             [15.1, 106.75],
             [15.1, 111.75],
           ],
-          rotation:0
+          rotation: 0,
         },
         type: 'static',
-        props: { density: 1, angularVelocity: 0, restitution: 0},
+        props: { density: 1, angularVelocity: 0, restitution: 0 },
       },
       {
         type: 'static',
-        position: {x: 0, y: 0},
+        position: { x: 0, y: 0 },
         props: { density: 1, angularVelocity: 0, restitution: 0 },
         shape: {
           type: 'polyline',
@@ -66,40 +66,40 @@ export const stages: StageDef[] = [
             [16, 106.75],
             [16, 111.75],
           ],
-        }
+        },
       },
       {
         type: 'static',
-        position: {x: 0, y : 0},
+        position: { x: 0, y: 0 },
         props: { density: 1, angularVelocity: 0, restitution: 0 },
         shape: {
           type: 'polyline',
           rotation: 0,
           points:
-              [
-                [12.75, 37.5],
-                [7, 43.5],
-                [7, 49.75],
-                [12.75, 53.75],
-                [12.75, 37.5],
-              ]
-        }
+            [
+              [12.75, 37.5],
+              [7, 43.5],
+              [7, 49.75],
+              [12.75, 53.75],
+              [12.75, 37.5],
+            ],
+        },
       },
       {
         type: 'static',
-        position: {x: 0, y : 0},
+        position: { x: 0, y: 0 },
         props: { density: 1, angularVelocity: 0, restitution: 0 },
         shape: {
           type: 'polyline',
           rotation: 0,
           points:
-              [
-                [14.75, 37.5],
-                [14.75, 43],
-                [17.5, 40.25],
-                [14.75, 37.5],
-              ]
-        }
+            [
+              [14.75, 37.5],
+              [14.75, 43],
+              [17.5, 40.25],
+              [14.75, 37.5],
+            ],
+        },
       },
       // boxes
       {
@@ -429,576 +429,321 @@ export const stages: StageDef[] = [
     ],
   },
   {
-    title: 'BubblePop',
-    goalY: 83,
-    zoomY: 78,
-    entities: [
-      // walls
-      {
-        type: 'static',
-        position: {x: 0, y: 0},
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-        shape: {
-          type: 'polyline',
-          rotation: 0,
-          points:
-              [
-                // left
-                [16.5, -300],
-                [9.25, -300],
-                [9.25, 0],
-                [9.25, 43],
-                [4.25, 50],
-                [9.25, 53],
-                [9.25, 75],
-                [12, 80],
-                [12, 83],
-              ]
-        }
+    'title': 'BubblePop',
+    'goalY': 83,
+    'zoomY': 78,
+    'entities': [{
+      'type': 'static',
+      'position': { 'x': 10.375, 'y': -108.5 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': {
+        'type': 'polyline',
+        'rotation': 0,
+        'points': [[6.125, -191.5], [-1.125, -191.5], [-1.125, 108.5], [-1.125, 151.5], [-6.125, 158.5], [-1.125, 161.5], [-1.125, 179.5], [-0.9128679656440362, 179.7498817789222], [-1.125, 179.9997635578444], [-1.125, 183.5], [1.625, 188.5], [1.625, 191.5]],
       },
-      {
-        type: 'static',
-        position: {x: 0, y: 0},
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-        shape: {
-          type: 'polyline',
-          rotation: 0,
-          points:
-              [
-                // right
-                [16.5, -300],
-                [16.5, 50],
-                [19.5, 54],
-                [18.5, 56],
-                [19.5, 58],
-                [16.5, 61],
-                [16.5, 75],
-                [13, 80],
-                [13, 83],
-              ]
-        }
+    }, {
+      'type': 'static',
+      'position': { 'x': 16.25, 'y': -108.5 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': {
+        'type': 'polyline',
+        'rotation': 0,
+        'points': [[0.25, -191.5], [0.25, 158.5], [3.25, 162.5], [2.25, 164.5], [3.25, 166.5], [0.25, 169.5], [0.25, 179.5], [0.03786796564403616, 179.75925677892224], [0.25, 179.9997635578444], [0.25, 183.5], [-3.25, 188.5], [-3.25, 191.5]],
       },
-      {
-        type: 'static',
-        position: {x: 0, y: 0},
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-        shape: {
-          type: 'polyline',
-          rotation: 0,
-          points:
-              [
-                [16.5, 52.5],
-                [17.5, 54],
-                [16.5, 56],
-                [17.5, 58],
-                [16.5, 59],
-                [15.5, 56],
-                [16.5, 52.5],
-              ]
-        }
+    }, {
+      'type': 'static',
+      'position': { 'x': 16.5, 'y': 55.75 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': {
+        'type': 'polyline',
+        'rotation': 0,
+        'points': [[0, -3.25], [1, -1.75], [0, 0.25], [1, 2.25], [0, 3.25], [-1, 0.25], [0, -3.25]],
       },
-      {
-        type: 'static',
-        position: {x: 0, y: 0},
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-        shape: {
-          type: 'polyline',
-          rotation: 0,
-          points:
-              [
-                [9.25, 45.5],
-                [6.25, 49.5],
-                [9.25, 51],
-                [14.5, 50.5],
-                [9.25, 45.5],
-              ]
-        }
+    }, {
+      'type': 'static',
+      'position': { 'x': 10.375, 'y': 48.25 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': {
+        'type': 'polyline',
+        'rotation': 0,
+        'points': [[-1.125, -2.75], [-4.125, 1.25], [-1.125, 2.75], [4.125, 2.25], [-1.125, -2.75]],
       },
-      {
-        type: 'static',
-        position: {x: 0, y: 0},
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-        shape: {
-          type: 'polyline',
-          rotation: 0,
-          points:
-              [
-                [9.25, 26],
-                [11.0625, 27.5],
-              ]
-        }
-      },
-      {
-        type: 'static',
-        position: {x: 0, y: 0},
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-        shape: {
-          type: 'polyline',
-          rotation: 0,
-          points:
-              [
-                [16.5, 26],
-                [14.6875, 27.5],
-              ]
-        }
-      },
-      {
-        type: 'static',
-        position: {x: 0, y: 0},
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-        shape: {
-          type: 'polyline',
-          rotation: 0,
-          points:
-              [
-                [11.0625, 30],
-                [12.875, 28.5],
-                [14.6875, 30],
-              ]
-        }
-      },
-      {
-        type: 'static',
-        position: {x: 0, y: 0},
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-        shape: {
-          type: 'polyline',
-          rotation: 0,
-          points:
-              [
-                [9.25, 31],
-                [11.0625, 32.5],
-              ]
-        }
-      },
-      {
-        type: 'static',
-        position: {x: 0, y: 0},
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-        shape: {
-          type: 'polyline',
-          rotation: 0,
-          points:
-              [
-                [16.5, 31],
-                [14.6875, 32.5],
-              ]
-        }
-      },
-      {
-        type: 'static',
-        position: {x: 0, y: 0},
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-        shape: {
-          type: 'polyline',
-          rotation: 0,
-          points:
-              [
-                [11.0625, 35],
-                [12.875, 33.5],
-                [14.6875, 35],
-              ]
-        }
-      },
-      // boxes
-      {
-        position: { x: 9.25, y: 18 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 11.25, y: 18 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 13.25, y: 18 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 15.25, y: 18 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 10.5, y: 19 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 12.5, y: 19 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 14.5, y: 19 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 16.5, y: 19 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 9.25, y: 20 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 11.25, y: 20 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 13.25, y: 20 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 15.25, y: 20 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 10.5, y: 21 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 12.5, y: 21 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 14.5, y: 21 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 16.5, y: 21 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 9.25, y: 22 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 11.25, y: 22 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 13.25, y: 22 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 15.25, y: 22 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 10.5, y: 23 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 12.5, y: 23 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 14.5, y: 23 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 16.5, y: 23 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 0.15,
-          height: 0.15,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 9.4, y: 39 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 3,
-          height: 3,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      {
-        position: { x: 16.5, y: 43 },
-        type: 'static',
-        shape: {
-          type: 'box',
-          width: 3,
-          height: 3,
-          rotation: 0.7853981633974483,
-        },
-        props: { density: 1, angularVelocity: 0, restitution: 0 },
-      },
-      // wheels
-      {
-        position: { x: 10.7, y: 10 },
-        type: 'kinematic',
-        shape: { type: 'box', width: 0.5, height: 0.1, rotation: 0 },
-        props: { density: 1, angularVelocity: 10, restitution: 0 },
-      },
-      {
-        position: { x: 14.7, y: 10 },
-        type: 'kinematic',
-        shape: { type: 'box', width: 0.5, height: 0.1, rotation: 0 },
-        props: { density: 1, angularVelocity: -10, restitution: 0 },
-      },
-      {
-        position: { x: 12.7, y: 10 },
-        type: 'kinematic',
-        shape: { type: 'box', width: 0.5, height: 0.1, rotation: 0 },
-        props: { density: 1, angularVelocity: 10, restitution: 0 },
-      },
-      {
-        position: { x: 10.7, y: 14 },
-        type: 'kinematic',
-        shape: { type: 'box', width: 2, height: 0.1, rotation: 0 },
-        props: { density: 1, angularVelocity: -3, restitution: 0 },
-      },
-      {
-        position: { x: 14.7, y: 14 },
-        type: 'kinematic',
-        shape: { type: 'box', width: 2, height: 0.1, rotation: 0 },
-        props: { density: 1, angularVelocity: 3, restitution: 0 },
-      },
-      {
-        position: { x: 11.2, y: 44 },
-        type: 'kinematic',
-        shape: { type: 'box', width: 0.5, height: 0.1, rotation: 0 },
-        props: { density: 1, angularVelocity: -5, restitution: 0 },
-      },
-      {
-        position: { x: 10.3, y: 75 },
-        type: 'kinematic',
-        shape: { type: 'box', width: 1, height: 0.1, rotation: 0 },
-        props: { density: 1, angularVelocity: 8, restitution: 0 },
-      },
-      {
-        position: { x: 15.2, y: 75 },
-        type: 'kinematic',
-        shape: { type: 'box', width: 1, height: 0.1, rotation: 0 },
-        props: { density: 1, angularVelocity: -8, restitution: 0 },
-      },
-
-      // jumpers
-      {
-        position: { x: 11, y: 65 },
-        type: 'static',
-        shape: { type: 'circle', radius: 0.5 },
-        props: { density: 1, angularVelocity: 0, restitution: 1.5, life: 1 },
-      },
-      {
-        position: { x: 13, y: 65 },
-        type: 'static',
-        shape: { type: 'circle', radius: 0.5 },
-        props: { density: 1, angularVelocity: 0, restitution: 1.5, life: 1 },
-      },
-      {
-        position: { x: 15, y: 65 },
-        type: 'static',
-        shape: { type: 'circle', radius: 0.5 },
-        props: { density: 1, angularVelocity: 0, restitution: 1.5, life: 1 },
-      },
-      {
-        position: { x: 12, y: 67.5 },
-        type: 'static',
-        shape: { type: 'circle', radius: 0.5 },
-        props: { density: 1, angularVelocity: 0, restitution: 1.5, life: 1 },
-      },
-      {
-        position: { x: 14, y: 67.5 },
-        type: 'static',
-        shape: { type: 'circle', radius: 0.5 },
-        props: { density: 1, angularVelocity: 0, restitution: 1.5, life: 1 },
-      },
-      {
-        position: { x: 13, y: 71 },
-        type: 'static',
-        shape: { type: 'circle', radius: 0.8 },
-        props: { density: 1, angularVelocity: 0, restitution: 1.5, life: 1 },
-      },
-      {
-        position: { x: 10.7, y: 77.5 },
-        type: 'static',
-        shape: { type: 'circle', radius: 0.8 },
-        props: { density: 1, angularVelocity: 0, restitution: 1.5, life: 1 },
-      },
-      {
-        position: { x: 14.7, y: 77.5 },
-        type: 'static',
-        shape: { type: 'circle', radius: 0.8 },
-        props: { density: 1, angularVelocity: 0, restitution: 1.5, life: 1 },
-      },
-      {
-        position: { x: 12.625, y: 80 },
-        type: 'static',
-        shape: { type: 'circle', radius: 1.5 },
-        props: { density: 1, angularVelocity: 0, restitution: 1.5, life: 1 },
-      },
-      {
-        position: { x: 12.625, y: 80 },
-        type: 'static',
-        shape: { type: 'circle', radius: 1.2 },
-        props: { density: 1, angularVelocity: 0, restitution: 1.5, life: 1 },
-      },
-    ],
+    }, {
+      'type': 'static',
+      'position': { 'x': 10.15625, 'y': 26.75 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'polyline', 'rotation': 0, 'points': [[-0.90625, -0.75], [0.90625, 0.75]] },
+    }, {
+      'type': 'static',
+      'position': { 'x': 15.59375, 'y': 26.75 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'polyline', 'rotation': 0, 'points': [[0.90625, -0.75], [-0.90625, 0.75]] },
+    }, {
+      'type': 'static',
+      'position': { 'x': 12.875, 'y': 29.25 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'polyline', 'rotation': 0, 'points': [[-1.8125, 0.75], [0, -0.75], [1.8125, 0.75]] },
+    }, {
+      'type': 'static',
+      'position': { 'x': 10.15625, 'y': 31.75 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'polyline', 'rotation': 0, 'points': [[-0.90625, -0.75], [0.90625, 0.75]] },
+    }, {
+      'type': 'static',
+      'position': { 'x': 15.59375, 'y': 31.75 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'polyline', 'rotation': 0, 'points': [[0.90625, -0.75], [-0.90625, 0.75]] },
+    }, {
+      'type': 'static',
+      'position': { 'x': 12.875, 'y': 34.25 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'polyline', 'rotation': 0, 'points': [[-1.8125, 0.75], [0, -0.75], [1.8125, 0.75]] },
+    }, {
+      'type': 'static',
+      'position': { 'x': 9.25, 'y': 18 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 11.25, 'y': 18 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 13.25, 'y': 18 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 15.25, 'y': 18 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 10.5, 'y': 19 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 12.5, 'y': 19 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 14.5, 'y': 19 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 16.5, 'y': 19 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 9.25, 'y': 20 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 11.25, 'y': 20 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 13.25, 'y': 20 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 15.25, 'y': 20 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 10.5, 'y': 21 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 12.5, 'y': 21 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 14.5, 'y': 21 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 16.5, 'y': 21 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 9.25, 'y': 22 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 11.25, 'y': 22 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 13.25, 'y': 22 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 15.25, 'y': 22 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 10.5, 'y': 23 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 12.5, 'y': 23 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 14.5, 'y': 23 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 16.5, 'y': 23 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 0.15, 'height': 0.15 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 9.400000000000002, 'y': 39 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 3, 'height': 3 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 16.5, 'y': 43 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0.7853981633974483, 'width': 3, 'height': 3 },
+    }, {
+      'type': 'kinematic',
+      'position': { 'x': 10.7, 'y': 10 },
+      'props': { 'angularVelocity': 10, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0, 'width': 0.5, 'height': 0.1 },
+    }, {
+      'type': 'kinematic',
+      'position': { 'x': 14.7, 'y': 10 },
+      'props': { 'angularVelocity': -10, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0, 'width': 0.5, 'height': 0.1 },
+    }, {
+      'type': 'kinematic',
+      'position': { 'x': 12.7, 'y': 10 },
+      'props': { 'angularVelocity': 10, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0, 'width': 0.5, 'height': 0.1 },
+    }, {
+      'type': 'kinematic',
+      'position': { 'x': 10.7, 'y': 14 },
+      'props': { 'angularVelocity': -3, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0, 'width': 2, 'height': 0.1 },
+    }, {
+      'type': 'kinematic',
+      'position': { 'x': 14.7, 'y': 14 },
+      'props': { 'angularVelocity': 3, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0, 'width': 2, 'height': 0.1 },
+    }, {
+      'type': 'kinematic',
+      'position': { 'x': 11.2, 'y': 44 },
+      'props': { 'angularVelocity': -5, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0, 'width': 0.5, 'height': 0.1 },
+    }, {
+      'type': 'kinematic',
+      'position': { 'x': 10.3, 'y': 75 },
+      'props': { 'angularVelocity': 8, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0, 'width': 1, 'height': 0.1 },
+    }, {
+      'type': 'kinematic',
+      'position': { 'x': 15.462132034355964, 'y': 75 },
+      'props': { 'angularVelocity': -8, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0, 'width': 1, 'height': 0.1 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 11, 'y': 65 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 1.5, 'life': 1 },
+      'shape': { 'type': 'circle', 'radius': 0.5 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 13, 'y': 65 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 1.5, 'life': 1 },
+      'shape': { 'type': 'circle', 'radius': 0.5 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 15, 'y': 65 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 1.5, 'life': 1 },
+      'shape': { 'type': 'circle', 'radius': 0.5 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 12, 'y': 67.5 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 1.5, 'life': 1 },
+      'shape': { 'type': 'circle', 'radius': 0.5 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 14, 'y': 67.5 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 1.5, 'life': 1 },
+      'shape': { 'type': 'circle', 'radius': 0.5 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 13, 'y': 69.77058813837772 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 1.5, 'life': 1 },
+      'shape': { 'type': 'circle', 'radius': 0.8 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 10.7, 'y': 77.5 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 1.5, 'life': 1 },
+      'shape': { 'type': 'circle', 'radius': 0.8 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 14.7, 'y': 77.5 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 1.5, 'life': 1 },
+      'shape': { 'type': 'circle', 'radius': 0.8 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 12.625, 'y': 80 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 1.5, 'life': 1 },
+      'shape': { 'type': 'circle', 'radius': 1.5 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 12.625, 'y': 80 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 1.5, 'life': 1 },
+      'shape': { 'type': 'circle', 'radius': 1.2 },
+    }, {
+      'type': 'kinematic',
+      'position': { 'x': 12.625, 'y': 56.00000000000001 },
+      'props': { 'angularVelocity': -8, 'density': 1, 'restitution': 0 },
+      'shape': { 'type': 'box', 'rotation': 0, 'width': 1, 'height': 0.1 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 9.947604593262161, 'y': 62.59581680393866 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 1.5, 'life': 1 },
+      'shape': { 'type': 'circle', 'radius': 0.5 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 11.947604593262161, 'y': 62.59581680393866 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 1.5, 'life': 1 },
+      'shape': { 'type': 'circle', 'radius': 0.5 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 13.947604593262161, 'y': 62.59581680393866 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 1.5, 'life': 1 },
+      'shape': { 'type': 'circle', 'radius': 0.5 },
+    }, {
+      'type': 'static',
+      'position': { 'x': 15.828283102570442, 'y': 62.59581680393866 },
+      'props': { 'angularVelocity': 0, 'density': 1, 'restitution': 1.5, 'life': 1 },
+      'shape': { 'type': 'circle', 'radius': 0.5 },
+    }],
   },
   {
     title: 'Pot of greed',
@@ -1007,26 +752,28 @@ export const stages: StageDef[] = [
     entities: [
       {
         type: 'static',
-        position: {x: 0, y: 0},
+        position: { x: 0, y: 0 },
         props: { density: 1, angularVelocity: 0, restitution: 0 },
         shape: {
           type: 'polyline',
           rotation: 0,
-          points:[
+          points: [
             [17, -300],
             [9, -300],
             [9, 8.5],
             [2, 15],
             [6, 61.5],
-          ]}},
+          ],
+        },
+      },
       {
         type: 'static',
-        position: {x: 0, y: 0},
+        position: { x: 0, y: 0 },
         props: { density: 1, angularVelocity: 0, restitution: 0 },
         shape: {
           type: 'polyline',
           rotation: 0,
-          points:[
+          points: [
             [7, 71],
             [9, 101],
             [8, 100.5],
@@ -1034,28 +781,32 @@ export const stages: StageDef[] = [
             [5, 90],
             [4, 70],
             [7, 71],
-          ]}},
+          ],
+        },
+      },
       {
         type: 'static',
-        position: {x: 0, y: 0},
+        position: { x: 0, y: 0 },
         props: { density: 1, angularVelocity: 0, restitution: 0 },
         shape: {
           type: 'polyline',
           rotation: 0,
-          points:[
+          points: [
             [17, -300],
             [17, 8.5],
             [24, 15],
             [20, 61.5],
-          ]}},
+          ],
+        },
+      },
       {
         type: 'static',
-        position: {x: 0, y: 0},
+        position: { x: 0, y: 0 },
         props: { density: 1, angularVelocity: 0, restitution: 0 },
         shape: {
           type: 'polyline',
           rotation: 0,
-          points:[
+          points: [
             [19, 71],
             [17, 101],
             [18, 100.5],
@@ -1063,39 +814,45 @@ export const stages: StageDef[] = [
             [21, 90],
             [22, 70],
             [19, 71],
-          ]}},
+          ],
+        },
+      },
       {
         type: 'static',
-        position: {x: 0, y: 0},
+        position: { x: 0, y: 0 },
         props: { density: 1, angularVelocity: 0, restitution: 0 },
         shape: {
           type: 'polyline',
           rotation: 0,
-          points:[
+          points: [
             [11, 88],
             [12, 90],
             [12, 112],
-          ]}},
+          ],
+        },
+      },
       {
         type: 'static',
-        position: {x: 0, y: 0},
+        position: { x: 0, y: 0 },
         props: { density: 1, angularVelocity: 0, restitution: 0 },
         shape: {
           type: 'polyline',
           rotation: 0,
-          points:[
+          points: [
             [15, 88],
             [14, 90],
             [14, 112],
-          ]}},
+          ],
+        },
+      },
       {
         type: 'static',
-        position: {x: 0, y: 0},
+        position: { x: 0, y: 0 },
         props: { density: 1, angularVelocity: 0, restitution: 0 },
         shape: {
           type: 'polyline',
           rotation: 0,
-          points:[
+          points: [
             [12, 102],
             [11, 103],
             [9, 104],
@@ -1109,15 +866,17 @@ export const stages: StageDef[] = [
             [4, 63],
             [5, 62],
             [6, 61.5],
-          ]}},
+          ],
+        },
+      },
       {
         type: 'static',
-        position: {x: 0, y: 0},
+        position: { x: 0, y: 0 },
         props: { density: 1, angularVelocity: 0, restitution: 0 },
         shape: {
           type: 'polyline',
           rotation: 0,
-          points:[
+          points: [
             [14, 102],
             [15, 103],
             [17, 104],
@@ -1131,7 +890,9 @@ export const stages: StageDef[] = [
             [22, 63],
             [21, 62],
             [20, 61.5],
-          ]}},
+          ],
+        },
+      },
       {
         position: { x: 13, y: 20 },
         type: 'static',
