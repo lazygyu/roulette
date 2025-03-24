@@ -21,7 +21,7 @@
   "scripts": {
     "lint": "eslint --fix src/**/*.ts",
     "dev": "parcel index.html --port 1235",
-    "build": "parcel build index.html --public-url /roulette/"
+    "build": "parcel build index.html --public-url https://roulette-nine-murex.vercel.app/roulette/"
   },
   "dependencies": {
     "box2d-wasm": "^7.0.0"
