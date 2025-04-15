@@ -10,5 +10,8 @@
   "dependencies": {
     "box2d-wasm": "^7.0.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@parcel/transformer-typescript-tsc": "^2.14.4",
+    "typescript": ">=3.0.0"
+  }
 }
