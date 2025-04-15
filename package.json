@@ -8,6 +8,8 @@
     "backend"
   ],
   "devDependencies": {
+    "@babel/core": "^7.26.10",
+    "@babel/plugin-proposal-decorators": "^7.25.9",
     "@parcel/packager-raw-url": "^2.13.3",
     "@parcel/transformer-sass": "^2.13.3",
     "@parcel/transformer-webmanifest": "^2.13.3",
