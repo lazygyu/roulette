@@ -18,15 +18,12 @@ export class EventsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer() server!: Server;
+  private readonly logger = new Logger(EventsGateway.name);
 
-  constructor(private readonly logger: Logger) {}
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   afterInit(server: Server) {
     this.logger.log('WebSocket Gateway Initialized');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   handleConnection(client: Socket, ...args: any[]) {
     this.logger.log(`Client connected: ${client.id}`);
   }
@@ -35,8 +32,6 @@ export class EventsGateway
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
-  // 예시: 'msgToServer' 이벤트를 수신하고 클라이언트에게 'msgToClient' 이벤트를 전송합니다.
-  // 실제 구현에서는 이 부분을 필요에 맞게 수정해야 합니다.
   @SubscribeMessage('msgToServer')
   handleMessage(client: Socket, payload: string): void {
     this.logger.log(`Message from client ${client.id}: ${payload}`);

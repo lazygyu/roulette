@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { EventsGateway } from './events/events.gateway'; // EventsGateway 임포트
-import { PrismaService } from './prisma/prisma.service'; // PrismaService 임포트
+import { PrismaService } from './prisma/prisma.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
-  imports: [UsersModule, AuthModule],
+  imports: [UsersModule, AuthModule, EventsModule],
   controllers: [AppController],
-  providers: [AppService, EventsGateway, PrismaService], // PrismaService를 providers에 추가
+  providers: [AppService, PrismaService],
 })
 export class AppModule {}

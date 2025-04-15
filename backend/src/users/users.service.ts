@@ -1,38 +1,37 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const existingUser = await this.usersRepository.findOne({
-      where: { email: createUserDto.email },
+    const existingUser = await this.prisma.user.findUnique({
+      where: { username: createUserDto.username },
     });
 
     if (existingUser) {
-      throw new ConflictException('이미 존재하는 이메일입니다.');
+      throw new ConflictException('이미 존재하는 사용자 이름입니다.');
     }
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    const user = this.usersRepository.create({
-      ...createUserDto,
-      password: hashedPassword,
+    const user = await this.prisma.user.create({
+      data: {
+        username: createUserDto.username,
+        nickname: createUserDto.nickname,
+        password: hashedPassword,
+      },
     });
 
-    return this.usersRepository.save(user);
+    return user;
   }
 
-  async findByEmail(email: string): Promise<User> {
-    const user = await this.usersRepository.findOne({
-      where: { email },
+  async findByUsername(username: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
     });
 
     if (!user) {
@@ -43,7 +42,7 @@ export class UsersService {
   }
 
   async findById(id: number): Promise<User> {
-    const user = await this.usersRepository.findOne({
+    const user = await this.prisma.user.findUnique({
       where: { id },
     });
 
