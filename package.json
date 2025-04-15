@@ -1,11 +1,17 @@
 {
-  "name": "roulette",
+  "name": "roulette-monorepo",
   "version": "1.0.0",
+  "private": true,
   "license": "MIT",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "devDependencies": {
     "@parcel/packager-raw-url": "^2.13.3",
     "@parcel/transformer-sass": "^2.13.3",
     "@parcel/transformer-webmanifest": "^2.13.3",
+    "concurrently": "^8.2.2",
     "eslint": "^9.15.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
@@ -19,11 +25,18 @@
     "typescript-eslint": "^8.15.0"
   },
   "scripts": {
-    "lint": "eslint --fix src/**/*.ts",
-    "dev": "parcel index.html --port 1235",
-    "build": "parcel build index.html --public-url /roulette/"
+    "dev": "concurrently \"yarn:frontend:dev\" \"yarn:backend:dev\"",
+    "build": "yarn frontend:build && yarn backend:build",
+    "lint": "yarn frontend:lint && yarn backend:lint",
+    "frontend:lint": "cd frontend && eslint --fix src/**/*.ts",
+    "frontend:dev": "cd frontend && parcel index.html --port 1235",
+    "frontend:build": "cd frontend && parcel build index.html --public-url /roulette/",
+    "backend:dev": "cd backend && yarn run start:dev",
+    "backend:build": "cd backend && yarn run build",
+    "backend:lint": "cd backend && yarn run lint"
   },
   "dependencies": {
     "box2d-wasm": "^7.0.0"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
