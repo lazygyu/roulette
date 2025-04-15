@@ -35,10 +35,13 @@
     "frontend:build": "cd frontend && parcel build index.html --public-url /roulette/",
     "backend:dev": "cd backend && yarn run start:dev",
     "backend:build": "cd backend && yarn run build",
-    "backend:lint": "cd backend && yarn run lint"
+    "backend:lint": "cd backend && yarn run lint",
+    "prisma:generate": "cd backend && yarn run prisma generate",
+    "postinstall": "yarn prisma generate"
   },
   "dependencies": {
-    "box2d-wasm": "^7.0.0"
+    "box2d-wasm": "^7.0.0",
+    "caniuse-lite": "^1.0.30001713"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
