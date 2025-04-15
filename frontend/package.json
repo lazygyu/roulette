@@ -1,0 +1,14 @@
+{
+  "name": "frontend",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --fix",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "box2d-wasm": "^7.0.0"
+  },
+  "devDependencies": {}
+}
