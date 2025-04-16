@@ -4,7 +4,6 @@ globs:
 alwaysApply: true
 ---
 
-# Your Package Manager
+# Node.js Package Manager Rule
 
-- Must use yarn instead of npm.
-- Use yarn only.
+- Must use yarn. Using npm will break all projects.
