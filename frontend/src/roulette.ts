@@ -1,7 +1,7 @@
 import { Marble } from './marble';
 import { initialZoom, Skills, zoomThreshold } from './data/constants';
 import { ParticleManager } from './particleManager';
-import { StageDef, stages } from './data/maps';
+import { StageDef } from './types/GameTypes';
 import { parseName } from './utils/utils';
 import { Camera } from './camera';
 import { RouletteRenderer } from './rouletteRenderer';
@@ -13,8 +13,8 @@ import { UIObject } from './UIObject';
 import { RankRenderer } from './rankRenderer';
 import { Minimap } from './minimap';
 import { VideoRecorder } from './utils/videoRecorder';
-import { IPhysics } from './IPhysics';
-import { Box2dPhysics } from './physics-box2d';
+import { GameSocketService } from './services/GameSocketService';
+import { GameState, GameStatus, MarbleState } from './types/GameTypes';
 
 export class Roulette extends EventTarget {
   private _marbles: Marble[] = [];
@@ -48,7 +48,12 @@ export class Roulette extends EventTarget {
   private _autoRecording: boolean = false;
   private _recorder!: VideoRecorder;
 
-  private physics!: IPhysics;
+  // 게임 소켓 서비스
+  private socketService: GameSocketService;
+  // 현재 방 ID
+  private roomId: number = 1; // 기본값, 실제로는 방에 입장할 때 설정
+  // 게임 상태
+  private gameState: GameState | null = null;
 
   private _isReady: boolean = false;
   get isReady() {
@@ -57,12 +62,119 @@ export class Roulette extends EventTarget {
 
   constructor() {
     super();
+    this.socketService = new GameSocketService();
+    this._setupSocketListeners();
+    
     this._renderer.init().then(() => {
       this._init().then(() => {
         this._isReady = true;
         this._update();
       });
     });
+  }
+
+  private _setupSocketListeners() {
+    // 게임 상태 업데이트 리스너
+    this.socketService.onGameStateUpdated((state) => {
+      this.gameState = state;
+      this._updateFromGameState(state);
+    });
+
+    // 게임 종료 리스너
+    this.socketService.onGameFinished((data) => {
+      if (data.winner) {
+        this.dispatchEvent(
+          new CustomEvent('goal', { detail: { winner: data.winner.name } })
+        );
+        this._isRunning = false;
+        this._particleManager.shot(
+          this._renderer.width,
+          this._renderer.height
+        );
+        setTimeout(() => {
+          this._recorder.stop();
+        }, 1000);
+      }
+    });
+
+    // 에러 리스너
+    this.socketService.onError((error) => {
+      console.error('Game socket error:', error);
+    });
+  }
+
+  // 게임 상태에서 필요한 정보를 추출하여 UI를 업데이트
+  private _updateFromGameState(state: GameState) {
+    if (!state) return;
+
+    // 스테이지 업데이트
+    if (state.stage && (!this._stage || this._stage.title !== state.stage.title)) {
+      this._stage = state.stage;
+    }
+
+    // 마블 업데이트
+    this._updateMarbleObjects(state.marbles);
+    
+    // 승자 업데이트
+    this._updateWinners(state.winners);
+    
+    // 게임 상태 업데이트
+    this._isRunning = state.status === GameStatus.RUNNING;
+    this._winnerRank = state.winnerRank;
+    
+    // 승자가 있으면 업데이트
+    if (state.winner) {
+      const winnerMarble = this._marbles.find(m => m.id === state.winner?.id);
+      if (winnerMarble) {
+        this._winner = winnerMarble;
+      }
+    }
+  }
+
+  // 마블 객체들 업데이트
+  private _updateMarbleObjects(marbleStates: MarbleState[]) {
+    // 기존 마블과 새 마블을 ID로 매핑
+    const existingMarblesMap = new Map<number, Marble>();
+    this._marbles.forEach(m => existingMarblesMap.set(m.id, m));
+    
+    const newMarbles: Marble[] = [];
+    
+    marbleStates.forEach(marbleState => {
+      // 기존 마블이 있으면 위치만 업데이트
+      if (existingMarblesMap.has(marbleState.id)) {
+        const marble = existingMarblesMap.get(marbleState.id)!;
+        marble.updateFromState(marbleState);
+        newMarbles.push(marble);
+      } else {
+        // 새 마블 생성
+        const marble = Marble.fromState(marbleState);
+        newMarbles.push(marble);
+      }
+    });
+    
+    // 마블 목록 업데이트
+    this._marbles = newMarbles;
+    
+    // 마블 정렬 (y 좌표 기준 내림차순)
+    if (this._marbles.length > 1) {
+      this._marbles.sort((a, b) => b.y - a.y);
+    }
+    
+    // 총 마블 개수 업데이트
+    this._totalMarbleCount = marbleStates.length + (this.gameState?.winners?.length || 0);
+  }
+
+  // 승자 목록 업데이트
+  private _updateWinners(winnerStates: MarbleState[]) {
+    const newWinners: Marble[] = [];
+    
+    winnerStates.forEach(winnerState => {
+      // 마블 객체로 변환
+      const marble = Marble.fromState(winnerState);
+      newWinners.push(marble);
+    });
+    
+    this._winners = newWinners;
   }
 
   public getZoom() {
@@ -87,21 +199,15 @@ export class Roulette extends EventTarget {
     }
     this._lastTime = currentTime;
 
-    const interval = (this._updateInterval / 1000) * this._timeScale;
-
+    // UI 객체 업데이트
     while (this._elapsed >= this._updateInterval) {
-      this.physics.step(interval);
-      this._updateMarbles(this._updateInterval);
       this._particleManager.update(this._updateInterval);
       this._updateEffects(this._updateInterval);
       this._elapsed -= this._updateInterval;
       this._uiObjects.forEach((obj) => obj.update(this._updateInterval));
     }
 
-    if (this._marbles.length > 1) {
-      this._marbles.sort((a, b) => b.y - a.y);
-    }
-
+    // 카메라 업데이트
     if (this._stage) {
       this._camera.update({
         marbles: this._marbles,
@@ -113,6 +219,7 @@ export class Roulette extends EventTarget {
             : 0,
       });
 
+      // 흔들기 기능은 백엔드에서 처리하지만, UI 표시용으로 상태 업데이트
       if (
         this._isRunning &&
         this._marbles.length > 0 &&
@@ -124,87 +231,9 @@ export class Roulette extends EventTarget {
       }
     }
 
+    // 렌더링
     this._render();
     window.requestAnimationFrame(this._update);
-  }
-
-  private _updateMarbles(deltaTime: number) {
-    if (!this._stage) return;
-
-    for (let i = 0; i < this._marbles.length; i++) {
-      const marble = this._marbles[i];
-      marble.update(deltaTime);
-      if (marble.skill === Skills.Impact) {
-        this._effects.push(new SkillEffect(marble.x, marble.y));
-        this.physics.impact(marble.id);
-      }
-      if (marble.y > this._stage.goalY) {
-        this._winners.push(marble);
-        if (this._isRunning && this._winners.length === this._winnerRank + 1) {
-          this.dispatchEvent(
-            new CustomEvent('goal', { detail: { winner: marble.name } }),
-          );
-          this._winner = marble;
-          this._isRunning = false;
-          this._particleManager.shot(
-            this._renderer.width,
-            this._renderer.height,
-          );
-          setTimeout(() => {
-            this._recorder.stop();
-          }, 1000);
-        } else if (
-          this._isRunning &&
-          this._winnerRank === this._winners.length &&
-          this._winnerRank === this._totalMarbleCount - 1
-        ) {
-          this.dispatchEvent(
-            new CustomEvent('goal', {
-              detail: { winner: this._marbles[i + 1].name },
-            }),
-          );
-          this._winner = this._marbles[i + 1];
-          this._isRunning = false;
-          this._particleManager.shot(
-            this._renderer.width,
-            this._renderer.height,
-          );
-          setTimeout(() => {
-            this._recorder.stop();
-          }, 1000);
-        }
-        setTimeout(() => {
-          this.physics.removeMarble(marble.id);
-        }, 500);
-      }
-    }
-
-    const targetIndex = this._winnerRank - this._winners.length;
-    const topY = this._marbles[targetIndex] ? this._marbles[targetIndex].y : 0;
-    this._goalDist = Math.abs(this._stage.zoomY - topY);
-    this._timeScale = this._calcTimeScale();
-
-    this._marbles = this._marbles.filter(
-      (marble) => marble.y <= this._stage!.goalY,
-    );
-  }
-
-  private _calcTimeScale(): number {
-    if (!this._stage) return 1;
-    const targetIndex = this._winnerRank - this._winners.length;
-    if (
-      this._winners.length < this._winnerRank + 1 &&
-      this._goalDist < zoomThreshold
-    ) {
-      if (
-        this._marbles[targetIndex].y >
-        this._stage.zoomY - zoomThreshold * 1.2 &&
-        (this._marbles[targetIndex - 1] || this._marbles[targetIndex + 1])
-      ) {
-        return Math.max(0.2, this._goalDist / zoomThreshold);
-      }
-    }
-    return 1;
   }
 
   private _updateEffects(deltaTime: number) {
@@ -214,10 +243,19 @@ export class Roulette extends EventTarget {
 
   private _render() {
     if (!this._stage) return;
+    
+    // 마블 상태 업데이트 중 스킬을 사용하는 경우 이펙트 추가
+    this._marbles.forEach(marble => {
+      if (marble.skill === Skills.Impact) {
+        this._effects.push(new SkillEffect(marble.x, marble.y));
+      }
+    });
+    
+    // 렌더링 파라미터 설정
     const renderParams = {
       camera: this._camera,
       stage: this._stage,
-      entities: this.physics.getEntities(),
+      entities: this.gameState?.entities || [],
       marbles: this._marbles,
       winners: this._winners,
       particleManager: this._particleManager,
@@ -226,29 +264,51 @@ export class Roulette extends EventTarget {
       winner: this._winner,
       size: { x: this._renderer.width, y: this._renderer.height },
     };
+    
+    // 렌더링 실행
     this._renderer.render(renderParams, this._uiObjects);
   }
 
   private async _init() {
     this._recorder = new VideoRecorder(this._renderer.canvas);
 
-    this.physics = new Box2dPhysics();
-    await this.physics.init();
-
-    this.addUiObject(new RankRenderer());
-    this.attachEvent();
-    const minimap = new Minimap();
-    minimap.onViewportChange((pos) => {
-      if (pos) {
-        this._camera.setPosition(pos, false);
-        this._camera.lock(true);
-      } else {
-        this._camera.lock(false);
+    // 소켓을 통해 게임 초기화
+    try {
+      // 서버에 연결하여 게임 초기화
+      await this.socketService.initializeGame(this.roomId);
+      
+      // 맵 목록 요청
+      await this.socketService.getMaps();
+      
+      // UI 컴포넌트 초기화
+      this.addUiObject(new RankRenderer());
+      this.attachEvent();
+      
+      const minimap = new Minimap();
+      minimap.onViewportChange((pos) => {
+        if (pos) {
+          this._camera.setPosition(pos, false);
+          this._camera.lock(true);
+        } else {
+          this._camera.lock(false);
+        }
+      });
+      this.addUiObject(minimap);
+      
+      // 게임 상태 요청
+      const gameState = await this.socketService.getGameState(this.roomId);
+      this.gameState = gameState;
+      
+      if (gameState.stage) {
+        this._stage = gameState.stage;
       }
-    });
-    this.addUiObject(minimap);
-    this._stage = stages[0];
-    this._loadMap();
+      
+      // 초기 게임 상태를 기반으로 UI 업데이트
+      this._updateFromGameState(gameState);
+      
+    } catch (error) {
+      console.error('Failed to initialize game:', error);
+    }
   }
 
   private attachEvent() {
@@ -275,35 +335,21 @@ export class Roulette extends EventTarget {
     });
   }
 
-  private _loadMap() {
-    if (!this._stage) {
-      throw new Error('No map has been selected');
-    }
-
-    this.physics.createStage(this._stage);
-  }
-
   public clearMarbles() {
-    this.physics.clearMarbles();
-    this._winner = null;
-    this._winners = [];
-    this._marbles = [];
+    // 백엔드에 마블 제거 요청
+    this.reset();
   }
 
   public start() {
+    // 백엔드에 게임 시작 요청
+    this.socketService.startGame(this.roomId);
+    
+    // 로컬 상태 업데이트
     this._isRunning = true;
-    this._winnerRank = options.winningRank;
-    if (this._winnerRank >= this._marbles.length) {
-      this._winnerRank = this._marbles.length - 1;
-    }
+    
+    // 녹화 기능 적용
     if (this._autoRecording) {
-      this._recorder.start().then(() => {
-        this.physics.start();
-        this._marbles.forEach((marble) => (marble.isActive = true));
-      });
-    } else {
-      this.physics.start();
-      this._marbles.forEach((marble) => (marble.isActive = true));
+      this._recorder.start();
     }
   }
 
@@ -319,6 +365,7 @@ export class Roulette extends EventTarget {
   }
 
   public setWinningRank(rank: number) {
+    // 백엔드에 순위 설정은 현재 구현되어 있지 않으므로 로컬 상태만 업데이트
     this._winnerRank = rank;
   }
 
@@ -327,65 +374,19 @@ export class Roulette extends EventTarget {
   }
 
   public setMarbles(names: string[]) {
-    this.reset();
-    const arr = names.slice();
-
-    let maxWeight = -Infinity;
-    let minWeight = Infinity;
-
-    const members = arr
-      .map((nameString) => {
-        const result = parseName(nameString);
-        if (!result) return null;
-        const { name, weight, count } = result;
-        if (weight > maxWeight) maxWeight = weight;
-        if (weight < minWeight) minWeight = weight;
-        return { name, weight, count };
-      })
-      .filter((member) => !!member);
-
-    const gap = maxWeight - minWeight;
-
-    let totalCount = 0;
-    members.forEach((member) => {
-      if (member) {
-        member.weight = 0.1 + (gap ? (member.weight - minWeight) / gap : 0);
-        totalCount += member.count;
-      }
-    });
-
-    const orders = Array(totalCount)
-      .fill(0)
-      .map((_, i) => i)
-      .sort(() => Math.random() - 0.5);
-    members.forEach((member) => {
-      if (member) {
-        for (let j = 0; j < member.count; j++) {
-          const order = orders.pop() || 0;
-          this._marbles.push(
-            new Marble(
-              this.physics,
-              order,
-              totalCount,
-              member.name,
-              member.weight,
-            ),
-          );
-        }
-      }
-    });
-    this._totalMarbleCount = totalCount;
-  }
-
-  private _clearMap() {
-    this.physics.clear();
-    this._marbles = [];
+    // 백엔드에 마블 설정 요청
+    this.socketService.setMarbles(this.roomId, names);
   }
 
   public reset() {
-    this.clearMarbles();
-    this._clearMap();
-    this._loadMap();
+    // 백엔드에 게임 리셋 요청
+    this.socketService.resetGame(this.roomId);
+    
+    // 로컬 상태 초기화
+    this._winner = null;
+    this._winners = [];
+    this._marbles = [];
+    this._isRunning = false;
     this._goalDist = Infinity;
   }
 
@@ -404,23 +405,25 @@ export class Roulette extends EventTarget {
 
   public shake() {
     if (!this._shakeAvailable) return;
-  }
-
-  public getMaps() {
-    return stages.map((stage, index) => {
-      return {
-        index,
-        title: stage.title,
-      };
+    
+    // 모든 마블을 흔들어버리기
+    this._marbles.forEach(marble => {
+      this.socketService.shakeMarble(this.roomId, marble.id);
     });
   }
 
-  public setMap(index: number) {
-    if (index < 0 || index > stages.length - 1) {
-      throw new Error('Incorrect map number');
+  public async getMaps() {
+    try {
+      const maps = await this.socketService.getMaps();
+      return maps.map((title, index) => ({ index, title }));
+    } catch (error) {
+      console.error('Failed to get maps:', error);
+      return [];
     }
-    const names = this._marbles.map((marble) => marble.name);
-    this._stage = stages[index];
-    this.setMarbles(names);
+  }
+
+  public setMap(index: number) {
+    // 백엔드에 맵 설정 요청
+    this.socketService.setMap(this.roomId, index);
   }
 }
