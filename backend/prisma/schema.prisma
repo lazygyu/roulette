@@ -27,6 +27,7 @@ model Room {
   password  String?  // 비밀번호는 선택 사항
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime? // 소프트 삭제를 위한 필드 추가
   manager   User     @relation(fields: [managerId], references: [id]) // User 모델과의 관계 설정
 
   @@index([managerId]) // managerId에 인덱스 추가
