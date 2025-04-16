@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Marble } from './models/marble.model';
-import { MatterPhysics } from './models/matter-physics.model';
+import { Box2dPhysics } from './models/box2d-physics.model';
 import { stages } from './data/maps';
 import { Skills } from './types/marble.type';
 import { GameState, GameStatus } from './types/game-state.type';
@@ -26,7 +26,7 @@ export class GameService {
       return this.gameStates.get(roomId)!;
     }
     
-    const physicsEngine = new MatterPhysics();
+    const physicsEngine = new Box2dPhysics();
     await physicsEngine.init();
     this.physics.set(roomId, physicsEngine);
     
@@ -69,22 +69,7 @@ export class GameService {
   
   // 게임 상태 가져오기
   getGameState(roomId: number): GameState | null {
-    const gameState = this.gameStates.get(roomId) || null;
-    if (!gameState) return null;
-    
-    // 직렬화가 가능한 깔끔한 상태 객체 반환
-    return {
-      roomId: gameState.roomId,
-      status: gameState.status,
-      marbles: gameState.marbles.map(marble => ({...marble})), // 깊은 복사로 참조 끊기
-      winners: gameState.winners.map(winner => ({...winner})), // 깊은 복사로 참조 끊기
-      entities: gameState.entities.map(entity => ({...entity})), // 깊은 복사로 참조 끊기
-      stage: gameState.stage ? {...gameState.stage} : null, // 깊은 복사로 참조 끊기
-      winnerRank: gameState.winnerRank,
-      lastUpdateTime: gameState.lastUpdateTime,
-      winner: gameState.winner ? {...gameState.winner} : null, // 깊은 복사로 참조 끊기
-      isReady: gameState.isReady
-    };
+    return this.gameStates.get(roomId) || null;
   }
   
   // 맵 설정

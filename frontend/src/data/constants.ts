@@ -5,8 +5,8 @@ export const zoomThreshold = 5;
 export const STUCK_DELAY = 5000;
 
 export enum Skills {
-  None = 'none',
-  Impact = 'impact',
+  None,
+  Impact,
 }
 
 export const DefaultEntityColor = {

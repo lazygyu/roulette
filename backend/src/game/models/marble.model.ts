@@ -114,17 +114,10 @@ export class Marble {
 
   // 직렬화를 위한 상태 객체 반환
   getState() {
-    // position 객체를 직접 가져오는 대신 각 속성을 직접 접근
-    const pos = this.physics.getMarblePosition(this.id);
-    
     return {
       id: this.id,
       name: this.name,
-      position: {
-        x: pos.x,
-        y: pos.y,
-        angle: pos.angle
-      },
+      position: this.position,
       color: this.color,
       hue: this.hue,
       isActive: this.isActive,

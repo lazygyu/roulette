@@ -3,7 +3,7 @@ import { rad } from './utils/utils';
 import options from './options';
 import { VectorLike } from './types/VectorLike';
 import { Vector } from './utils/Vector';
-import { MarbleState } from './types/GameTypes';
+import { IPhysics } from './IPhysics';
 
 export class Marble {
   type = 'marble' as const;
@@ -22,97 +22,98 @@ export class Marble {
   private _stuckTime = 0;
   private lastPosition: VectorLike = { x: 0, y: 0 };
 
+  private physics: IPhysics;
+
   id: number;
 
-  // 마블의 위치 정보
-  private _position: { x: number; y: number; angle: number } = { x: 0, y: 0, angle: 0 };
-
   get position() {
-    return this._position;
-  }
-
-  set position(pos: { x: number; y: number; angle: number }) {
-    this._position = pos;
+    return this.physics.getMarblePosition(this.id) || { x: 0, y: 0, angle: 0 };
   }
 
   get x() {
-    return this._position.x;
+    return this.position.x;
   }
 
   set x(v: number) {
-    this._position.x = v;
+    this.position.x = v;
   }
 
   get y() {
-    return this._position.y;
+    return this.position.y;
   }
 
   set y(v: number) {
-    this._position.y = v;
+    this.position.y = v;
   }
 
   get angle() {
-    return this._position.angle;
+    return this.position.angle;
   }
 
-  // 서버 상태로부터 마블 객체 생성
-  static fromState(state: MarbleState): Marble {
-    const marble = new Marble(state.id, state.name, state.weight, state.hue);
-    marble.position = state.position;
-    marble.isActive = state.isActive;
-    marble.skill = state.skill;
-    marble.color = state.color;
-    return marble;
+  constructor(
+    physics: IPhysics,
+    order: number,
+    max: number,
+    name?: string,
+    weight: number = 1,
+  ) {
+    this.name = name || `M${order}`;
+    this.weight = weight;
+    this.physics = physics;
+
+    this._maxCoolTime = 1000 + (1 - this.weight) * 4000;
+    this._coolTime = this._maxCoolTime * Math.random();
+    this._skillRate = 0.2 * this.weight;
+
+    const maxLine = Math.ceil(max / 10);
+    const line = Math.floor(order / 10);
+    const lineDelta = -Math.max(0, Math.ceil(maxLine - 5));
+    this.hue = (360 / max) * order;
+    this.color = `hsl(${this.hue} 100% 70%)`;
+    this.id = order;
+
+    physics.createMarble(
+      order,
+      10.25 + (order % 10) * 0.6,
+      maxLine - line + lineDelta,
+    );
   }
 
-  // 서버 상태를 기반으로 마블 상태 업데이트
-  updateFromState(state: MarbleState): void {
-    this.position = state.position;
-    this.isActive = state.isActive;
-    this.skill = state.skill;
-  }
-
-  constructor(idOrState: number | MarbleState, name: string = '', weight: number = 1, hue: number = 0) {
-    if (typeof idOrState === 'number') {
-      // 기본 생성자 방식
-      this.id = idOrState;
-      this.name = name || `M${idOrState}`;
-      this.weight = weight;
-      this._maxCoolTime = 1000 + (1 - this.weight) * 4000;
-      this._coolTime = this._maxCoolTime * Math.random();
-      this._skillRate = 0.2 * this.weight;
-      this.hue = hue;
-      this.color = `hsl(${this.hue} 100% 70%)`;
-    } else {
-      // MarbleState로부터 생성
-      this.id = idOrState.id;
-      this.name = idOrState.name;
-      this.weight = idOrState.weight;
-      this.hue = idOrState.hue;
-      this.color = idOrState.color;
-      this._position = idOrState.position;
-      this.isActive = idOrState.isActive;
-      this.skill = idOrState.skill;
-      this._maxCoolTime = 1000 + (1 - this.weight) * 4000;
-      this._coolTime = this._maxCoolTime * Math.random();
-      this._skillRate = 0.2 * this.weight;
-    }
-  }
-
-  // 움직임 감지 및 멈춤 판정 업데이트
   update(deltaTime: number) {
-    // 이전 위치와 현재 위치 간의 차이로 멈춤 여부 판단
-    if (this.isActive && Vector.lenSq(Vector.sub(this.lastPosition, this.position)) < 0.00001) {
+    if (
+      this.isActive &&
+      Vector.lenSq(Vector.sub(this.lastPosition, this.position)) < 0.00001
+    ) {
       this._stuckTime += deltaTime;
+
+      if (this._stuckTime > STUCK_DELAY) {
+        this.physics.shakeMarble(this.id);
+        this._stuckTime = 0;
+      }
     } else {
       this._stuckTime = 0;
     }
-
     this.lastPosition = { x: this.position.x, y: this.position.y };
 
-    // 이펙트 시간 감소
+    this.skill = Skills.None;
     if (this.impact) {
       this.impact = Math.max(0, this.impact - deltaTime);
+    }
+    if (!this.isActive) return;
+    if (options.useSkills) {
+      this._updateSkillInformation(deltaTime);
+    }
+  }
+
+  private _updateSkillInformation(deltaTime: number) {
+    if (this._coolTime > 0) {
+      this._coolTime -= deltaTime;
+    }
+
+    if (this._coolTime <= 0) {
+      this.skill =
+        Math.random() < this._skillRate ? Skills.Impact : Skills.None;
+      this._coolTime = this._maxCoolTime;
     }
   }
 
@@ -139,11 +140,22 @@ export class Marble {
 
   private _drawMarbleBody(ctx: CanvasRenderingContext2D, isMinimap: boolean) {
     ctx.beginPath();
-    ctx.arc(this.x, this.y, isMinimap ? this.size : this.size / 2, 0, Math.PI * 2);
+    ctx.arc(
+      this.x,
+      this.y,
+      isMinimap ? this.size : this.size / 2,
+      0,
+      Math.PI * 2,
+    );
     ctx.fill();
   }
 
-  private _renderNormal(ctx: CanvasRenderingContext2D, zoom: number, outline: boolean, skin?: CanvasImageSource) {
+  private _renderNormal(
+    ctx: CanvasRenderingContext2D,
+    zoom: number,
+    outline: boolean,
+    skin?: CanvasImageSource,
+  ) {
     ctx.fillStyle = `hsl(${this.hue} 100% ${70 + 25 * Math.min(1, this.impact / 500)}%`;
     if (this._stuckTime > 0) {
       ctx.fillStyle = `hsl(${this.hue} 100% ${70 + 25 * Math.min(1, this._stuckTime / STUCK_DELAY)}%`;
@@ -204,7 +216,13 @@ export class Marble {
     ctx.strokeStyle = 'red';
     ctx.lineWidth = 1 / zoom;
     ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size / 2 + 2 / zoom, rad(270), rad(270 + (360 * this._coolTime) / this._maxCoolTime));
+    ctx.arc(
+      this.x,
+      this.y,
+      this.size / 2 + 2 / zoom,
+      rad(270),
+      rad(270 + (360 * this._coolTime) / this._maxCoolTime),
+    );
     ctx.stroke();
   }
 
@@ -212,7 +230,13 @@ export class Marble {
     ctx.strokeStyle = 'green';
     ctx.lineWidth = 1 / zoom;
     ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size / 2 + 3 / zoom, rad(270), rad(270 + 360 * (1 - this._stuckTime / STUCK_DELAY)));
+    ctx.arc(
+      this.x,
+      this.y,
+      this.size / 2 + 3 / zoom,
+      rad(270),
+      rad(270 + 360 * (1 - this._stuckTime / STUCK_DELAY)),
+    );
     ctx.stroke();
   }
 }
