@@ -9,21 +9,16 @@ export class RoomsController {
 
   @Post()
   async create(@Body() createRoomDto: CreateRoomDto): Promise<Room> {
-    return this.roomsService.create(createRoomDto);
+    return this.roomsService.createRoom(createRoomDto);
   }
 
   @Delete(':id')
   async delete(@Param('id', ParseIntPipe) id: number): Promise<Room> {
-    return this.roomsService.delete(id);
-  }
-
-  @Get()
-  async findAll(): Promise<Room[]> {
-    return this.roomsService.findAll();
+    return this.roomsService.deleteRoom(id);
   }
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Room> {
-    return this.roomsService.findOne(id);
+    return this.roomsService.getRoom(id);
   }
-} 
+}

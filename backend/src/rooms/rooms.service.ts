@@ -7,7 +7,7 @@ import { Room } from '@prisma/client';
 export class RoomsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createRoomDto: CreateRoomDto): Promise<Room> {
+  async createRoom(createRoomDto: CreateRoomDto): Promise<Room> {
     const room = await this.prisma.room.create({
       data: {
         name: createRoomDto.name,
@@ -19,7 +19,7 @@ export class RoomsService {
     return room;
   }
 
-  async delete(id: number): Promise<Room> {
+  async deleteRoom(id: number): Promise<Room> {
     // 방이 존재하는지 확인
     const room = await this.prisma.room.findUnique({
       where: { id },
@@ -36,19 +36,11 @@ export class RoomsService {
     });
   }
 
-  async findAll(): Promise<Room[]> {
-    // 삭제되지 않은 방만 조회
-    return this.prisma.room.findMany({
-      where: { deletedAt: null },
-      include: { manager: true },
-    });
-  }
-
-  async findOne(id: number): Promise<Room> {
-    const room = await this.prisma.room.findFirst({
-      where: { 
+  async getRoom(id: number): Promise<Room> {
+    const room = await this.prisma.room.findUnique({
+      where: {
         id,
-        deletedAt: null 
+        deletedAt: null,
       },
       include: { manager: true },
     });
@@ -59,4 +51,14 @@ export class RoomsService {
 
     return room;
   }
-} 
+
+  async isManager(roomId: number, userId: number): Promise<boolean> {
+    const room = await this.getRoom(roomId);
+
+    if (!room) {
+      throw new NotFoundException('해당 방을 찾을 수 없습니다.');
+    }
+
+    return room.managerId === userId;
+  }
+}
