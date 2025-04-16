@@ -1,7 +1,11 @@
 import { IPhysics } from '../IPhysics';
 import { StageDef } from '../data/maps';
-import Box2DFactory from 'box2d-wasm';
 import { MapEntity, MapEntityState } from '../types/MapEntity.type';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// 올바른 Box2D 모듈 경로로 변경
+const Box2DFactory = require('box2d-wasm/dist/umd/Box2D.js');
 
 export class Box2dPhysics implements IPhysics {
   private Box2D!: any; // typeof Box2D & EmscriptenModule;
@@ -14,10 +18,39 @@ export class Box2dPhysics implements IPhysics {
   private deleteCandidates: any[] = []; // Box2D.b2Body[]
 
   async init(): Promise<void> {
-    this.Box2D = await Box2DFactory();
-    this.gravity = new this.Box2D.b2Vec2(0, 10);
-    this.world = new this.Box2D.b2World(this.gravity);
-    console.log('box2d ready');
+    try {
+      // WASM 파일 직접 로드
+      const wasmBinary = await this.loadWasmBinary();
+      this.Box2D = await Box2DFactory({ wasmBinary });
+      
+      this.gravity = new this.Box2D.b2Vec2(0, 10);
+      this.world = new this.Box2D.b2World(this.gravity);
+      console.log('box2d ready');
+    } catch (error) {
+      console.error('Box2D 초기화 실패:', error);
+      throw error;
+    }
+  }
+
+  // WebAssembly 바이너리 파일 경로 수정
+  private async loadWasmBinary(): Promise<ArrayBuffer> {
+    return new Promise((resolve, reject) => {
+      try {
+        // 올바른 wasm 파일 경로 지정
+        const wasmPath = path.resolve(__dirname, '../../../../node_modules/box2d-wasm/dist/umd/Box2D.wasm');
+        console.log('Loading WASM from:', wasmPath);
+        
+        // 파일 존재 여부 확인
+        if (!fs.existsSync(wasmPath)) {
+          throw new Error(`WASM 파일을 찾을 수 없습니다: ${wasmPath}`);
+        }
+        
+        const buffer = fs.readFileSync(wasmPath);
+        resolve(buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength));
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   clear(): void {
