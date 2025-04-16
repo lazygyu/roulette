@@ -1,4 +1,5 @@
-import { Marble } from './marble';
+// import { Marble } from './marble'; // No longer using Marble class instance
+import { MarbleState } from './types/MarbleState.type'; // Use MarbleState type instead
 import { StageDef } from './data/maps';
 import { initialZoom, zoomThreshold } from './data/constants';
 import { VectorLike } from './types/VectorLike';
@@ -51,9 +52,9 @@ export class Camera {
     needToZoom,
     targetIndex,
   }: {
-    marbles: Marble[];
+    marbles: MarbleState[]; // Changed type to MarbleState[]
     stage: StageDef;
-    needToZoom: boolean;
+    needToZoom: boolean; // This logic might be removed or changed in roulette.ts
     targetIndex: number;
   }) {
     // set target position
@@ -70,18 +71,19 @@ export class Camera {
   }
 
   private _calcTargetPositionAndZoom(
-    marbles: Marble[],
+    marbles: MarbleState[], // Changed type to MarbleState[]
     stage: StageDef,
-    needToZoom: boolean,
+    needToZoom: boolean, // This logic might be removed or changed in roulette.ts
     targetIndex: number
   ) {
     if (marbles.length > 0) {
       const targetMarble = marbles[targetIndex]
         ? marbles[targetIndex]
         : marbles[0];
-      this.setPosition(targetMarble.position);
+      // Access x, y directly from MarbleState
+      this.setPosition({ x: targetMarble.x, y: targetMarble.y });
       if (needToZoom) {
-        const goalDist = Math.abs(stage.zoomY - this._position.y);
+        const goalDist = Math.abs(stage.zoomY - this._position.y); // _position is internal camera state
         this.zoom = Math.max(1, (1 - goalDist / zoomThreshold) * 4);
       } else {
         this.zoom = 1;

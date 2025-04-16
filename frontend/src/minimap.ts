@@ -4,7 +4,8 @@ import { UIObject } from './UIObject';
 import { bound } from './utils/bound.decorator';
 import { Rect } from './types/rect.type';
 import { VectorLike } from './types/VectorLike';
-import { MapEntityState } from './types/MapEntity.type';
+import { MapEntityState } from './types/MapEntityState.type'; // Corrected import path if needed
+import { MarbleState } from './types/MarbleState.type'; // Import MarbleState
 
 export class Minimap implements UIObject {
   private ctx!: CanvasRenderingContext2D;
@@ -143,9 +144,24 @@ export class Minimap implements UIObject {
   }
 
   private drawMarbles(params: RenderParameters) {
-    const { marbles } = params;
-    marbles.forEach((marble) => {
-      marble.render(this.ctx, 1, false, true);
+    const { marbles } = params; // marbles is now MarbleState[]
+    this.ctx.save();
+    marbles.forEach((marbleState: MarbleState) => { // Use MarbleState type
+      // Draw marble based on state for minimap
+      this.ctx.beginPath();
+      // Use a smaller radius for the minimap representation
+      const minimapRadius = Math.max(0.5, marbleState.radius * 0.5); // Adjust multiplier as needed
+      this.ctx.arc(marbleState.x, marbleState.y, minimapRadius, 0, Math.PI * 2, false);
+      this.ctx.fillStyle = marbleState.color;
+      this.ctx.fill();
+      // Optionally add a border or different style for minimap
+      // this.ctx.strokeStyle = 'white';
+      // this.ctx.lineWidth = 0.1;
+      // this.ctx.stroke();
+
+      // Original call removed:
+      // marble.render(this.ctx, 1, false, true);
     });
+    this.ctx.restore();
   }
 }

@@ -1,7 +1,8 @@
 import {canvasHeight, canvasWidth, DefaultBloomColor, DefaultEntityColor, initialZoom} from './data/constants';
 import { Camera } from './camera';
 import { StageDef } from './data/maps';
-import { Marble } from './marble';
+// import { Marble } from './marble'; // No longer using Marble class instance
+import { MarbleState } from './types/MarbleState.type'; // Use MarbleState instead
 import { ParticleManager } from './particleManager';
 import { GameObject } from './gameObject';
 import { UIObject } from './UIObject';
@@ -12,12 +13,12 @@ export type RenderParameters = {
   camera: Camera;
   stage: StageDef;
   entities: MapEntityState[];
-  marbles: Marble[];
-  winners: Marble[];
+  marbles: MarbleState[]; // Changed type
+  winners: MarbleState[]; // Changed type
   particleManager: ParticleManager;
   effects: GameObject[];
   winnerRank: number;
-  winner: Marble | null;
+  winner: MarbleState | null; // Changed type
   size: VectorLike;
 };
 
@@ -113,8 +114,10 @@ export class RouletteRenderer {
   }
 
   private renderEntities(entities: MapEntityState[]) {
+    console.log(`renderEntities called with ${entities.length} entities.`); // Uncommented log
     this.ctx.save();
     entities.forEach((entity) => {
+      console.log(`Rendering entity:`, entity); // Uncommented log
       this.ctx.save();
       this.ctx.translate(entity.x, entity.y);
       this.ctx.rotate(entity.angle);
@@ -159,27 +162,74 @@ export class RouletteRenderer {
     );
   }
 
+  // Updated to render based on MarbleState
   private renderMarbles({
                           marbles,
                           camera,
                           winnerRank,
                           winners,
                         }: RenderParameters) {
-    const winnerIndex = winnerRank - winners.length;
+    const winnerIndex = winnerRank - winners.length; // This index might not be reliable if marbles array is filtered differently on server/client
+    console.log(`renderMarbles called with ${marbles.length} marbles.`); // Uncommented log
 
-    marbles.forEach((marble, i) => {
-      marble.render(
-        this.ctx,
-        camera.zoom * initialZoom,
-        i === winnerIndex,
-        false,
-        this._images[marble.name] || undefined,
-      );
+    marbles.forEach((marbleState, i) => {
+      console.log(`Rendering marble ${i}:`, marbleState); // Uncommented log
+      // Draw marble based on state
+      this.ctx.save();
+      this.ctx.translate(marbleState.x, marbleState.y);
+      // TODO: Add rotation if available in MarbleState and needed
+      // this.ctx.rotate(marbleState.angle || 0);
+
+      // Basic circle rendering
+      this.ctx.beginPath();
+      this.ctx.arc(0, 0, marbleState.radius, 0, Math.PI * 2, false);
+      this.ctx.fillStyle = marbleState.color;
+      this.ctx.fill();
+
+      // Add stroke or effects based on state (e.g., winner highlight)
+      if (i === winnerIndex) { // Highlight potential winner? Check if this logic is still valid
+          this.ctx.strokeStyle = 'yellow'; // Example highlight
+          this.ctx.lineWidth = 0.1; // Adjust line width based on zoom?
+          this.ctx.stroke();
+      }
+
+      // Render name (simplified)
+      this.ctx.fillStyle = 'white';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      const fontSize = Math.max(0.3, marbleState.radius * 0.5); // Adjust font size based on radius
+      this.ctx.font = `${fontSize}pt sans-serif`;
+      this.ctx.fillText(marbleState.name, 0, 0);
+
+      // Render image if available (using name as key)
+      const img = this._images[marbleState.name];
+      if (img) {
+          try {
+              const imgSize = marbleState.radius * 1.6; // Adjust image size relative to radius
+              this.ctx.drawImage(img, -imgSize / 2, -imgSize / 2, imgSize, imgSize);
+          } catch (e) {
+              console.error(`Error drawing image for ${marbleState.name}:`, e);
+              // Fallback or do nothing if image fails to draw
+          }
+      }
+
+
+      this.ctx.restore();
+
+      // Original call (removed):
+      // marble.render(
+      //   this.ctx,
+      //   camera.zoom * initialZoom,
+      //   i === winnerIndex,
+      //   false,
+      //   this._images[marble.name] || undefined,
+      // );
     });
   }
 
+  // Updated to render based on MarbleState
   private renderWinner({ winner }: RenderParameters) {
-    if (!winner) return;
+    if (!winner) return; // Winner is now MarbleState | null
     this.ctx.save();
     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     this.ctx.fillRect(
