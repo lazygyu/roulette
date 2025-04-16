@@ -7,12 +7,12 @@ import { Room } from '@prisma/client';
 export class RoomsService {
   constructor(private prisma: PrismaService) {}
 
-  async createRoom(createRoomDto: CreateRoomDto): Promise<Room> {
+  async createRoom(createRoomDto: CreateRoomDto, managerId: number): Promise<Room> {
     const room = await this.prisma.room.create({
       data: {
         name: createRoomDto.name,
         password: createRoomDto.password,
-        managerId: createRoomDto.managerId,
+        managerId,
       },
     });
 

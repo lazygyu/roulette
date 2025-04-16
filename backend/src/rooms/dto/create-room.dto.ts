@@ -7,7 +7,4 @@ export class CreateRoomDto {
   @IsOptional()
   @IsString()
   password?: string;
-
-  @IsInt()
-  managerId!: number;
-} 
+}
