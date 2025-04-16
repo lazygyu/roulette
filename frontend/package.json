@@ -3,19 +3,12 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "build": "parcel build index.html",
-    "dev": "parcel index.html --port 1235",
+    "build": "tsc",
     "lint": "eslint . --fix",
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@types/react": "^19.1.2",
-    "@types/react-dom": "^19.1.2",
-    "box2d-wasm": "^7.0.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-router-dom": "^6.21.3",
-    "socket.io-client": "^4.8.1"
+    "box2d-wasm": "^7.0.0"
   },
   "devDependencies": {
     "@parcel/transformer-typescript-tsc": "^2.14.4"
