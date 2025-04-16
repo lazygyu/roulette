@@ -5,40 +5,81 @@ import {
   WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  MessageBody,
+  ConnectedSocket,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Socket, Server } from 'socket.io';
+import { EventsService } from './events.service';
 
+@Injectable()
 @WebSocketGateway({
   cors: {
     origin: '*', // 실제 프로덕션 환경에서는 특정 출처만 허용하도록 변경해야 합니다.
   },
+  namespace: 'rooms', // 네임스페이스 추가
 })
 export class EventsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer() server!: Server;
-  private readonly logger = new Logger(EventsGateway.name);
+
+  constructor(private eventsService: EventsService) {}
 
   afterInit(server: Server) {
-    this.logger.log('WebSocket Gateway Initialized');
+    // 초기화 시 필요한 설정이 있으면 여기에 추가
   }
 
   handleConnection(client: Socket, ...args: any[]) {
-    this.logger.log(`Client connected: ${client.id}`);
+    // 클라이언트 연결 시 필요한 처리가 있으면 여기에 추가
   }
 
-  handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected: ${client.id}`);
+  async handleDisconnect(client: Socket) {
+    await this.eventsService.handleDisconnect(client, this.server);
   }
 
-  @SubscribeMessage('msgToServer')
-  handleMessage(client: Socket, payload: string): void {
-    this.logger.log(`Message from client ${client.id}: ${payload}`);
-    // 모든 클라이언트에게 메시지 브로드캐스트
-    // this.server.emit('msgToClient', payload);
+  @SubscribeMessage('joinRoom')
+  async handleJoinRoom(
+    @ConnectedSocket() client: Socket, 
+    @MessageBody() payload: { roomId: number, username?: string }
+  ): Promise<void> {
+    const { roomId, username } = payload;
+    await this.eventsService.handleJoinRoom(client, this.server, roomId, username);
+  }
 
-    // 메시지를 보낸 클라이언트에게만 응답
-    client.emit('msgToClient', `Server received your message: ${payload}`);
+  @SubscribeMessage('leaveRoom')
+  async handleLeaveRoom(
+    @ConnectedSocket() client: Socket, 
+    @MessageBody() payload: { roomId: number }
+  ): Promise<void> {
+    try {
+      const { roomId } = payload;
+      
+      // 사용자가 해당 방에 있는지 확인
+      if (client.data.roomId !== roomId) {
+        client.emit('error', { message: '해당 방에 입장한 상태가 아닙니다.' });
+        return;
+      }
+      
+      await this.eventsService.handleLeaveRoom(client, this.server, roomId);
+      
+      // 사용자 데이터에서 방 정보 제거
+      delete client.data.roomId;
+      delete client.data.roomName;
+      
+      // 방 퇴장 확인 메시지 전송
+      client.emit('leftRoom', { roomId });
+    } catch (error) {
+      client.emit('error', { message: '방 퇴장 중 오류가 발생했습니다.' });
+    }
+  }
+
+  @SubscribeMessage('sendMessage')
+  handleSendMessage(
+    @ConnectedSocket() client: Socket, 
+    @MessageBody() payload: { roomId: number, message: string }
+  ): void {
+    const { roomId, message } = payload;
+    this.eventsService.handleSendMessage(client, this.server, roomId, message);
   }
 }
