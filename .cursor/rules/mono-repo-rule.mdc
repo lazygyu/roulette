@@ -1,0 +1,12 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Mono Repository Structure informations
+
+- This project is mono repository structure.
+- It has root([package.json](mdc:package.json)), backend([package.json](mdc:backend/package.json)) and frontend([package.json](mdc:frontend/package.json)).
+  - You should consider where to edit.
+  - You should think about running environments.
