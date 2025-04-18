@@ -13,6 +13,7 @@ export const Translations = {
     'Wheel of fortune': 'Wheel of fortune',
     BubblePop: 'BubblePop',
     'Pot of greed': 'Pot of greed',
+    'Yoru ni Kakeru': 'Into The Night',
     'Shake!': 'Shake!',
     'Input names separated by commas or line feed here':
       'Input names separated by commas or line feed here',
@@ -33,6 +34,7 @@ export const Translations = {
     'Wheel of fortune': '운명의 수레바퀴',
     BubblePop: '버블팝',
     'Pot of greed': '욕망의 항아리',
+    'Yoru ni Kakeru': '밤을 달리다',
     'Shake!': '흔들기!',
     'Input names separated by commas or line feed here':
       '이름들을 쉼표나 엔터로 구분해서 넣어주세요',
