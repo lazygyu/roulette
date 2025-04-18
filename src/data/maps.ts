@@ -1065,13 +1065,11 @@ export const stages: StageDef[] = [
     zoomY: 222.2,
     entities: [
       {
-        position: { x: 0, y: 0 },
+        position: { x: 2, y: 0 },
         shape: {
-          type: 'polyline',
-          points: [
-            [3, -400],
-            [3, 400],
-          ],
+          type: 'box',
+          width: 1,
+          height: 800,
           rotation: 0,
         },
         type: 'static',
@@ -1079,15 +1077,13 @@ export const stages: StageDef[] = [
       },
       {
         type: 'static',
-        position: { x: 0, y: 0 },
+        position: { x: 21, y: 0 },
         props: { density: 500, angularVelocity: 0, restitution: 0 },
         shape: {
-          type: 'polyline',
+          type: 'box',
           rotation: 0,
-          points: [
-            [20, -400],
-            [20, 400],
-          ],
+          width: 1,
+          height: 800,
         },
       },
       {
@@ -2835,6 +2831,6 @@ export const stages: StageDef[] = [
         shape: { type: 'box', width: 8.0, height: 0.1, rotation: 0 },
         props: { density: 1, angularVelocity: 7.7, restitution: 0 },
       },
-    ]
+    ],
   },
 ];
