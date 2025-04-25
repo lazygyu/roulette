@@ -29,13 +29,17 @@ class SocketService {
       return;
     }
 
-    // TODO: Replace with actual backend URL if needed
-    const socketUrl = 'http://localhost:3000/game'; // Assuming backend runs on port 3000 and uses /game namespace
+    // 현재 호스트 기반으로 백엔드 URL 동적 생성
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.hostname;
+    const port = process.env.NODE_ENV === 'production' ? window.location.port : '3000';
+    const socketUrl = `${protocol}//${host}:${port}/game`;
+    
     console.log(`Connecting to socket server at ${socketUrl}...`);
 
     this.socket = io(socketUrl, {
-      // Add any necessary options here
-      // e.g., transports: ['websocket']
+      // 필요한 경우 옵션 추가
+      // transports: ['websocket']
     });
 
     this.socket.on('connect', () => {

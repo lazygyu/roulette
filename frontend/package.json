@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "build": "tsc",
+    "build": "parcel build index.html",
+    "start": "parcel serve index.html",
     "lint": "eslint . --fix",
     "format": "prettier --write ."
   },
@@ -12,6 +13,7 @@
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
-    "@parcel/transformer-typescript-tsc": "^2.14.4"
+    "@parcel/transformer-typescript-tsc": "^2.14.4",
+    "parcel": "^2.14.4"
   }
 }

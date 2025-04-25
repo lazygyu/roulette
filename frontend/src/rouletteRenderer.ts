@@ -1,4 +1,4 @@
-import {canvasHeight, canvasWidth, DefaultBloomColor, DefaultEntityColor, initialZoom} from './data/constants';
+import { canvasHeight, canvasWidth, DefaultBloomColor, DefaultEntityColor, initialZoom } from './data/constants';
 import { Camera } from './camera';
 import { StageDef } from './data/maps';
 // import { Marble } from './marble'; // No longer using Marble class instance
@@ -29,8 +29,7 @@ export class RouletteRenderer {
 
   private _images: { [key: string]: HTMLImageElement } = {};
 
-  constructor() {
-  }
+  constructor() {}
 
   get width() {
     return this._canvas.width;
@@ -57,9 +56,7 @@ export class RouletteRenderer {
     document.body.appendChild(this._canvas);
 
     const resizing = (entries?: ResizeObserverEntry[]) => {
-      const realSize = entries
-        ? entries[0].contentRect
-        : this._canvas.getBoundingClientRect();
+      const realSize = entries ? entries[0].contentRect : this._canvas.getBoundingClientRect();
       const width = Math.max(realSize.width / 2, 640);
       const height = (width / realSize.width) * realSize.height;
       this._canvas.width = width;
@@ -101,14 +98,7 @@ export class RouletteRenderer {
     });
     this.ctx.restore();
 
-    uiObjects.forEach((obj) =>
-      obj.render(
-        this.ctx,
-        renderParameters,
-        this._canvas.width,
-        this._canvas.height,
-      ),
-    );
+    uiObjects.forEach((obj) => obj.render(this.ctx, renderParameters, this._canvas.width, this._canvas.height));
     renderParameters.particleManager.render(this.ctx);
     this.renderWinner(renderParameters);
   }
@@ -131,7 +121,7 @@ export class RouletteRenderer {
           if (shape.points.length > 0) {
             this.ctx.beginPath();
             this.ctx.moveTo(shape.points[0][0], shape.points[0][1]);
-            for(let i = 1; i < shape.points.length; i++) {
+            for (let i = 1; i < shape.points.length; i++) {
               this.ctx.lineTo(shape.points[i][0], shape.points[i][1]);
             }
             this.ctx.stroke();
@@ -157,18 +147,11 @@ export class RouletteRenderer {
   }
 
   private renderEffects({ effects, camera }: RenderParameters) {
-    effects.forEach((effect) =>
-      effect.render(this.ctx, camera.zoom * initialZoom),
-    );
+    effects.forEach((effect) => effect.render(this.ctx, camera.zoom * initialZoom));
   }
 
   // Updated to render based on MarbleState
-  private renderMarbles({
-                          marbles,
-                          camera,
-                          winnerRank,
-                          winners,
-                        }: RenderParameters) {
+  private renderMarbles({ marbles, camera, winnerRank, winners }: RenderParameters) {
     const winnerIndex = winnerRank - winners.length; // This index might not be reliable if marbles array is filtered differently on server/client
     console.log(`renderMarbles called with ${marbles.length} marbles.`); // Uncommented log
 
@@ -187,10 +170,11 @@ export class RouletteRenderer {
       this.ctx.fill();
 
       // Add stroke or effects based on state (e.g., winner highlight)
-      if (i === winnerIndex) { // Highlight potential winner? Check if this logic is still valid
-          this.ctx.strokeStyle = 'yellow'; // Example highlight
-          this.ctx.lineWidth = 0.1; // Adjust line width based on zoom?
-          this.ctx.stroke();
+      if (i === winnerIndex) {
+        // Highlight potential winner? Check if this logic is still valid
+        this.ctx.strokeStyle = 'yellow'; // Example highlight
+        this.ctx.lineWidth = 0.1; // Adjust line width based on zoom?
+        this.ctx.stroke();
       }
 
       // Render name (simplified)
@@ -204,15 +188,14 @@ export class RouletteRenderer {
       // Render image if available (using name as key)
       const img = this._images[marbleState.name];
       if (img) {
-          try {
-              const imgSize = marbleState.radius * 1.6; // Adjust image size relative to radius
-              this.ctx.drawImage(img, -imgSize / 2, -imgSize / 2, imgSize, imgSize);
-          } catch (e) {
-              console.error(`Error drawing image for ${marbleState.name}:`, e);
-              // Fallback or do nothing if image fails to draw
-          }
+        try {
+          const imgSize = marbleState.radius * 1.6; // Adjust image size relative to radius
+          this.ctx.drawImage(img, -imgSize / 2, -imgSize / 2, imgSize, imgSize);
+        } catch (e) {
+          console.error(`Error drawing image for ${marbleState.name}:`, e);
+          // Fallback or do nothing if image fails to draw
+        }
       }
-
 
       this.ctx.restore();
 
@@ -232,27 +215,14 @@ export class RouletteRenderer {
     if (!winner) return; // Winner is now MarbleState | null
     this.ctx.save();
     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    this.ctx.fillRect(
-      this._canvas.width / 2,
-      this._canvas.height - 168,
-      this._canvas.width / 2,
-      168,
-    );
+    this.ctx.fillRect(this._canvas.width / 2, this._canvas.height - 168, this._canvas.width / 2, 168);
     this.ctx.fillStyle = 'white';
     this.ctx.font = 'bold 48px sans-serif';
     this.ctx.textAlign = 'right';
-    this.ctx.fillText(
-      'Winner',
-      this._canvas.width - 10,
-      this._canvas.height - 120,
-    );
+    this.ctx.fillText('Winner', this._canvas.width - 10, this._canvas.height - 120);
     this.ctx.font = 'bold 72px sans-serif';
     this.ctx.fillStyle = winner.color;
-    this.ctx.fillText(
-      winner.name,
-      this._canvas.width - 10,
-      this._canvas.height - 55,
-    );
+    this.ctx.fillText(winner.name, this._canvas.width - 10, this._canvas.height - 55);
     this.ctx.restore();
   }
 }
