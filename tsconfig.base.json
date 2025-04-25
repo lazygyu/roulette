@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    /* Base options for all workspaces */
+    "target": "ES2022",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+
+    /* Module settings often differ, specify in workspace tsconfig */
+    // "module": "...",
+    // "moduleResolution": "node", // Often default, can be added if needed
+
+    /* Output settings differ, specify in workspace tsconfig */
+    // "outDir": "...",
+    // "declaration": ...,
+    // "removeComments": ...,
+
+    /* Lib settings differ (e.g., DOM for frontend), specify in workspace tsconfig */
+    // "lib": [...]
+  }
+}

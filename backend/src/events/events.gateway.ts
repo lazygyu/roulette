@@ -17,8 +17,9 @@ import { Socket, Server } from 'socket.io';
 export class EventsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
-  @WebSocketServer() server: Server;
-  private logger: Logger = new Logger('EventsGateway');
+  @WebSocketServer() server!: Server;
+
+  constructor(private readonly logger: Logger) {}
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   afterInit(server: Server) {

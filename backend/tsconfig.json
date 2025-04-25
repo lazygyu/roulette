@@ -1,21 +1,16 @@
 {
+  "extends": "../tsconfig.base.json", // Extend the base configuration
   "compilerOptions": {
-    "module": "commonjs",
-    "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "target": "ES2023",
-    "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
-    "incremental": true,
-    "skipLibCheck": true,
-    "strictNullChecks": true,
-    "forceConsistentCasingInFileNames": true,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    /* Backend specific options */
+    "module": "commonjs", // Node.js typically uses CommonJS
+    "declaration": true, // Generate .d.ts files for the backend library/app
+    "removeComments": true, // Remove comments from compiled output
+    "target": "ES2023", // Backend can use a more modern target
+    "outDir": "./dist", // Backend specific output directory
+    "baseUrl": "./", // Base URL for module resolution
+    "incremental": true, // Enable incremental compilation for faster builds
+
+    "strict": true,
   }
+  // Include/exclude patterns are often implicit or defined in tsconfig.build.json for NestJS
 }
