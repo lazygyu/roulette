@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your Package Manager
+
+- Must use yarn instead of npm.
+- Use yarn only.
