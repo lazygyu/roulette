@@ -1,0 +1,33 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // 데이터베이스 공급자를 postgresql로 설정
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique // username은 고유해야 합니다.
+  nickname  String
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  rooms     Room[]   // 사용자가 관리하는 방 목록 (1:N 관계)
+}
+
+model Room {
+  id        Int      @id @default(autoincrement())
+  managerId Int      // manager_id 필드 이름 변경 (Prisma 컨벤션)
+  name      String
+  password  String?  // 비밀번호는 선택 사항
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  manager   User     @relation(fields: [managerId], references: [id]) // User 모델과의 관계 설정
+
+  @@index([managerId]) // managerId에 인덱스 추가
+}
