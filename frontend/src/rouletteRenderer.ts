@@ -150,63 +150,64 @@ export class RouletteRenderer {
     effects.forEach((effect) => effect.render(this.ctx, camera.zoom * initialZoom));
   }
 
-  // Updated to render based on MarbleState
+  // Updated to render based on MarbleState (Restored full logic + radius fallback)
   private renderMarbles({ marbles, camera, winnerRank, winners }: RenderParameters) {
-    const winnerIndex = winnerRank - winners.length; // This index might not be reliable if marbles array is filtered differently on server/client
-    console.log(`renderMarbles called with ${marbles.length} marbles.`); // Uncommented log
+    const winnerIndex = winnerRank - winners.length;
+    console.log(`renderMarbles called with ${marbles.length} marbles.`);
 
     marbles.forEach((marbleState, i) => {
-      console.log(`Rendering marble ${i}:`, marbleState); // Uncommented log
-      // Draw marble based on state
-      this.ctx.save();
-      this.ctx.translate(marbleState.x, marbleState.y);
-      // TODO: Add rotation if available in MarbleState and needed
-      // this.ctx.rotate(marbleState.angle || 0);
+      console.log(`Rendering marble ${i}:`, marbleState);
 
-      // Basic circle rendering
+      // --- Fallback for missing or invalid radius ---
+      const radius = (marbleState.radius && marbleState.radius > 0) ? marbleState.radius : 0.25;
+      if (!marbleState.radius || marbleState.radius <= 0) {
+        console.warn(`Marble ${i} (${marbleState.name}) missing or invalid radius (${marbleState.radius}). Using default: ${radius}`);
+      }
+      // --- End Fallback ---
+
+      this.ctx.save();
+      // Translate to the marble's center position
+      this.ctx.translate(marbleState.x, marbleState.y);
+
+      // Basic circle rendering (using potentially fallback radius)
       this.ctx.beginPath();
-      this.ctx.arc(0, 0, marbleState.radius, 0, Math.PI * 2, false);
+      this.ctx.arc(0, 0, radius, 0, Math.PI * 2, false);
       this.ctx.fillStyle = marbleState.color;
       this.ctx.fill();
 
       // Add stroke or effects based on state (e.g., winner highlight)
       if (i === winnerIndex) {
-        // Highlight potential winner? Check if this logic is still valid
-        this.ctx.strokeStyle = 'yellow'; // Example highlight
-        this.ctx.lineWidth = 0.1; // Adjust line width based on zoom?
+        this.ctx.strokeStyle = 'yellow';
+        this.ctx.lineWidth = 0.1;
         this.ctx.stroke();
       }
 
-      // Render name (simplified)
-      this.ctx.fillStyle = 'white';
+      // Render name BELOW the circle (using potentially fallback radius for sizing)
+      this.ctx.strokeStyle = 'red'; // Red outline as per target image
+      this.ctx.lineWidth = 0.02; // Thinner outline
       this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      const fontSize = Math.max(0.3, marbleState.radius * 0.5); // Adjust font size based on radius
+      // Adjust textBaseline and y-offset to draw below the circle
+      this.ctx.textBaseline = 'top'; // Align text top to the drawing point
+      const textYOffset = radius + 0.1; // Position text below the circle (adjust offset as needed)
+      const fontSize = Math.max(0.3, radius * 0.5); // Use radius for font size
       this.ctx.font = `${fontSize}pt sans-serif`;
-      this.ctx.fillText(marbleState.name, 0, 0);
+      // Draw outline first, then fill, at the adjusted Y position
+      this.ctx.strokeText(marbleState.name, 0, textYOffset);
+      this.ctx.fillStyle = marbleState.color;
+      this.ctx.fillText(marbleState.name, 0, textYOffset);
 
-      // Render image if available (using name as key)
+      // Render image if available (using potentially fallback radius for sizing) - Draw image AT THE CENTER (0, 0)
       const img = this._images[marbleState.name];
       if (img) {
         try {
-          const imgSize = marbleState.radius * 1.6; // Adjust image size relative to radius
+          const imgSize = radius * 1.6; // Use radius for image size
           this.ctx.drawImage(img, -imgSize / 2, -imgSize / 2, imgSize, imgSize);
         } catch (e) {
           console.error(`Error drawing image for ${marbleState.name}:`, e);
-          // Fallback or do nothing if image fails to draw
         }
       }
 
       this.ctx.restore();
-
-      // Original call (removed):
-      // marble.render(
-      //   this.ctx,
-      //   camera.zoom * initialZoom,
-      //   i === winnerIndex,
-      //   false,
-      //   this._images[marble.name] || undefined,
-      // );
     });
   }
 
