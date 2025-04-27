@@ -1,4 +1,5 @@
 import './localization';
+import './styles.css'; // Import the CSS file
 import { Roulette } from './roulette';
 import options from './options';
 import socketService from './socketService'; // Import the socket service instance
