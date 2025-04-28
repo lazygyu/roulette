@@ -4,12 +4,11 @@ import { AppService } from './app.service';
 import { PrismaService } from './prisma/prisma.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
-import { EventsModule } from './events/events.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { GameModule } from './game/game.module';
 
 @Module({
-  imports: [UsersModule, AuthModule, EventsModule, RoomsModule, GameModule],
+  imports: [UsersModule, AuthModule, RoomsModule, GameModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })
