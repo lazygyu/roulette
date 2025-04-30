@@ -98,7 +98,7 @@ export class Marble {
       this.impact = Math.max(0, this.impact - deltaTime);
     }
     if (!this.isActive) return;
-    this._updateSkillInformation(deltaTime);
+    // this._updateSkillInformation(deltaTime);
   }
 
   private _updateSkillInformation(deltaTime: number) {
