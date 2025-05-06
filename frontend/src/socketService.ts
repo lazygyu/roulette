@@ -143,7 +143,6 @@ class SocketService {
     // Get user info from localStorage or create default
     const userInfo = {
       nickname: localStorage.getItem('user_nickname') || `User_${Math.floor(Math.random() * 1000)}`,
-      // Add any other user info you want to track
     };
 
     this.socket.emit('join_room', { 
@@ -156,6 +155,10 @@ class SocketService {
         localStorage.setItem('user_nickname', userInfo.nickname);
       } else {
         console.error(`Failed to join room ${roomId}: ${response.message}`);
+        // Show error message to user
+        alert(response.message || '방 참여에 실패했습니다.');
+        // Redirect to home page
+        window.location.href = '/';
       }
     });
   }

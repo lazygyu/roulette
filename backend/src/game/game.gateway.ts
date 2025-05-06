@@ -10,6 +10,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { RoomManagerService } from './room-manager.service';
 import { Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
 @WebSocketGateway({
   cors: {
@@ -23,7 +24,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
-  constructor(private readonly roomManagerService: RoomManagerService) {}
+  constructor(
+    private readonly roomManagerService: RoomManagerService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   afterInit() {
     this.logger.log('Game WebSocket Gateway 초기화 완료');
@@ -50,11 +54,25 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('join_room')
-  handleJoinRoom(
+  async handleJoinRoom(
     @ConnectedSocket() client: Socket, 
     @MessageBody() data: { roomId: string; userInfo?: { nickname: string } }
   ) {
     const { roomId, userInfo = { nickname: `User_${client.id.slice(0, 4)}` } } = data;
+
+    // Check if room exists in database
+    const room = await this.prisma.room.findUnique({
+      where: { id: parseInt(roomId) }
+    });
+
+    if (!room) {
+      this.logger.warn(`존재하지 않는 방 접근 시도: ${roomId} (${client.id})`);
+      return { 
+        success: false, 
+        message: '존재하지 않는 방입니다.' 
+      };
+    }
+
     client.join(roomId);
     
     // Add player with user info
