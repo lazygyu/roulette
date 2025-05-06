@@ -94,12 +94,19 @@ class SocketService {
     });
 
     this.socket.on('player_joined', (data) => {
-      console.log('Player joined:', data);
+      console.log('새로운 플레이어 참여:', {
+        playerId: data.playerId,
+        nickname: data.userInfo.nickname,
+        timestamp: new Date().toLocaleTimeString()
+      });
       // Optional: Update UI to show connected players
     });
 
     this.socket.on('player_left', (data) => {
-      console.log('Player left:', data);
+      console.log('플레이어 퇴장:', {
+        playerId: data.playerId,
+        timestamp: new Date().toLocaleTimeString()
+      });
       // Optional: Update UI
     });
 
@@ -132,9 +139,21 @@ class SocketService {
       return;
     }
     console.log(`Joining room: ${roomId}`);
-    this.socket.emit('join_room', { roomId }, (response: { success: boolean; message?: string }) => {
+    
+    // Get user info from localStorage or create default
+    const userInfo = {
+      nickname: localStorage.getItem('user_nickname') || `User_${Math.floor(Math.random() * 1000)}`,
+      // Add any other user info you want to track
+    };
+
+    this.socket.emit('join_room', { 
+      roomId,
+      userInfo 
+    }, (response: { success: boolean; message?: string }) => {
       if (response.success) {
         console.log(`Successfully joined room ${roomId}`);
+        // Store user info in localStorage for persistence
+        localStorage.setItem('user_nickname', userInfo.nickname);
       } else {
         console.error(`Failed to join room ${roomId}: ${response.message}`);
       }
