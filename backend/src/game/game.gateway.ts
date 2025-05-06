@@ -153,7 +153,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         } else {
           clearInterval(interval);
         }
-      }, 1000 / 30); // 30fps로 업데이트
+      }, 1000 / 60); // 60fps로 업데이트
     }
 
     this.logger.log(`방 ${roomId}에서 게임이 시작되었습니다.`);

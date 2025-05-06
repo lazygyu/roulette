@@ -87,10 +87,10 @@
 
   function setWinnerRank(rank) {
     document.querySelector('#in_winningRank').value = rank;
-    window.options.winningRank = rank - 1; // Keep local option state for now
+    window.options.winningRank = rank; // Store 1-based rank
     // window.roullete.setWinningRank(window.options.winningRank); // Replaced with socket emit
     if (window.socketService) {
-      window.socketService.setWinningRank(window.options.winningRank); // Send rank (0-based index)
+      window.socketService.setWinningRank(rank - 1); // Send 0-based rank to server
     } else {
       console.error('socketService not available');
     }
@@ -216,10 +216,9 @@
 
     document.querySelector('#in_winningRank').addEventListener('change', (e) => {
       const v = parseInt(e.target.value, 10);
+      const newRank = isNaN(v) || v < 1 ? 1 : v; // Ensure rank is at least 1
       winnerType = 'custom';
-      // setWinnerRank will handle the socket emit
-      setWinnerRank(isNaN(v) ? 1 : v); // Send 1-based rank, backend expects 0-based? Check gateway. Gateway uses rank directly. Let's send 1-based for now. No, send 0-based.
-      setWinnerRank(isNaN(v) ? 0 : v - 1);
+      setWinnerRank(newRank); // Call with 1-based rank
     });
 
     document.querySelector('.btn-last-winner').addEventListener('click', () => {
@@ -231,8 +230,8 @@
       // TODO: Get total count from server state via socketService
       console.warn("Setting winner to 'last' requires total count from server state.");
       const currentTotal = window.roullete?.getCount() ?? 1; // Temporary fallback
-      winnerType = 'last';
-      setWinnerRank(currentTotal > 0 ? currentTotal - 1 : 0); // Send 0-based rank
+      winnerType = 'last'; // Set type before calling setWinnerRank
+      setWinnerRank(currentTotal > 0 ? currentTotal : 1); // Call with 1-based rank (total count)
     });
     document.querySelector('.btn-first-winner').addEventListener('click', () => {
       winnerType = 'first';
