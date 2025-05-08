@@ -6,10 +6,10 @@
     "lib": ["dom", "es2017"], // Include DOM library for browser environment
     "module": "System", // Parcel might require a specific module system
     "moduleResolution": "node",
-    "outFile": "./dist/index.js", // Frontend specific output
+    "outFile": "./dist/index.js" // Frontend specific output
 
     /* Override base options if necessary */
     // "strict": false, // Example: If frontend needs less strict checks
   },
-	"include": ["src/index.ts"] // Frontend specific include path
+  "include": ["src/index1.ts"] // Frontend specific include path
 }

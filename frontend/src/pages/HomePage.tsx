@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import socketService from '../services/socketService'; // socketService import
-import RouletteVisualizer from '../components/RouletteVisualizer'; // RouletteVisualizer import
 
 // GameState 및 MapInfo 타입 정의 (socketService.ts와 동일하게 또는 공유 타입으로)
 interface GameState {

@@ -23,6 +23,15 @@ module.exports = {
   rules: {
     'prettier/prettier': 'error', // Prettier 규칙 위반 시 에러 발생
     // 필요에 따라 다른 전역 규칙 추가 가능
+    '@typescript-eslint/no-unused-expressions': [
+      'error',
+      {
+        allowShortCircuit: false,
+        allowTernary: false,
+        allowTaggedTemplates: false,
+        enforceForJSX: false,
+      },
+    ],
   },
 
   // 전역 무시 패턴 설정 (워크스페이스에서 추가 가능)
