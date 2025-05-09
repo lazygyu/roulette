@@ -1,10 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { Roulette } from './roulette';
 
+interface Player {
+  id: string;
+  userInfo: {
+    nickname: string;
+  };
+}
+
 export interface GameRoom {
   id: string;
   game: Roulette;
-  players: string[]; // 플레이어 소켓 ID 목록
+  players: Map<string, Player>;
   isRunning: boolean;
   interval?: NodeJS.Timeout;
 }
@@ -25,7 +32,7 @@ export class RoomManagerService {
     const room: GameRoom = {
       id: roomId,
       game,
-      players: [],
+      players: new Map(),
       isRunning: false,
     };
 
@@ -39,21 +46,26 @@ export class RoomManagerService {
   }
 
   // 방에 플레이어 추가
-  addPlayer(roomId: string, playerId: string): void {
-    const room = this.getRoom(roomId) || this.createRoom(roomId);
-    if (!room.players.includes(playerId)) {
-      room.players.push(playerId);
+  addPlayer(roomId: string, playerId: string, userInfo: { nickname: string }): void {
+    let room = this.getRoom(roomId);
+    if (!room) {
+      room = this.createRoom(roomId);
     }
+    
+    room.players.set(playerId, {
+      id: playerId,
+      userInfo: userInfo
+    });
   }
 
   // 방에서 플레이어 제거
   removePlayer(roomId: string, playerId: string): void {
     const room = this.getRoom(roomId);
     if (room) {
-      room.players = room.players.filter(id => id !== playerId);
+      room.players.delete(playerId);
       
       // 방에 플레이어가 없으면 방 제거
-      if (room.players.length === 0) {
+      if (room.players.size === 0) {
         this.removeRoom(roomId);
       }
     }
@@ -154,5 +166,11 @@ export class RoomManagerService {
       room.isRunning = false;
       room.game.reset();
     }
+  }
+
+  getPlayers(roomId: string): Player[] {
+    const room = this.getRoom(roomId);
+    if (!room) return [];
+    return Array.from(room.players.values());
   }
 }
