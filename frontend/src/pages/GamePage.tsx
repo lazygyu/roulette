@@ -1,19 +1,21 @@
+// import '../index1'
 import React, { useEffect, useRef, useState } from 'react';
 import '../styles.css'; // 전역 스타일 import
-import { Roulette } from '../roulette'; // Roulette 타입 import
-import socketServiceInstance from '../socketService'; // socketService 인스턴스 import (타입 추론용)
-import optionsInstance from '../options'; // options 인스턴스 import (타입 추론용)
+import { Roulette } from '../roulette';
+import socketService from '../socketService'; // 실제 인스턴스 사용
+import options from '../options'; // 실제 인스턴스 사용
+import { TranslatedLanguages, TranslationKeys, Translations } from '../data/languages'; // localization.ts에서 가져옴
 
-// 필요한 경우 타입 정의 (index1.ts나 다른 곳에서 전역으로 선언되었을 수 있음)
+// GamePage에 필요한 window 속성들을 전역 Window 인터페이스에 선택적으로 추가
 declare global {
   interface Window {
-    roullete: Roulette; // Roulette 타입으로 변경
-    socketService: typeof socketServiceInstance; // 실제 인스턴스 타입으로 변경
-    options: typeof optionsInstance; // 실제 인스턴스 타입으로 변경
-    updateMapSelector: (maps: { index: number; title: string }[]) => void;
-    dataLayer: any[];
-    gtag: (...args: any[]) => void;
-    translateElement: (element: HTMLElement) => void;
+    roullete?: Roulette;
+    socketService?: typeof socketService;
+    options?: typeof options;
+    updateMapSelector?: (maps: { index: number; title: string }[]) => void;
+    dataLayer?: any[];
+    gtag?: (...args: any[]) => void;
+    translateElement?: (element: HTMLElement) => void;
   }
 }
 
@@ -33,27 +35,37 @@ const GamePage: React.FC = () => {
   const [isGameReady, setIsGameReady] = useState(false);
   const [winnerSelectionType, setWinnerSelectionType] = useState('first');
 
+  // For localization
+  const [currentLocale, setCurrentLocale] = useState<TranslatedLanguages>('en');
 
   useEffect(() => {
-    // gtag 초기화
-    window.dataLayer = window.dataLayer || [];
-    function gtag(...args: any[]) {
-      window.dataLayer!.push(args);
-    }
-    window.gtag = gtag; // window.gtag에 할당
-    gtag('js', new Date());
-    gtag('config', 'G-5899C1DJM0');
+    let rouletteInstance: Roulette | null = null;
+    let originalDocumentLang = document.documentElement.lang;
+    let donateButtonCheckTimeoutId: NodeJS.Timeout | undefined;
+    let readyCheckTimeoutId: NodeJS.Timeout | undefined;
 
-    let localReady = false;
-    let localWinnerType = 'first';
+    // DOM Elements (queried within initializeGamePage, references stored here for cleanup)
+    // These will be assigned when setupGameInteractions is called.
+    let inNamesEl: HTMLTextAreaElement | null = null; 
+    let btnShuffleEl: HTMLButtonElement | null = null;
+    let btnStartEl: HTMLButtonElement | null = null;
+    let chkSkillElFromQuery: HTMLInputElement | null = null;
+    let inWinningRankElFromQuery: HTMLInputElement | null = null;
+    let btnLastWinnerEl: HTMLButtonElement | null = null;
+    let btnFirstWinnerEl: HTMLButtonElement | null = null;
+    let btnShakeEl: HTMLButtonElement | null = null;
+    let sltMapEl: HTMLSelectElement | null = null;
+    let chkAutoRecordingElFromRef: HTMLInputElement | null = null; // from ref
+    let closeNoticeButtonEl: HTMLButtonElement | null = null;
+    let openNoticeButtonEl: HTMLButtonElement | null = null;
+    let noticeElFromQuery: HTMLElement | null = null;
 
-    const getNames = () => {
-      if (!inNamesRef.current) return [];
-      const value = inNamesRef.current.value.trim();
-      return value
-        .split(/[,\r\n]/g)
-        .map((v) => v.trim())
-        .filter((v) => !!v);
+
+    // Event Handlers
+    const getNames = (): string[] => {
+      if (!inNamesEl) return [];
+      const value = inNamesEl.value.trim();
+      return value.split(/[,\r\n]/g).map((v) => v.trim()).filter((v) => !!v);
     };
 
     const parseName = (nameStr: string) => {
@@ -65,304 +77,298 @@ const GamePage: React.FC = () => {
       const name = nameMatch ? nameMatch[1] : '';
       const weight = hasWeight ? parseInt(weightRegex.exec(nameStr)![1].replace('/', '')) : 1;
       const count = hasCount ? parseInt(countRegex.exec(nameStr)![1].replace('*', '')) : 1;
-      return {
-        name,
-        weight,
-        count,
-      };
+      return { name, weight, count };
     };
+    
+    let localWinnerType = 'first'; // Keep this to mirror original logic closely
 
     const setWinnerRank = (rank: number) => {
-      if (inWinningRankRef.current) {
-        inWinningRankRef.current.value = rank.toString();
-      }
-      if (window.options) {
-        window.options.winningRank = rank; // Store 1-based rank
-      }
-
-      if (window.socketService) {
-        window.socketService.setWinningRank(rank - 1); // Send 0-based rank to server
-      } else {
-        console.error('socketService not available');
-      }
+      if (inWinningRankRef.current) inWinningRankRef.current.value = rank.toString();
+      if (window.options) window.options.winningRank = rank;
+      if (window.socketService) window.socketService.setWinningRank(rank - 1);
+      else console.error('socketService not available for setWinnerRank');
 
       const btnFirstWinner = document.querySelector('.btn-first-winner');
       const btnLastWinner = document.querySelector('.btn-last-winner');
-      const inWinningRankEl = document.querySelector('#in_winningRank');
-
-      if (btnFirstWinner && btnLastWinner && inWinningRankEl) {
-        if (localWinnerType === 'first') {
-          btnFirstWinner.classList.toggle('active', true);
-          btnLastWinner.classList.toggle('active', false);
-          inWinningRankEl.classList.toggle('active', false);
-        } else if (localWinnerType === 'last') {
-          btnFirstWinner.classList.toggle('active', false);
-          btnLastWinner.classList.toggle('active', true);
-          inWinningRankEl.classList.toggle('active', false);
-        } else if (localWinnerType === 'custom') {
-          btnFirstWinner.classList.toggle('active', false);
-          btnLastWinner.classList.toggle('active', false);
-          inWinningRankEl.classList.toggle('active', true);
-        }
+      const inWinningRankInput = document.querySelector('#in_winningRank');
+      if (btnFirstWinner && btnLastWinner && inWinningRankInput) {
+        btnFirstWinner.classList.toggle('active', localWinnerType === 'first');
+        btnLastWinner.classList.toggle('active', localWinnerType === 'last');
+        inWinningRankInput.classList.toggle('active', localWinnerType === 'custom');
       }
     };
 
     const getReady = () => {
       const names = getNames();
-      if (window.socketService) {
-        window.socketService.setMarbles(names);
-      } else {
-        console.error('socketService not available');
-      }
-      localReady = names.length > 0;
-      setIsGameReady(localReady); // Update React state
+      if (window.socketService) window.socketService.setMarbles(names);
+      else console.error('socketService not available for getReady');
+      
+      const currentLocalReady = names.length > 0;
+      setIsGameReady(currentLocalReady); // Update React state
       localStorage.setItem('mbr_names', names.join(','));
+      
       switch (localWinnerType) {
-        case 'first':
-          setWinnerRank(1);
-          break;
+        case 'first': setWinnerRank(1); break;
         case 'last':
           const total = window.roullete?.getCount() ?? 0;
           setWinnerRank(total > 0 ? total : 1);
           break;
       }
     };
-
-
-    const initialize = () => {
-      if (!window.roullete || !window.roullete.isReady) {
-        console.log('roulette does not loaded yet');
-        setTimeout(initialize, 100);
-        return;
-      }
-      console.log('initializing start');
-
-      if (window.socketService) {
-        window.socketService.connect();
-      } else {
-        console.error('socketService not available during initialization');
-        setTimeout(() => {
-          if (window.socketService) {
-            console.log('Retrying socket connection...');
-            window.socketService.connect();
-          } else {
-            console.error('socketService still not available.');
+    
+    const handleInNamesInput = getReady;
+    const handleInNamesBlur = () => {
+        if (!inNamesEl) return;
+        const nameSource = getNames();
+        const nameSet = new Set<string>();
+        const nameCounts: { [key: string]: number } = {};
+        nameSource.forEach((nameSrc) => {
+          const item = parseName(nameSrc);
+          const key = item.weight > 1 ? `${item.name}/${item.weight}` : (item.name || '');
+          if (!nameSet.has(key)) {
+            nameSet.add(key);
+            nameCounts[key] = 0;
           }
-        }, 500);
-      }
-
-      const savedNames = localStorage.getItem('mbr_names');
-      if (savedNames && inNamesRef.current) {
-        inNamesRef.current.value = savedNames;
-      }
-
-      // Event Listeners
-      const inNamesEl = inNamesRef.current;
-      if (inNamesEl) {
-        inNamesEl.addEventListener('input', getReady);
-        inNamesEl.addEventListener('blur', () => {
-          const nameSource = getNames();
-          const nameSet = new Set<string>();
-          const nameCounts: { [key: string]: number } = {};
-          nameSource.forEach((nameSrc) => {
-            const name = parseName(nameSrc);
-            const key = name.weight > 1 ? `${name.name}/${name.weight}` : (name.name || '');
-            if (!nameSet.has(key)) {
-              nameSet.add(key);
-              nameCounts[key] = 0;
-            }
-            nameCounts[key] += name.count;
-          });
-          const result: string[] = [];
-          Object.keys(nameCounts).forEach((key) => {
-            if (nameCounts[key] > 1) {
-              result.push(`${key}*${nameCounts[key]}`);
-            } else {
-              result.push(key);
-            }
-          });
-
-          const oldValue = inNamesEl.value;
-          const newValue = result.join(',');
-
-          if (oldValue !== newValue) {
-            inNamesEl.value = newValue;
-            getReady();
-          }
+          nameCounts[key] += item.count;
         });
-      }
-
-      document.querySelector('#btnShuffle')?.addEventListener('click', getReady);
-
-      document.querySelector('#btnStart')?.addEventListener('click', () => {
-        if (!localReady) return;
-        window.gtag?.('event', 'start', {
-          event_category: 'roulette',
-          event_label: 'start',
-          value: 1,
+        const result: string[] = [];
+        Object.keys(nameCounts).forEach((key) => {
+          result.push(nameCounts[key] > 1 ? `${key}*${nameCounts[key]}` : key);
         });
-        if (window.socketService) {
-          window.socketService.startGame();
-        } else {
-          console.error('socketService not available');
+        const oldValue = inNamesEl.value;
+        const newValue = result.join(',');
+        if (oldValue !== newValue) {
+          inNamesEl.value = newValue;
+          getReady();
         }
+    };
+    const handleBtnShuffleClick = getReady;
+    const handleBtnStartClick = () => {
+        if (!isGameReady) return; // Use React state for readiness check
+        window.gtag?.('event', 'start', { event_category: 'roulette', event_label: 'start', value: 1 });
+        if (window.socketService) window.socketService.startGame();
+        else console.error('socketService not available for startGame');
         document.querySelector('#settings')?.classList.add('hide');
         document.querySelector('#donate')?.classList.add('hide');
-      });
-
-      const chkSkillEl = chkSkillRef.current;
-      if (chkSkillEl) {
-        chkSkillEl.addEventListener('change', (e) => {
-          if (window.options) {
-            window.options.useSkills = (e.target as HTMLInputElement).checked;
-          }
-          // window.roullete.setWinningRank(window.options.winningRank); // This might be handled by server now
-        });
-      }
-
-      const inWinningRankEl = inWinningRankRef.current;
-      if (inWinningRankEl) {
-        inWinningRankEl.addEventListener('change', (e) => {
-          const v = parseInt((e.target as HTMLInputElement).value, 10);
-          const newRank = isNaN(v) || v < 1 ? 1 : v;
-          localWinnerType = 'custom';
-          setWinnerSelectionType('custom'); // Update React state
-          setWinnerRank(newRank);
-        });
-      }
-
-      document.querySelector('.btn-last-winner')?.addEventListener('click', () => {
-        console.warn("Setting winner to 'last' requires total count from server state.");
+    };
+    const handleChkSkillChange = (e: Event) => {
+        if (window.options) window.options.useSkills = (e.target as HTMLInputElement).checked;
+    };
+    const handleInWinningRankChange = (e: Event) => {
+        const v = parseInt((e.target as HTMLInputElement).value, 10);
+        const newRank = isNaN(v) || v < 1 ? 1 : v;
+        localWinnerType = 'custom';
+        setWinnerSelectionType('custom');
+        setWinnerRank(newRank);
+    };
+    const handleBtnLastWinnerClick = () => {
         const currentTotal = window.roullete?.getCount() ?? 1;
         localWinnerType = 'last';
-        setWinnerSelectionType('last'); // Update React state
+        setWinnerSelectionType('last');
         setWinnerRank(currentTotal > 0 ? currentTotal : 1);
-      });
-
-      document.querySelector('.btn-first-winner')?.addEventListener('click', () => {
+    };
+    const handleBtnFirstWinnerClick = () => {
         localWinnerType = 'first';
-        setWinnerSelectionType('first'); // Update React state
+        setWinnerSelectionType('first');
         setWinnerRank(1);
-      });
-
-      document.querySelector('#btnShake')?.addEventListener('click', () => {
+    };
+    const handleBtnShakeClick = () => {
         window.roullete?.shake();
-        window.gtag?.('event', 'shake', {
-          event_category: 'roulette',
-          event_label: 'shake',
-          value: 1,
-        });
-      });
+        window.gtag?.('event', 'shake', { event_category: 'roulette', event_label: 'shake', value: 1 });
+    };
+    const handleMapChange = (e: Event) => {
+        const index = parseInt((e.target as HTMLSelectElement).value, 10);
+        if (window.socketService && !isNaN(index)) window.socketService.setMap(index);
+        else console.error('socketService not available or invalid map index for setMap');
+    };
+    const handleAutoRecordingChange = (e: Event) => {
+        if (window.roullete) window.roullete.setAutoRecording((e.target as HTMLInputElement).checked);
+    };
+    const handleCloseNotice = () => {
+        if (noticeElFromQuery) noticeElFromQuery.style.display = 'none';
+        localStorage.setItem('lastViewedNotification', '1'); // Assuming currentNotice is 1
+    };
+    const handleOpenNotice = () => {
+        if (noticeElFromQuery) noticeElFromQuery.style.display = 'flex';
+    };
 
-      document.querySelector('#btnShuffle')?.dispatchEvent(new Event('click'));
+    // --- Initialization Function (now split into parts) ---
+    
+    // Part 1: One-time setup of window objects and non-DOM related initializations
+    rouletteInstance = new Roulette(); // Create instance once
+    window.roullete = rouletteInstance;
+    window.socketService = socketService;
+    window.options = options;
 
+    window.dataLayer = window.dataLayer || [];
+    function gtagForPage(...args: any[]) { (window.dataLayer!).push(args); } // Renamed to avoid conflict if gtag is already on window
+    window.gtag = gtagForPage;
+    gtagForPage('js', new Date());
+    gtagForPage('config', 'G-5899C1DJM0');
 
-      const mapSelector = sltMapRef.current;
-      if (mapSelector) {
-        mapSelector.innerHTML = '<option value="">Loading maps...</option>';
-        mapSelector.disabled = true;
+    const defaultLoc: TranslatedLanguages = 'en';
+    let pageLocale: TranslatedLanguages | undefined;
+    originalDocumentLang = document.documentElement.lang; 
+    const getBrowserLoc = () => navigator.language.split('-')[0] as TranslatedLanguages;
+    const translateElForPage = (element: Element) => {
+      if (!(element instanceof HTMLElement) || !pageLocale || !Translations[pageLocale]) return;
+      const prop = element.getAttribute('data-trans');
+      const targetKey = prop ? (element.getAttribute(prop) || '').trim() : element.innerText.trim();
+      if (targetKey && Translations[pageLocale] && targetKey in Translations[pageLocale]) {
+        const translation = Translations[pageLocale][targetKey as TranslationKeys];
+        if (prop) element.setAttribute(prop, translation);
+        else element.innerText = translation;
+      }
+    };
+    window.translateElement = translateElForPage;
+    const translateP = () => document.querySelectorAll('[data-trans]').forEach(translateElForPage);
+    const setPageLoc = (newLoc: string) => {
+      const newLocTyped = newLoc as TranslatedLanguages;
+      if (newLocTyped === pageLocale) return;
+      document.documentElement.lang = newLocTyped;
+      pageLocale = newLocTyped in Translations ? newLocTyped : defaultLoc;
+      translateP();
+    };
+    setPageLoc(getBrowserLoc());
 
+    // Part 2: Function to set up DOM interactions and listeners (called after roulette is ready)
+    const setupGameInteractions = () => {
+      console.log('Roulette is ready, proceeding with GamePage DOM & event setup.');
+      // Assign elements from refs and querySelector
+      inNamesEl = inNamesRef.current;
+      sltMapEl = sltMapRef.current;
+      chkAutoRecordingElFromRef = chkAutoRecordingRef.current;
+      btnShuffleEl = document.querySelector<HTMLButtonElement>('#btnShuffle');
+      btnStartEl = document.querySelector<HTMLButtonElement>('#btnStart');
+      chkSkillElFromQuery = document.querySelector<HTMLInputElement>('#chkSkill');
+      inWinningRankElFromQuery = document.querySelector<HTMLInputElement>('#in_winningRank');
+      btnLastWinnerEl = document.querySelector<HTMLButtonElement>('.btn-last-winner');
+      btnFirstWinnerEl = document.querySelector<HTMLButtonElement>('.btn-first-winner');
+      btnShakeEl = document.querySelector<HTMLButtonElement>('#btnShake');
+      closeNoticeButtonEl = document.querySelector<HTMLButtonElement>('#closeNotice');
+      openNoticeButtonEl = document.querySelector<HTMLButtonElement>('#btnNotice');
+      noticeElFromQuery = document.querySelector<HTMLElement>('#notice');
+
+      if (window.socketService) window.socketService.connect();
+      else console.error('socketService not available during GamePage initialization');
+
+      const savedNames = localStorage.getItem('mbr_names');
+      if (savedNames && inNamesEl) inNamesEl.value = savedNames;
+
+      // Add Event Listeners
+      if (inNamesEl) {
+        inNamesEl.addEventListener('input', handleInNamesInput);
+        inNamesEl.addEventListener('blur', handleInNamesBlur);
+      }
+      btnShuffleEl?.addEventListener('click', handleBtnShuffleClick);
+      btnStartEl?.addEventListener('click', handleBtnStartClick);
+      chkSkillElFromQuery?.addEventListener('change', handleChkSkillChange);
+      inWinningRankElFromQuery?.addEventListener('change', handleInWinningRankChange);
+      btnLastWinnerEl?.addEventListener('click', handleBtnLastWinnerClick);
+      btnFirstWinnerEl?.addEventListener('click', handleBtnFirstWinnerClick);
+      btnShakeEl?.addEventListener('click', handleBtnShakeClick);
+      
+      if (sltMapEl) { // sltMapEl null 체크
+        sltMapEl.innerHTML = '<option value="">Loading maps...</option>';
+        sltMapEl.disabled = true;
         window.updateMapSelector = (maps) => {
-          mapSelector.innerHTML = '';
+          if (!sltMapEl) return; // 내부에서도 null 체크
+          sltMapEl.innerHTML = '';
           maps.forEach((map) => {
             const option = document.createElement('option');
             option.value = map.index.toString();
             option.innerHTML = map.title;
             option.setAttribute('data-trans', '');
-            window.translateElement?.(option);
-            mapSelector.append(option);
+            if (window.translateElement) window.translateElement(option);
+            sltMapEl!.append(option);
           });
-          mapSelector.disabled = false;
+          sltMapEl.disabled = false;
         };
-
-        mapSelector.addEventListener('change', (e) => {
-          const index = parseInt((e.target as HTMLSelectElement).value, 10);
-          if (window.socketService && !isNaN(index)) {
-            window.socketService.setMap(index);
-          } else {
-            console.error('socketService not available or invalid map index');
-          }
-        });
+        sltMapEl.addEventListener('change', handleMapChange);
       }
       
-      const chkAutoRecordingEl = chkAutoRecordingRef.current;
-      if (chkAutoRecordingEl && window.roullete) {
-        chkAutoRecordingEl.addEventListener('change', (e) => {
-            window.roullete.setAutoRecording((e.target as HTMLInputElement).checked);
-        });
-        // Set initial state from options if available
-        if (window.options) {
-            chkAutoRecordingEl.checked = window.options.autoRecording;
+      if (chkAutoRecordingElFromRef) { // chkAutoRecordingElFromRef null 체크
+         chkAutoRecordingElFromRef.addEventListener('change', handleAutoRecordingChange);
+         if (window.options && window.roullete) {
+            chkAutoRecordingElFromRef.checked = window.options.autoRecording;
             window.roullete.setAutoRecording(window.options.autoRecording);
         }
       }
 
-
       const checkDonateButtonLoaded = () => {
         const btn = document.querySelector('span.bmc-btn-text');
         if (!btn) {
-          setTimeout(checkDonateButtonLoaded, 100);
+          donateButtonCheckTimeoutId = setTimeout(checkDonateButtonLoaded, 100);
         } else {
-          console.log('donation button has been loaded');
           btn.setAttribute('data-trans', '');
-          window.translateElement?.(btn as HTMLElement);
+          if (window.translateElement) window.translateElement(btn as HTMLElement);
         }
       };
-      setTimeout(checkDonateButtonLoaded, 100);
-
-      const currentNotice = 1;
+      donateButtonCheckTimeoutId = setTimeout(checkDonateButtonLoaded, 100);
+      
+      const currentNotice = 1; // Assuming this is constant
       const noticeKey = 'lastViewedNotification';
-
-      const noticeEl = document.querySelector('#notice') as HTMLElement | null;
-
-      const closeNotice = () => {
-        if (noticeEl) noticeEl.style.display = 'none';
-        localStorage.setItem(noticeKey, currentNotice.toString());
-      };
-
-      const openNotice = () => {
-        console.log('openNotice');
-        if (noticeEl) noticeEl.style.display = 'flex';
-      };
-
-      document.querySelector('#closeNotice')?.addEventListener('click', closeNotice);
-      document.querySelector('#btnNotice')?.addEventListener('click', openNotice);
-
       const checkNotice = () => {
         const lastViewed = localStorage.getItem(noticeKey);
-        console.log('lastViewed', lastViewed);
         if (lastViewed === null || Number(lastViewed) < currentNotice) {
-          openNotice();
+          handleOpenNotice(); // Use the hoisted handler
         }
       };
-
+      closeNoticeButtonEl?.addEventListener('click', handleCloseNotice);
+      openNoticeButtonEl?.addEventListener('click', handleOpenNotice);
       checkNotice();
+
+      btnShuffleEl?.dispatchEvent(new Event('click')); // Initial shuffle
     };
 
-    initialize();
+    // Part 3: Polling function to check if roulette is ready
+    const checkRouletteReadyAndInitialize = () => {
+      if (window.roullete && window.roullete.isReady) {
+        setupGameInteractions();
+      } else {
+        console.log('roulette still not loaded (GamePage), retrying...');
+        readyCheckTimeoutId = setTimeout(checkRouletteReadyAndInitialize, 100);
+      }
+    };
 
-    // Cleanup function
+    checkRouletteReadyAndInitialize(); // Start the check
+
     return () => {
-        // Remove all event listeners added in initialize
-        const inNamesElCleanup = inNamesRef.current;
-        if (inNamesElCleanup) {
-            inNamesElCleanup.removeEventListener('input', getReady);
-            // blur 이벤트 리스너는 익명 함수이므로 직접 제거가 어렵습니다.
-            // 컴포넌트 언마운트 시 자동으로 정리되거나, named function으로 변경 필요.
-        }
-        document.querySelector('#btnShuffle')?.removeEventListener('click', getReady);
-        // 기타 이벤트 리스너들도 동일하게 제거 필요
-        // 예: document.querySelector('#btnStart')?.removeEventListener('click', ...);
-        // 익명 함수로 등록된 이벤트 리스너는 이렇게 직접 제거하기 어렵습니다.
-        // 실제 프로덕션 코드에서는 named function을 사용하거나,
-        // useEffect의 cleanup 함수에서 AbortController 등을 활용하는 것이 좋습니다.
-        // 이 예제에서는 단순화를 위해 일부만 표기합니다.
-        if (window.socketService) {
-            // socketService.disconnect(); // 페이지 이동 시 소켓 연결 해제
-        }
-    };
+      console.log("Cleaning up GamePage effects");
+      if (readyCheckTimeoutId) clearTimeout(readyCheckTimeoutId);
+      if (donateButtonCheckTimeoutId) clearTimeout(donateButtonCheckTimeoutId);
 
-  }, []); // 빈 의존성 배열로 마운트 시 1회 실행
+      // Remove Event Listeners (ensure elements were assigned before trying to remove)
+      if (inNamesEl) {
+        inNamesEl.removeEventListener('input', handleInNamesInput);
+        inNamesEl.removeEventListener('blur', handleInNamesBlur);
+      }
+      btnShuffleEl?.removeEventListener('click', handleBtnShuffleClick);
+      btnStartEl?.removeEventListener('click', handleBtnStartClick);
+      chkSkillElFromQuery?.removeEventListener('change', handleChkSkillChange);
+      inWinningRankElFromQuery?.removeEventListener('change', handleInWinningRankChange);
+      btnLastWinnerEl?.removeEventListener('click', handleBtnLastWinnerClick);
+      btnFirstWinnerEl?.removeEventListener('click', handleBtnFirstWinnerClick);
+      btnShakeEl?.removeEventListener('click', handleBtnShakeClick);
+      sltMapEl?.removeEventListener('change', handleMapChange); // Optional chaining
+      chkAutoRecordingElFromRef?.removeEventListener('change', handleAutoRecordingChange);
+      closeNoticeButtonEl?.removeEventListener('click', handleCloseNotice);
+      openNoticeButtonEl?.removeEventListener('click', handleOpenNotice);
+      
+      if (window.socketService) window.socketService.disconnect();
+      
+      delete window.roullete; // Clean up window object
+      delete window.socketService;
+      delete window.options;
+      delete window.updateMapSelector;
+      delete window.translateElement;
+      // gtag and dataLayer are often fine to leave, but clear if strictly necessary
+      // delete window.gtag;
+      // delete window.dataLayer;
+
+      document.documentElement.lang = originalDocumentLang;
+    };
+  }, []);
 
   // BuyMeACoffee 스크립트 로딩
   useEffect(() => {

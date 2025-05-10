@@ -104,7 +104,7 @@ export class RouletteRenderer {
   }
 
   private renderEntities(entities: MapEntityState[]) {
-    console.log(`renderEntities called with ${entities.length} entities.`); // Uncommented log
+    // console.log(`renderEntities called with ${entities.length} entities.`); // Uncommented log
     this.ctx.save();
     entities.forEach((entity) => {
       console.log(`Rendering entity:`, entity); // Uncommented log
@@ -153,7 +153,7 @@ export class RouletteRenderer {
   // Updated to render based on MarbleState (Restored full logic + radius fallback)
   private renderMarbles({ marbles, camera, winnerRank, winners }: RenderParameters) {
     const winnerIndex = winnerRank - winners.length;
-    console.log(`renderMarbles called with ${marbles.length} marbles.`);
+    // console.log(`renderMarbles called with ${marbles.length} marbles.`);
 
     marbles.forEach((marbleState, i) => {
       console.log(`Rendering marble ${i}:`, marbleState);
