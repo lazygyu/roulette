@@ -158,7 +158,7 @@ const GamePage: React.FC = () => {
     };
     const handleBtnShuffleClick = getReady;
     const handleBtnStartClick = () => {
-      console.log('Start button clicked');
+      console.log('Start button clicked', { isGameReady });
       if (!isGameReady) return; // Use React state for readiness check
       window.gtag?.('event', 'start', { event_category: 'roulette', event_label: 'start', value: 1 });
       // window.socketService 대신 직접 socketService 사용
