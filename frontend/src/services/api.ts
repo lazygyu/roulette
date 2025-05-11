@@ -30,8 +30,8 @@ export const login = async (username: string, password_hash: string) => {
   return apiClient.post('/auth/login', { username, password: password_hash });
 };
 
-export const register = async (username: string, password_hash: string) => {
-  return apiClient.post('/auth/register', { username, password: password_hash });
+export const register = async (username: string, password_hash: string, nickname: string) => { // nickname 인자 추가
+  return apiClient.post('/auth/register', { username, password: password_hash, nickname }); // nickname 전달
 };
 
 // 필요한 다른 API 호출 함수들을 여기에 추가할 수 있습니다.
