@@ -1,4 +1,3 @@
-// import '../index1'
 import React, { useEffect, useRef, useState } from 'react';
 import '../styles.css'; // 전역 스타일 import
 import { Roulette } from '../roulette';
