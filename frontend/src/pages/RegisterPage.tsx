@@ -29,19 +29,23 @@ function RegisterPage() {
       // 현재 백엔드 User DTO는 password를 직접 받으므로, 그대로 전달합니다.
       const response = await register(username, password, nickname);
 
-      // 백엔드에서 회원가입 성공 시 바로 로그인 처리하고 토큰과 닉네임을 반환한다고 가정
-      if (response.data && response.data.access_token && response.data.nickname) {
-        localStorage.setItem('access_token', response.data.access_token);
-        localStorage.setItem('user_nickname', response.data.nickname);
+      // register 함수는 LoginResponse를 직접 반환합니다.
+      if (response && response.access_token && response.nickname) {
+        localStorage.setItem('access_token', response.access_token);
+        localStorage.setItem('user_nickname', response.nickname); // 'user_nickname' 대신 'nickname'으로 저장해야 AuthContext와 일관됩니다.
         alert('회원가입 및 로그인이 완료되었습니다.');
         navigate('/'); // 홈페이지로 리디렉션
       } else {
-        // 백엔드 응답 구조가 다를 경우 이 부분 조정 필요
-        setError(response.data.message || '회원가입에 실패했습니다. 응답 형식을 확인해주세요.');
+        // 백엔드 응답 구조가 예상과 다를 경우
+        setError('회원가입에 실패했습니다. 응답 형식을 확인해주세요.');
       }
     } catch (err: any) {
-      if (err.response && err.response.data && err.response.data.message) {
+      // API 호출 자체에서 에러가 발생한 경우 (e.g., 네트워크 오류, 서버 오류 등)
+      // err.response.data.message를 확인하기 전에 err.response와 err.response.data가 존재하는지 확인
+      if (err.response && err.response.data && typeof err.response.data.message === 'string') {
         setError(err.response.data.message);
+      } else if (typeof err.message === 'string') {
+        setError(err.message);
       } else {
         setError('회원가입 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.');
       }

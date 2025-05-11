@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext'; // AuthProvider import
+import UserInfoDisplay from './components/UserInfoDisplay'; // UserInfoDisplay import
 import HomePage from './pages/HomePage'; // HomePage import
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage'; // RegisterPage 임포트
@@ -9,11 +11,13 @@ import './App.css';
 
 function App() {
   return (
-    <Router>
-      <div>
-        <nav>
-          <ul>
-            <li>
+    <AuthProvider>
+      <Router>
+        <div>
+          <UserInfoDisplay /> {/* UserInfoDisplay 컴포넌트 추가 */}
+          <nav>
+            <ul>
+              <li>
               <Link to="/">Home</Link>
             </li>
             <li>
@@ -40,6 +44,7 @@ function App() {
         </Routes>
       </div>
     </Router>
+  </AuthProvider>
   );
 }
 
