@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom'; // useParams 추가
+import { useParams, useNavigate } from 'react-router-dom'; // useNavigate 추가
 import '../styles.css'; // 전역 스타일 import
 import { Roulette } from '../roulette';
 import socketService from '../services/socketService'; // 경로 변경
@@ -23,6 +23,7 @@ declare global {
 
 const GamePage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>(); // roomId 추출
+  const navigate = useNavigate(); // useNavigate 훅 사용
   const inNamesRef = useRef<HTMLTextAreaElement>(null);
   const inWinningRankRef = useRef<HTMLInputElement>(null);
   const chkSkillRef = useRef<HTMLInputElement>(null);
@@ -264,13 +265,19 @@ const GamePage: React.FC = () => {
       if (roomId && socketService) {
         socketService.connect(roomId)
           .then(() => console.log(`GamePage: Successfully connected to socket for room ${roomId}`))
-          .catch(error => console.error(`GamePage: Failed to connect to socket for room ${roomId}`, error));
+          .catch(error => {
+            console.error(`GamePage: Failed to connect to socket for room ${roomId}`, error);
+            alert(error.message || '방 입장에 실패했습니다. 이전 페이지로 돌아갑니다.');
+            navigate(-1); // 이전 페이지로 이동, 또는 navigate('/') 등으로 특정 페이지 지정
+          });
       } else if (!roomId) {
         console.error('GamePage: Room ID is missing, cannot connect to socket.');
-        // 사용자에게 오류를 알리거나 홈페이지로 리디렉션할 수 있습니다.
-        // 예: alert('Room ID is missing!'); navigate('/');
+        alert('잘못된 접근입니다. 방 ID가 없습니다.');
+        navigate('/'); // 홈페이지로 리디렉션
       } else {
         console.error('socketService not available during GamePage initialization');
+        alert('소켓 서비스 초기화 오류입니다. 잠시 후 다시 시도해주세요.');
+        navigate('/'); // 홈페이지로 리디렉션
       }
 
       const savedNames = localStorage.getItem('mbr_names');
