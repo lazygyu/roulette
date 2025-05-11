@@ -36,7 +36,6 @@ const GamePage: React.FC = () => {
   // let winnerType = 'first'; // 이 값은 setWinnerRank 및 버튼 클릭 핸들러에서 사용됩니다.
   // React에서는 이런 변수들을 useState로 관리하는 것이 일반적입니다.
   // 예를 들어:
-  const [isGameReady, setIsGameReady] = useState(false);
   const [winnerSelectionType, setWinnerSelectionType] = useState('first');
 
   // For localization
@@ -156,11 +155,10 @@ const GamePage: React.FC = () => {
     };
     const handleBtnShuffleClick = submitParticipantNamesToBackend;
     const handleBtnStartClick = () => {
-      // isGameReady 상태를 직접 참조하는 대신, 룰렛 인스턴스에서 직접 참가자 수를 확인
       const currentParticipantCount = window.roullete?.getCount() ?? 0;
       const canStartGame = currentParticipantCount > 0;
 
-      if (!canStartGame) { // isGameReady 대신 canStartGame 사용
+      if (!canStartGame) {
         console.log('Cannot start game: No participants found in roulette instance.');
         return;
       }
@@ -341,10 +339,6 @@ const GamePage: React.FC = () => {
           console.log(window.roullete);
           if (window.roullete) {
             window.roullete.updateStateFromServer(gameState);
-            const currentParticipantCount = window.roullete.getCount();
-            console.log(currentParticipantCount);
-            console.log(currentParticipantCount > 0);
-            setIsGameReady(currentParticipantCount > 0); // 백엔드 데이터 기준으로 isGameReady 설정
 
             const inGameDiv = document.querySelector('#inGame');
             if (inGameDiv) {
