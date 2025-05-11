@@ -109,14 +109,12 @@ const GamePage: React.FC = () => {
       }
     };
 
-    const getReady = () => {
+    const submitParticipantNamesToBackend = () => {
       const names = getNames();
       // window.socketService 대신 직접 socketService 사용
       if (socketService) socketService.setMarbles(names);
-      else console.error('socketService not available for getReady');
+      else console.error('socketService not available for submitParticipantNamesToBackend');
 
-      const currentLocalReady = names.length > 0;
-      setIsGameReady(currentLocalReady); // Update React state
       localStorage.setItem('mbr_names', names.join(','));
 
       switch (localWinnerType) {
@@ -130,7 +128,7 @@ const GamePage: React.FC = () => {
       }
     };
 
-    const handleInNamesInput = getReady;
+    const handleInNamesInput = submitParticipantNamesToBackend;
     const handleInNamesBlur = () => {
       if (!inNamesEl) return;
       const nameSource = getNames();
@@ -153,17 +151,27 @@ const GamePage: React.FC = () => {
       const newValue = result.join(',');
       if (oldValue !== newValue) {
         inNamesEl.value = newValue;
-        getReady();
+        submitParticipantNamesToBackend();
       }
     };
-    const handleBtnShuffleClick = getReady;
+    const handleBtnShuffleClick = submitParticipantNamesToBackend;
     const handleBtnStartClick = () => {
-      console.log('Start button clicked', { isGameReady });
-      if (!isGameReady) return; // Use React state for readiness check
+      // isGameReady 상태를 직접 참조하는 대신, 룰렛 인스턴스에서 직접 참가자 수를 확인
+      const currentParticipantCount = window.roullete?.getCount() ?? 0;
+      const canStartGame = currentParticipantCount > 0;
+
+      if (!canStartGame) { // isGameReady 대신 canStartGame 사용
+        console.log('Cannot start game: No participants found in roulette instance.');
+        return;
+      }
+
       window.gtag?.('event', 'start', { event_category: 'roulette', event_label: 'start', value: 1 });
       // window.socketService 대신 직접 socketService 사용
-      if (socketService) socketService.startGame();
-      else console.error('socketService not available for startGame');
+      if (socketService) {
+        socketService.startGame();
+      } else {
+        console.error('socketService not available for startGame');
+      }
       document.querySelector('#settings')?.classList.add('hide');
       document.querySelector('#donate')?.classList.add('hide');
     };
@@ -329,8 +337,15 @@ const GamePage: React.FC = () => {
       // let unsubscribeGameState: (() => void) | undefined; // useEffect 스코프로 이동
       if (socketService && window.roullete) {
         unsubscribeGameState = socketService.onGameStateUpdate((gameState) => {
+          console.log('GameState updated:', gameState);
+          console.log(window.roullete);
           if (window.roullete) {
             window.roullete.updateStateFromServer(gameState);
+            const currentParticipantCount = window.roullete.getCount();
+            console.log(currentParticipantCount);
+            console.log(currentParticipantCount > 0);
+            setIsGameReady(currentParticipantCount > 0); // 백엔드 데이터 기준으로 isGameReady 설정
+
             const inGameDiv = document.querySelector('#inGame');
             if (inGameDiv) {
               inGameDiv.classList.toggle('hide', !gameState.shakeAvailable);
