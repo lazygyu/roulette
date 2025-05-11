@@ -107,7 +107,7 @@ export class RouletteRenderer {
     // console.log(`renderEntities called with ${entities.length} entities.`); // Uncommented log
     this.ctx.save();
     entities.forEach((entity) => {
-      console.log(`Rendering entity:`, entity); // Uncommented log
+      // console.log(`Rendering entity:`, entity); // Uncommented log
       this.ctx.save();
       this.ctx.translate(entity.x, entity.y);
       this.ctx.rotate(entity.angle);
@@ -156,12 +156,12 @@ export class RouletteRenderer {
     // console.log(`renderMarbles called with ${marbles.length} marbles.`);
 
     marbles.forEach((marbleState, i) => {
-      console.log(`Rendering marble ${i}:`, marbleState);
+      // console.log(`Rendering marble ${i}:`, marbleState);
 
       // --- Fallback for missing or invalid radius ---
       const radius = (marbleState.radius && marbleState.radius > 0) ? marbleState.radius : 0.25;
       if (!marbleState.radius || marbleState.radius <= 0) {
-        console.warn(`Marble ${i} (${marbleState.name}) missing or invalid radius (${marbleState.radius}). Using default: ${radius}`);
+        // console.warn(`Marble ${i} (${marbleState.name}) missing or invalid radius (${marbleState.radius}). Using default: ${radius}`);
       }
       // --- End Fallback ---
 

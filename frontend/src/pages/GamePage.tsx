@@ -68,12 +68,14 @@ const GamePage: React.FC = () => {
     let openNoticeButtonEl: HTMLButtonElement | null = null;
     let noticeElFromQuery: HTMLElement | null = null;
 
-
     // Event Handlers
     const getNames = (): string[] => {
       if (!inNamesEl) return [];
       const value = inNamesEl.value.trim();
-      return value.split(/[,\r\n]/g).map((v) => v.trim()).filter((v) => !!v);
+      return value
+        .split(/[,\r\n]/g)
+        .map((v) => v.trim())
+        .filter((v) => !!v);
     };
 
     const parseName = (nameStr: string) => {
@@ -118,7 +120,9 @@ const GamePage: React.FC = () => {
       localStorage.setItem('mbr_names', names.join(','));
 
       switch (localWinnerType) {
-        case 'first': setWinnerRank(1); break;
+        case 'first':
+          setWinnerRank(1);
+          break;
         case 'last':
           const total = window.roullete?.getCount() ?? 0;
           setWinnerRank(total > 0 ? total : 1);
@@ -128,84 +132,85 @@ const GamePage: React.FC = () => {
 
     const handleInNamesInput = getReady;
     const handleInNamesBlur = () => {
-        if (!inNamesEl) return;
-        const nameSource = getNames();
-        const nameSet = new Set<string>();
-        const nameCounts: { [key: string]: number } = {};
-        nameSource.forEach((nameSrc) => {
-          const item = parseName(nameSrc);
-          const key = item.weight > 1 ? `${item.name}/${item.weight}` : (item.name || '');
-          if (!nameSet.has(key)) {
-            nameSet.add(key);
-            nameCounts[key] = 0;
-          }
-          nameCounts[key] += item.count;
-        });
-        const result: string[] = [];
-        Object.keys(nameCounts).forEach((key) => {
-          result.push(nameCounts[key] > 1 ? `${key}*${nameCounts[key]}` : key);
-        });
-        const oldValue = inNamesEl.value;
-        const newValue = result.join(',');
-        if (oldValue !== newValue) {
-          inNamesEl.value = newValue;
-          getReady();
+      if (!inNamesEl) return;
+      const nameSource = getNames();
+      const nameSet = new Set<string>();
+      const nameCounts: { [key: string]: number } = {};
+      nameSource.forEach((nameSrc) => {
+        const item = parseName(nameSrc);
+        const key = item.weight > 1 ? `${item.name}/${item.weight}` : item.name || '';
+        if (!nameSet.has(key)) {
+          nameSet.add(key);
+          nameCounts[key] = 0;
         }
+        nameCounts[key] += item.count;
+      });
+      const result: string[] = [];
+      Object.keys(nameCounts).forEach((key) => {
+        result.push(nameCounts[key] > 1 ? `${key}*${nameCounts[key]}` : key);
+      });
+      const oldValue = inNamesEl.value;
+      const newValue = result.join(',');
+      if (oldValue !== newValue) {
+        inNamesEl.value = newValue;
+        getReady();
+      }
     };
     const handleBtnShuffleClick = getReady;
     const handleBtnStartClick = () => {
-        if (!isGameReady) return; // Use React state for readiness check
-        window.gtag?.('event', 'start', { event_category: 'roulette', event_label: 'start', value: 1 });
-        // window.socketService 대신 직접 socketService 사용
-        if (socketService) socketService.startGame();
-        else console.error('socketService not available for startGame');
-        document.querySelector('#settings')?.classList.add('hide');
-        document.querySelector('#donate')?.classList.add('hide');
+      console.log('Start button clicked');
+      if (!isGameReady) return; // Use React state for readiness check
+      window.gtag?.('event', 'start', { event_category: 'roulette', event_label: 'start', value: 1 });
+      // window.socketService 대신 직접 socketService 사용
+      if (socketService) socketService.startGame();
+      else console.error('socketService not available for startGame');
+      document.querySelector('#settings')?.classList.add('hide');
+      document.querySelector('#donate')?.classList.add('hide');
     };
     const handleChkSkillChange = (e: Event) => {
-        if (window.options) window.options.useSkills = (e.target as HTMLInputElement).checked;
+      if (window.options) window.options.useSkills = (e.target as HTMLInputElement).checked;
     };
     const handleInWinningRankChange = (e: Event) => {
-        const v = parseInt((e.target as HTMLInputElement).value, 10);
-        const newRank = isNaN(v) || v < 1 ? 1 : v;
-        localWinnerType = 'custom';
-        setWinnerSelectionType('custom');
-        setWinnerRank(newRank);
+      const v = parseInt((e.target as HTMLInputElement).value, 10);
+      const newRank = isNaN(v) || v < 1 ? 1 : v;
+      localWinnerType = 'custom';
+      setWinnerSelectionType('custom');
+      setWinnerRank(newRank);
     };
     const handleBtnLastWinnerClick = () => {
-        const currentTotal = window.roullete?.getCount() ?? 1;
-        localWinnerType = 'last';
-        setWinnerSelectionType('last');
-        setWinnerRank(currentTotal > 0 ? currentTotal : 1);
+      const currentTotal = window.roullete?.getCount() ?? 1;
+      localWinnerType = 'last';
+      setWinnerSelectionType('last');
+      setWinnerRank(currentTotal > 0 ? currentTotal : 1);
     };
     const handleBtnFirstWinnerClick = () => {
-        localWinnerType = 'first';
-        setWinnerSelectionType('first');
-        setWinnerRank(1);
+      localWinnerType = 'first';
+      setWinnerSelectionType('first');
+      setWinnerRank(1);
     };
     const handleBtnShakeClick = () => {
-        window.roullete?.shake();
-        window.gtag?.('event', 'shake', { event_category: 'roulette', event_label: 'shake', value: 1 });
+      window.roullete?.shake();
+      window.gtag?.('event', 'shake', { event_category: 'roulette', event_label: 'shake', value: 1 });
     };
     const handleMapChange = (e: Event) => {
-        const index = parseInt((e.target as HTMLSelectElement).value, 10);
-        // window.socketService 대신 직접 socketService 사용
-        if (socketService && !isNaN(index)) socketService.setMap(index);
-        else console.error('socketService not available or invalid map index for setMap');
+      const index = parseInt((e.target as HTMLSelectElement).value, 10);
+      // window.socketService 대신 직접 socketService 사용
+      if (socketService && !isNaN(index)) socketService.setMap(index);
+      else console.error('socketService not available or invalid map index for setMap');
     };
     const handleAutoRecordingChange = (e: Event) => {
-        if (window.roullete) window.roullete.setAutoRecording((e.target as HTMLInputElement).checked);
+      if (window.roullete) window.roullete.setAutoRecording((e.target as HTMLInputElement).checked);
     };
     const handleCloseNotice = () => {
-        if (noticeElFromQuery) noticeElFromQuery.style.display = 'none';
-        localStorage.setItem('lastViewedNotification', '1'); // Assuming currentNotice is 1
+      if (noticeElFromQuery) noticeElFromQuery.style.display = 'none';
+      localStorage.setItem('lastViewedNotification', '1'); // Assuming currentNotice is 1
     };
     const handleOpenNotice = () => {
-        if (noticeElFromQuery) noticeElFromQuery.style.display = 'flex';
+      if (noticeElFromQuery) noticeElFromQuery.style.display = 'flex';
     };
 
     // --- Initialization Function (now split into parts) ---
-    
+
     // Part 1: One-time setup of window objects and non-DOM related initializations
     rouletteInstance = new Roulette(); // Create instance once
     window.roullete = rouletteInstance;
@@ -213,7 +218,9 @@ const GamePage: React.FC = () => {
     window.options = options;
 
     window.dataLayer = window.dataLayer || [];
-    function gtagForPage(...args: any[]) { (window.dataLayer!).push(args); } // Renamed to avoid conflict if gtag is already on window
+    function gtagForPage(...args: any[]) {
+      window.dataLayer!.push(args);
+    } // Renamed to avoid conflict if gtag is already on window
     window.gtag = gtagForPage;
     gtagForPage('js', new Date());
     gtagForPage('config', 'G-5899C1DJM0');
@@ -263,9 +270,10 @@ const GamePage: React.FC = () => {
 
       // roomId가 있을 경우에만 connect 시도
       if (roomId && socketService) {
-        socketService.connect(roomId)
+        socketService
+          .connect(roomId)
           .then(() => console.log(`GamePage: Successfully connected to socket for room ${roomId}`))
-          .catch(error => {
+          .catch((error) => {
             console.error(`GamePage: Failed to connect to socket for room ${roomId}`, error);
             alert(error.message || '방 입장에 실패했습니다. 이전 페이지로 돌아갑니다.');
             navigate(-1); // 이전 페이지로 이동, 또는 navigate('/') 등으로 특정 페이지 지정
@@ -316,7 +324,7 @@ const GamePage: React.FC = () => {
         });
         sltMapRef.current!.addEventListener('change', handleMapChange); // Non-null assertion
       }
-      
+
       // GameState 업데이트 처리
       // let unsubscribeGameState: (() => void) | undefined; // useEffect 스코프로 이동
       if (socketService && window.roullete) {
@@ -331,12 +339,12 @@ const GamePage: React.FC = () => {
         });
       }
 
-
-      if (chkAutoRecordingElFromRef) { // chkAutoRecordingElFromRef null 체크
-         chkAutoRecordingElFromRef.addEventListener('change', handleAutoRecordingChange);
-         if (window.options && window.roullete) {
-            chkAutoRecordingElFromRef.checked = window.options.autoRecording;
-            window.roullete.setAutoRecording(window.options.autoRecording);
+      if (chkAutoRecordingElFromRef) {
+        // chkAutoRecordingElFromRef null 체크
+        chkAutoRecordingElFromRef.addEventListener('change', handleAutoRecordingChange);
+        if (window.options && window.roullete) {
+          chkAutoRecordingElFromRef.checked = window.options.autoRecording;
+          window.roullete.setAutoRecording(window.options.autoRecording);
         }
       }
 
@@ -377,10 +385,9 @@ const GamePage: React.FC = () => {
     };
 
     checkRouletteReadyAndInitialize(); // Start the check
-    
 
     return () => {
-      console.log("Cleaning up GamePage effects");
+      console.log('Cleaning up GamePage effects');
       if (readyCheckTimeoutId) clearTimeout(readyCheckTimeoutId);
       if (donateButtonCheckTimeoutId) clearTimeout(donateButtonCheckTimeoutId);
 
@@ -434,7 +441,7 @@ const GamePage: React.FC = () => {
 
     const script = document.createElement('script');
     script.id = scriptId;
-    script.src = "https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js";
+    script.src = 'https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js';
     script.setAttribute('data-name', 'bmc-button');
     script.setAttribute('data-slug', 'lazygyu');
     script.setAttribute('data-color', '#FFDD00');
@@ -445,7 +452,7 @@ const GamePage: React.FC = () => {
     script.setAttribute('data-font-color', '#000000');
     script.setAttribute('data-coffee-color', '#ffffff');
     script.async = true;
-    
+
     donateContainer.appendChild(script);
 
     return () => {
@@ -455,7 +462,6 @@ const GamePage: React.FC = () => {
       }
     };
   }, []);
-
 
   return (
     <>
@@ -490,9 +496,26 @@ const GamePage: React.FC = () => {
               <span data-trans>The winner is</span>
             </label>
             <div className="btn-group">
-              <button className={`btn-winner btn-first-winner ${winnerSelectionType === 'first' ? 'active' : ''}`} data-trans>First</button>
-              <button className={`btn-winner btn-last-winner ${winnerSelectionType === 'last' ? 'active' : ''}`} data-trans>Last</button>
-              <input type="number" id="in_winningRank" defaultValue="1" min="1" ref={inWinningRankRef} className={winnerSelectionType === 'custom' ? 'active' : ''} />
+              <button
+                className={`btn-winner btn-first-winner ${winnerSelectionType === 'first' ? 'active' : ''}`}
+                data-trans
+              >
+                First
+              </button>
+              <button
+                className={`btn-winner btn-last-winner ${winnerSelectionType === 'last' ? 'active' : ''}`}
+                data-trans
+              >
+                Last
+              </button>
+              <input
+                type="number"
+                id="in_winningRank"
+                defaultValue="1"
+                min="1"
+                ref={inWinningRankRef}
+                className={winnerSelectionType === 'custom' ? 'active' : ''}
+              />
             </div>
           </div>
           <div className="row">
@@ -529,36 +552,46 @@ const GamePage: React.FC = () => {
         </div>
       </div>
 
-      <div id="donate">
-        {/* BuyMeACoffee 버튼 스크립트가 여기에 동적으로 삽입됩니다. */}
-      </div>
+      <div id="donate">{/* BuyMeACoffee 버튼 스크립트가 여기에 동적으로 삽입됩니다. */}</div>
 
       <div id="inGame" className="settings hide">
-        <button id="btnShake" data-trans>Shake!</button>
+        <button id="btnShake" data-trans>
+          Shake!
+        </button>
       </div>
 
-      <div id="notice" style={{display: 'none'}}> {/* 초기 상태는 none으로 */}
+      <div id="notice" style={{ display: 'none' }}>
+        {' '}
+        {/* 초기 상태는 none으로 */}
         <h1>Notice</h1>
         <div className="notice-body">
           <p>이 프로그램은 무료이며 사용에 아무런 제한이 없습니다.</p>
           <p>
-            이 프로그램의 사용이나 프로그램을 이용한 영상 제작, 방송 등에 원작자는 아무런 제재를 가하거나 이의를 제기하지
-            않습니다. 자유롭게 사용하셔도 됩니다.
+            이 프로그램의 사용이나 프로그램을 이용한 영상 제작, 방송 등에 원작자는 아무런 제재를 가하거나 이의를
+            제기하지 않습니다. 자유롭게 사용하셔도 됩니다.
           </p>
           <p>다만 저작권자를 사칭하는 것은 저작권법을 위반하는 범죄입니다.</p>
           <p>
             저작권자를 사칭하여 권리 침해를 주장하는 경우를 보거나 겪으시는 분은
-            <a href="mailto:lazygyu+legal@gmail.com" target="_blank" rel="noopener noreferrer">lazygyu+legal@gmail.com</a> 으로 제보 부탁드립니다.
+            <a href="mailto:lazygyu+legal@gmail.com" target="_blank" rel="noopener noreferrer">
+              lazygyu+legal@gmail.com
+            </a>{' '}
+            으로 제보 부탁드립니다.
           </p>
           <p>감사합니다.</p>
         </div>
         <div className="notice-action">
-          <button id="closeNotice" data-trans>Close</button>
+          <button id="closeNotice" data-trans>
+            Close
+          </button>
         </div>
       </div>
 
       <div className="copyright">
-        &copy; 2025.<a href="https://lazygyu.net" target="_blank" rel="noopener noreferrer">lazygyu</a>
+        &copy; 2025.
+        <a href="https://lazygyu.net" target="_blank" rel="noopener noreferrer">
+          lazygyu
+        </a>
         <span data-trans>
           This program is freeware and may be used freely anywhere, including in broadcasts and videos.
         </span>
