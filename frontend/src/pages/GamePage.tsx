@@ -335,8 +335,6 @@ const GamePage: React.FC = () => {
       // let unsubscribeGameState: (() => void) | undefined; // useEffect 스코프로 이동
       if (socketService && window.roullete) {
         unsubscribeGameState = socketService.onGameStateUpdate((gameState) => {
-          console.log('GameState updated:', gameState);
-          console.log(window.roullete);
           if (window.roullete) {
             window.roullete.updateStateFromServer(gameState);
 
