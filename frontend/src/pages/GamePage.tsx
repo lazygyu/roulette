@@ -279,7 +279,11 @@ const GamePage: React.FC = () => {
       if (roomId && socketService) {
         socketService
           .connect(roomId)
-          .then(() => console.log(`GamePage: Successfully connected to socket for room ${roomId}`))
+          .then(() => {
+            console.log(`GamePage: Successfully connected to socket for room ${roomId}`);
+            // 소켓 연결 및 방 참여 성공 후 초기 셔플 실행
+            btnShuffleEl?.dispatchEvent(new Event('click')); // Initial shuffle
+          })
           .catch((error) => {
             console.error(`GamePage: Failed to connect to socket for room ${roomId}`, error);
             alert(error.message || '방 입장에 실패했습니다. 이전 페이지로 돌아갑니다.');
@@ -379,7 +383,7 @@ const GamePage: React.FC = () => {
       openNoticeButtonEl?.addEventListener('click', handleOpenNotice);
       checkNotice();
 
-      btnShuffleEl?.dispatchEvent(new Event('click')); // Initial shuffle
+      // btnShuffleEl?.dispatchEvent(new Event('click')); // Initial shuffle - 위쪽 .then() 블록으로 이동
     };
 
     // Part 3: Initialize Roulette and then setup game interactions
