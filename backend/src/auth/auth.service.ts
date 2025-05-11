@@ -26,6 +26,7 @@ export class AuthService {
     const payload = { username: user.username, sub: user.id };
     return {
       access_token: this.jwtService.sign(payload),
+      nickname: user.nickname, // 사용자 닉네임을 응답에 추가
     };
   }
 }

@@ -16,13 +16,14 @@ function LoginPage() {
 
     try {
       const response = await login(username, password);
-      if (response.data && response.data.access_token) {
+      if (response.data && response.data.access_token && response.data.nickname) {
         localStorage.setItem('access_token', response.data.access_token);
+        localStorage.setItem('user_nickname', response.data.nickname); // 닉네임 저장 추가
         // 로그인 성공 후 사용자를 홈페이지 또는 다른 적절한 페이지로 리디렉션합니다.
         // 예: navigate('/'); 또는 navigate('/create-room');
         navigate('/'); // 홈페이지로 리디렉션 (예시)
       } else {
-        setError('로그인에 실패했습니다. 응답 형식을 확인해주세요.');
+        setError('로그인에 실패했습니다. 응답 형식을 확인해주세요. (닉네임 정보 누락 가능성)');
       }
     } catch (err: any) {
       if (err.response && err.response.data && err.response.data.message) {
