@@ -1,17 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom'; // useParams 추가
 import '../styles.css'; // 전역 스타일 import
 import { Roulette } from '../roulette';
-import socketService from '../socketService'; // 실제 인스턴스 사용
+import socketService from '../services/socketService'; // 경로 변경
 import options from '../options'; // 실제 인스턴스 사용
+// GameState 등의 타입은 roulette.ts나 socketService에서 가져오므로 여기서 직접 임포트 불필요할 수 있음
+// 필요하다면 import { GameState, MapInfo } from '../types/gameTypes'; 추가
 import { TranslatedLanguages, TranslationKeys, Translations } from '../data/languages'; // localization.ts에서 가져옴
 
 // GamePage에 필요한 window 속성들을 전역 Window 인터페이스에 선택적으로 추가
 declare global {
   interface Window {
     roullete?: Roulette;
-    socketService?: typeof socketService;
+    // window.socketService 는 더 이상 사용하지 않음
     options?: typeof options;
-    updateMapSelector?: (maps: { index: number; title: string }[]) => void;
+    // updateMapSelector 는 GamePage 내부에서 socketService.onAvailableMapsUpdate를 통해 처리
     dataLayer?: any[];
     gtag?: (...args: any[]) => void;
     translateElement?: (element: HTMLElement) => void;
@@ -19,6 +22,7 @@ declare global {
 }
 
 const GamePage: React.FC = () => {
+  const { roomId } = useParams<{ roomId: string }>(); // roomId 추출
   const inNamesRef = useRef<HTMLTextAreaElement>(null);
   const inWinningRankRef = useRef<HTMLInputElement>(null);
   const chkSkillRef = useRef<HTMLInputElement>(null);
@@ -43,9 +47,13 @@ const GamePage: React.FC = () => {
     let donateButtonCheckTimeoutId: NodeJS.Timeout | undefined;
     let readyCheckTimeoutId: NodeJS.Timeout | undefined;
 
+    // 구독 해제 함수들을 저장할 변수들
+    let unsubscribeMaps: (() => void) | undefined;
+    let unsubscribeGameState: (() => void) | undefined;
+
     // DOM Elements (queried within initializeGamePage, references stored here for cleanup)
     // These will be assigned when setupGameInteractions is called.
-    let inNamesEl: HTMLTextAreaElement | null = null; 
+    let inNamesEl: HTMLTextAreaElement | null = null;
     let btnShuffleEl: HTMLButtonElement | null = null;
     let btnStartEl: HTMLButtonElement | null = null;
     let chkSkillElFromQuery: HTMLInputElement | null = null;
@@ -78,13 +86,14 @@ const GamePage: React.FC = () => {
       const count = hasCount ? parseInt(countRegex.exec(nameStr)![1].replace('*', '')) : 1;
       return { name, weight, count };
     };
-    
+
     let localWinnerType = 'first'; // Keep this to mirror original logic closely
 
     const setWinnerRank = (rank: number) => {
       if (inWinningRankRef.current) inWinningRankRef.current.value = rank.toString();
       if (window.options) window.options.winningRank = rank;
-      if (window.socketService) window.socketService.setWinningRank(rank - 1);
+      // window.socketService 대신 직접 socketService 사용
+      if (socketService) socketService.setWinningRank(rank - 1);
       else console.error('socketService not available for setWinnerRank');
 
       const btnFirstWinner = document.querySelector('.btn-first-winner');
@@ -99,13 +108,14 @@ const GamePage: React.FC = () => {
 
     const getReady = () => {
       const names = getNames();
-      if (window.socketService) window.socketService.setMarbles(names);
+      // window.socketService 대신 직접 socketService 사용
+      if (socketService) socketService.setMarbles(names);
       else console.error('socketService not available for getReady');
-      
+
       const currentLocalReady = names.length > 0;
       setIsGameReady(currentLocalReady); // Update React state
       localStorage.setItem('mbr_names', names.join(','));
-      
+
       switch (localWinnerType) {
         case 'first': setWinnerRank(1); break;
         case 'last':
@@ -114,7 +124,7 @@ const GamePage: React.FC = () => {
           break;
       }
     };
-    
+
     const handleInNamesInput = getReady;
     const handleInNamesBlur = () => {
         if (!inNamesEl) return;
@@ -145,7 +155,8 @@ const GamePage: React.FC = () => {
     const handleBtnStartClick = () => {
         if (!isGameReady) return; // Use React state for readiness check
         window.gtag?.('event', 'start', { event_category: 'roulette', event_label: 'start', value: 1 });
-        if (window.socketService) window.socketService.startGame();
+        // window.socketService 대신 직접 socketService 사용
+        if (socketService) socketService.startGame();
         else console.error('socketService not available for startGame');
         document.querySelector('#settings')?.classList.add('hide');
         document.querySelector('#donate')?.classList.add('hide');
@@ -177,7 +188,8 @@ const GamePage: React.FC = () => {
     };
     const handleMapChange = (e: Event) => {
         const index = parseInt((e.target as HTMLSelectElement).value, 10);
-        if (window.socketService && !isNaN(index)) window.socketService.setMap(index);
+        // window.socketService 대신 직접 socketService 사용
+        if (socketService && !isNaN(index)) socketService.setMap(index);
         else console.error('socketService not available or invalid map index for setMap');
     };
     const handleAutoRecordingChange = (e: Event) => {
@@ -196,7 +208,7 @@ const GamePage: React.FC = () => {
     // Part 1: One-time setup of window objects and non-DOM related initializations
     rouletteInstance = new Roulette(); // Create instance once
     window.roullete = rouletteInstance;
-    window.socketService = socketService;
+    // window.socketService = socketService; // 더 이상 전역에 할당하지 않음
     window.options = options;
 
     window.dataLayer = window.dataLayer || [];
@@ -207,7 +219,7 @@ const GamePage: React.FC = () => {
 
     const defaultLoc: TranslatedLanguages = 'en';
     let pageLocale: TranslatedLanguages | undefined;
-    originalDocumentLang = document.documentElement.lang; 
+    originalDocumentLang = document.documentElement.lang;
     const getBrowserLoc = () => navigator.language.split('-')[0] as TranslatedLanguages;
     const translateElForPage = (element: Element) => {
       if (!(element instanceof HTMLElement) || !pageLocale || !Translations[pageLocale]) return;
@@ -248,8 +260,18 @@ const GamePage: React.FC = () => {
       openNoticeButtonEl = document.querySelector<HTMLButtonElement>('#btnNotice');
       noticeElFromQuery = document.querySelector<HTMLElement>('#notice');
 
-      if (window.socketService) window.socketService.connect();
-      else console.error('socketService not available during GamePage initialization');
+      // roomId가 있을 경우에만 connect 시도
+      if (roomId && socketService) {
+        socketService.connect(roomId)
+          .then(() => console.log(`GamePage: Successfully connected to socket for room ${roomId}`))
+          .catch(error => console.error(`GamePage: Failed to connect to socket for room ${roomId}`, error));
+      } else if (!roomId) {
+        console.error('GamePage: Room ID is missing, cannot connect to socket.');
+        // 사용자에게 오류를 알리거나 홈페이지로 리디렉션할 수 있습니다.
+        // 예: alert('Room ID is missing!'); navigate('/');
+      } else {
+        console.error('socketService not available during GamePage initialization');
+      }
 
       const savedNames = localStorage.getItem('mbr_names');
       if (savedNames && inNamesEl) inNamesEl.value = savedNames;
@@ -266,26 +288,43 @@ const GamePage: React.FC = () => {
       btnLastWinnerEl?.addEventListener('click', handleBtnLastWinnerClick);
       btnFirstWinnerEl?.addEventListener('click', handleBtnFirstWinnerClick);
       btnShakeEl?.addEventListener('click', handleBtnShakeClick);
-      
-      if (sltMapEl) { // sltMapEl null 체크
+
+      // window.updateMapSelector 대신 socketService.onAvailableMapsUpdate 사용
+      // let unsubscribeMaps: (() => void) | undefined; // useEffect 스코프로 이동
+      if (sltMapEl && socketService) {
         sltMapEl.innerHTML = '<option value="">Loading maps...</option>';
         sltMapEl.disabled = true;
-        window.updateMapSelector = (maps) => {
-          if (!sltMapEl) return; // 내부에서도 null 체크
-          sltMapEl.innerHTML = '';
+        unsubscribeMaps = socketService.onAvailableMapsUpdate((maps) => {
+          if (!sltMapRef.current) return; // Ref의 current를 직접 확인
+          sltMapRef.current.innerHTML = '';
           maps.forEach((map) => {
             const option = document.createElement('option');
             option.value = map.index.toString();
             option.innerHTML = map.title;
             option.setAttribute('data-trans', '');
             if (window.translateElement) window.translateElement(option);
-            sltMapEl!.append(option);
+            sltMapRef.current!.append(option); // Non-null assertion
           });
-          sltMapEl.disabled = false;
-        };
-        sltMapEl.addEventListener('change', handleMapChange);
+          sltMapRef.current!.disabled = false; // Non-null assertion
+        });
+        sltMapRef.current!.addEventListener('change', handleMapChange); // Non-null assertion
       }
       
+      // GameState 업데이트 처리
+      // let unsubscribeGameState: (() => void) | undefined; // useEffect 스코프로 이동
+      if (socketService && window.roullete) {
+        unsubscribeGameState = socketService.onGameStateUpdate((gameState) => {
+          if (window.roullete) {
+            window.roullete.updateStateFromServer(gameState);
+            const inGameDiv = document.querySelector('#inGame');
+            if (inGameDiv) {
+              inGameDiv.classList.toggle('hide', !gameState.shakeAvailable);
+            }
+          }
+        });
+      }
+
+
       if (chkAutoRecordingElFromRef) { // chkAutoRecordingElFromRef null 체크
          chkAutoRecordingElFromRef.addEventListener('change', handleAutoRecordingChange);
          if (window.options && window.roullete) {
@@ -304,7 +343,7 @@ const GamePage: React.FC = () => {
         }
       };
       donateButtonCheckTimeoutId = setTimeout(checkDonateButtonLoaded, 100);
-      
+
       const currentNotice = 1; // Assuming this is constant
       const noticeKey = 'lastViewedNotification';
       const checkNotice = () => {
@@ -331,11 +370,20 @@ const GamePage: React.FC = () => {
     };
 
     checkRouletteReadyAndInitialize(); // Start the check
+    
 
     return () => {
       console.log("Cleaning up GamePage effects");
       if (readyCheckTimeoutId) clearTimeout(readyCheckTimeoutId);
       if (donateButtonCheckTimeoutId) clearTimeout(donateButtonCheckTimeoutId);
+
+      // 구독 해제 함수 호출
+      if (unsubscribeMaps) {
+        unsubscribeMaps();
+      }
+      if (unsubscribeGameState) {
+        unsubscribeGameState();
+      }
 
       // Remove Event Listeners (ensure elements were assigned before trying to remove)
       if (inNamesEl) {
@@ -353,13 +401,14 @@ const GamePage: React.FC = () => {
       chkAutoRecordingElFromRef?.removeEventListener('change', handleAutoRecordingChange);
       closeNoticeButtonEl?.removeEventListener('click', handleCloseNotice);
       openNoticeButtonEl?.removeEventListener('click', handleOpenNotice);
-      
-      if (window.socketService) window.socketService.disconnect();
-      
+
+      // window.socketService 대신 직접 socketService 사용
+      if (socketService) socketService.disconnect();
+
       delete window.roullete; // Clean up window object
-      delete window.socketService;
+      // delete window.socketService; // 이미 전역에서 제거됨
       delete window.options;
-      delete window.updateMapSelector;
+      // delete window.updateMapSelector; // 이미 GamePage 내부 로직으로 대체됨
       delete window.translateElement;
       // gtag and dataLayer are often fine to leave, but clear if strictly necessary
       // delete window.gtag;
@@ -367,7 +416,7 @@ const GamePage: React.FC = () => {
 
       document.documentElement.lang = originalDocumentLang;
     };
-  }, []);
+  }, [roomId]); // roomId가 변경되면 useEffect를 다시 실행 (방 변경 시 소켓 재연결 등)
 
   // BuyMeACoffee 스크립트 로딩
   useEffect(() => {

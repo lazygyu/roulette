@@ -2,23 +2,23 @@ import { canvasHeight, canvasWidth, DefaultBloomColor, DefaultEntityColor, initi
 import { Camera } from './camera';
 import { StageDef } from './data/maps';
 // import { Marble } from './marble'; // No longer using Marble class instance
-import { MarbleState } from './types/MarbleState.type'; // Use MarbleState instead
+import { MarbleState, MapEntityState } from './types/gameTypes'; // Use types from gameTypes
 import { ParticleManager } from './particleManager';
 import { GameObject } from './gameObject';
 import { UIObject } from './UIObject';
 import { VectorLike } from './types/VectorLike';
-import { MapEntityState } from './types/MapEntity.type';
+// import { MapEntityState } from './types/MapEntity.type'; // No longer needed
 
 export type RenderParameters = {
   camera: Camera;
   stage: StageDef;
-  entities: MapEntityState[];
-  marbles: MarbleState[]; // Changed type
-  winners: MarbleState[]; // Changed type
+  entities: MapEntityState[]; // Uses MapEntityState from gameTypes
+  marbles: MarbleState[]; // Uses MarbleState from gameTypes
+  winners: MarbleState[]; // Uses MarbleState from gameTypes
   particleManager: ParticleManager;
   effects: GameObject[];
   winnerRank: number;
-  winner: MarbleState | null; // Changed type
+  winner: MarbleState | null; // Uses MarbleState from gameTypes
   size: VectorLike;
 };
 

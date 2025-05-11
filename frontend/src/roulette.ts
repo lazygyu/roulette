@@ -15,9 +15,7 @@ import { Minimap } from './minimap';
 import { VideoRecorder } from './utils/videoRecorder';
 // import { IPhysics } from './IPhysics'; // No longer needed for local physics
 // import { Box2dPhysics } from './physics-box2d'; // No longer needed for local physics
-import { GameState } from './types/GameState.type'; // Import GameState
-import { MarbleState } from './types/MarbleState.type'; // Import MarbleState
-import { MapEntityState } from './types/MapEntityState.type'; // Import MapEntityState
+import { GameState, MarbleState, MapEntityState } from './types/gameTypes'; // Import types from gameTypes
 
 export class Roulette extends EventTarget {
   // Store state received from server
