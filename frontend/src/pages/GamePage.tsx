@@ -622,7 +622,7 @@ const GamePage: React.FC = () => {
       {/* 
         Roulette 게임 캔버스는 이제 아래 div#roulette-canvas-container 내부에 생성됩니다.
       */}
-      <div id="roulette-canvas-container" ref={rouletteCanvasContainerRef} style={{ width: '100%', height: '100%', position: 'fixed', top: 0, left: 0, zIndex: -1 }} />
+      <div id="roulette-canvas-container" ref={rouletteCanvasContainerRef} style={{ width: '100%', height: '100%', position: 'fixed', top: 0, left: 0 }} />
     </>
   );
 };
