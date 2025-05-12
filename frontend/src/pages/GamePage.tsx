@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import '../styles.css';
+import { useParams, useNavigate } from 'react-router-dom'; // useNavigate 추가
+import '../styles.css'; // 전역 스타일 import
 import { Roulette } from '../roulette';
-import socketService from '../services/socketService';
-import options from '../options';
-import { TranslatedLanguages, TranslationKeys, Translations } from '../data/languages';
-import { getCurrentUser, getRoomInfo, UserInfo, RoomInfo } from '../services/api'; // API 함수 및 타입 임포트
+import socketService from '../services/socketService'; // 경로 변경
+import options from '../options'; // 실제 인스턴스 사용
+// GameState 등의 타입은 roulette.ts나 socketService에서 가져오므로 여기서 직접 임포트 불필요할 수 있음
+// 필요하다면 import { GameState, MapInfo } from '../types/gameTypes'; 추가
+import { TranslatedLanguages, TranslationKeys, Translations } from '../data/languages'; // localization.ts에서 가져옴
 
 // GamePage에 필요한 window 속성들을 전역 Window 인터페이스에 선택적으로 추가
 declare global {
@@ -40,53 +41,9 @@ const GamePage: React.FC = () => {
 
   // For localization
   const [currentLocale, setCurrentLocale] = useState<TranslatedLanguages>('en');
-  // --- 추가된 상태 변수들 ---
-  const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
-  const [roomInfo, setRoomInfo] = useState<RoomInfo | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // 데이터 로딩 상태
 
   useEffect(() => {
-    // --- 데이터 Fetch 로직 추가 ---
-    const fetchData = async () => {
-      if (!roomId) {
-        console.error('Room ID is missing.');
-        setIsLoading(false);
-        navigate('/'); // 또는 오류 페이지로 이동
-        return;
-      }
-      setIsLoading(true);
-      try {
-        // 병렬로 사용자 정보와 방 정보 가져오기
-        const [user, room] = await Promise.all([
-          getCurrentUser(),
-          getRoomInfo(roomId),
-        ]);
-        setCurrentUser(user);
-        setRoomInfo(room);
-        // 관리자 여부 확인
-        if (user && room) {
-          setIsAdmin(user.id === room.managerId);
-          console.log(`Current user ID: ${user.id}, Room manager ID: ${room.managerId}, Is admin: ${user.id === room.managerId}`);
-        } else {
-          setIsAdmin(false);
-        }
-      } catch (error) {
-        console.error('Error fetching user or room data:', error);
-        // 오류 처리 (예: 로그인 페이지로 리디렉션, 오류 메시지 표시 등)
-        // 여기서는 간단히 isAdmin을 false로 설정하고 로딩 종료
-        setIsAdmin(false);
-        // navigate('/login'); // 예시: 로그인 안 된 경우 로그인 페이지로
-        alert('사용자 또는 방 정보를 가져오는 데 실패했습니다.');
-        navigate('/'); // 예시: 홈으로 이동
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-    // --- 기존 useEffect 내용 시작 ---
-    let rouletteInstance: Roulette | null = null;
+    let rouletteInstance: Roulette | null = null; // Roulette 인스턴스를 저장할 변수
     let originalDocumentLang = document.documentElement.lang;
     let donateButtonCheckTimeoutId: NodeJS.Timeout | undefined;
     // let readyCheckTimeoutId: NodeJS.Timeout | undefined; // polling 방식 제거
@@ -544,15 +501,10 @@ const GamePage: React.FC = () => {
         여기서는 gtag 초기화는 useEffect에서 처리했습니다.
       */}
 
-      {/* --- 조건부 렌더링 적용 --- */}
-      {isLoading ? (
-        <div style={{ color: 'white', textAlign: 'center', paddingTop: '50px' }}>Loading...</div>
-      ) : isAdmin ? (
-        <div id="settings" className="settings">
-          {/* 기존 설정 UI */}
-          <div className="right">
-            <div className="row">
-              <label>
+      <div id="settings" className="settings">
+        <div className="right">
+          <div className="row">
+            <label>
               <i className="icon map"></i>
               <span data-trans>Map</span>
             </label>
@@ -624,15 +576,8 @@ const GamePage: React.FC = () => {
               <span data-trans>Start</span>
             </button>
           </div>
-          </div>
         </div>
-      ) : (
-        // 관리자가 아닐 때 표시할 내용 (선택 사항)
-        // 예: <div style={{ color: 'white', textAlign: 'center', paddingTop: '50px' }}>게임 설정을 변경할 권한이 없습니다.</div>
-        // 여기서는 아무것도 표시하지 않음
-        null
-      )}
-
+      </div>
 
       <div id="donate">{/* BuyMeACoffee 버튼 스크립트가 여기에 동적으로 삽입됩니다. */}</div>
 
