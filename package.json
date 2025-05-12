@@ -45,7 +45,7 @@
     "build": "yarn workspace frontend build && yarn workspace backend build",
     "lint": "yarn workspace frontend lint && yarn workspace backend lint",
     "frontend:lint": "yarn workspace frontend lint",
-    "frontend:dev": "yarn workspace frontend dev",
+    "frontend:dev": "yarn workspace frontend start",
     "frontend:build": "yarn workspace frontend build",
     "backend:dev": "yarn workspace backend start:dev",
     "backend:build": "yarn workspace backend build",
