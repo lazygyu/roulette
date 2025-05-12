@@ -42,12 +42,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // 클라이언트가 참여한 모든 방에서 제거
     const rooms = Array.from(client.rooms.values()).filter((room) => room !== client.id);
     rooms.forEach((roomId) => {
-      const player = this.roomManagerService.getPlayers(roomId).find(p => p.id === client.id);
+      const player = this.roomManagerService.getPlayers(roomId).find((p) => p.id === client.id);
       this.roomManagerService.removePlayer(roomId, client.id);
       // 방에 남아있는 플레이어들에게 알림
-      client.to(roomId).emit('player_left', { 
+      client.to(roomId).emit('player_left', {
         playerId: client.id,
-        nickname: player?.userInfo.nickname || 'Unknown'
+        nickname: player?.userInfo.nickname || 'Unknown',
       });
       this.logger.log(`방 ${roomId}에서 플레이어 ${player?.userInfo.nickname || 'Unknown'} (${client.id}) 퇴장`);
     });
@@ -55,42 +55,42 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('join_room')
   async handleJoinRoom(
-    @ConnectedSocket() client: Socket, 
-    @MessageBody() data: { roomId: string; userInfo?: { nickname: string } }
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { roomId: string; userInfo?: { nickname: string } },
   ) {
     const { roomId, userInfo = { nickname: `User_${client.id.slice(0, 4)}` } } = data;
 
     // Check if room exists in database
     const room = await this.prisma.room.findUnique({
-      where: { id: parseInt(roomId) }
+      where: { id: parseInt(roomId) },
     });
 
     if (!room) {
       this.logger.warn(`존재하지 않는 방 접근 시도: ${roomId} (${client.id})`);
-      return { 
-        success: false, 
-        message: '존재하지 않는 방입니다.' 
+      return {
+        success: false,
+        message: '존재하지 않는 방입니다.',
       };
     }
 
     client.join(roomId);
-    
+
     // Add player with user info
     this.roomManagerService.addPlayer(roomId, client.id, userInfo);
 
     // Get current players in the room
     const currentPlayers = this.roomManagerService.getPlayers(roomId);
     this.logger.log(`방 ${roomId} 현재 플레이어 목록:`);
-    currentPlayers.forEach(player => {
+    currentPlayers.forEach((player) => {
       if (player && player.userInfo) {
         this.logger.log(`- ${player.userInfo.nickname} (${player.id})`);
       }
     });
 
     // Notify other clients about new player with user info
-    client.to(roomId).emit('player_joined', { 
+    client.to(roomId).emit('player_joined', {
       playerId: client.id,
-      userInfo: userInfo 
+      userInfo: userInfo,
     });
 
     // Send game state and maps
@@ -99,7 +99,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('game_state', gameState);
     client.emit('available_maps', maps);
 
-    this.logger.log(`새로운 플레이어 참여: ${userInfo.nickname} (${client.id}) - 방 ${roomId} (${new Date().toLocaleString()})`);
+    this.logger.log(
+      `새로운 플레이어 참여: ${userInfo.nickname} (${client.id}) - 방 ${roomId} (${new Date().toLocaleString()})`,
+    );
     return { success: true, message: `방 ${roomId}에 참여했습니다.` };
   }
 
