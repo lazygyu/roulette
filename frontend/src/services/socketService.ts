@@ -51,10 +51,10 @@ class SocketService {
       const socketUrl = `${protocol}//${host}:${port}/game`;
 
       console.log(`Connecting to socket server at ${socketUrl} for room ${roomId}...`);
-      const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem('access_token'); // 'access_token' 키가 맞는지 확인 필요
       this.socket = io(socketUrl, {
         auth: {
-          token: token ? `Bearer ${token}` : undefined,
+          token: token, // 'Bearer ' 접두사 제거
         },
       });
 

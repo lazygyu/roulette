@@ -11,10 +11,14 @@ import {
 import { Server, Socket } from 'socket.io';
 import { GameSessionService } from './game-session.service';
 import { GameEngineService } from './game-engine.service';
-import { Logger, UsePipes, ValidationPipe } from '@nestjs/common'; // ValidationPipe 임포트, ParseIntPipe 제거
+import { Logger, UsePipes, ValidationPipe, UseGuards } from '@nestjs/common'; // UseGuards 임포트 추가
 import { PrismaService } from '../prisma/prisma.service';
 import { generateAnonymousNickname } from './utils/nickname.util';
 import { prefixRoomId, unprefixRoomId } from './utils/roomId.util';
+import { WsJwtAuthGuard } from '../auth/guards/ws-jwt-auth.guard'; // WsJwtAuthGuard 임포트
+import { SocketCurrentUser } from '../decorators/socket-user.decorator'; // SocketCurrentUser 임포트
+import { User } from '@prisma/client'; // User 임포트
+import { RoomsService } from '../rooms/rooms.service'; // RoomsService 임포트
 
 // DTO 임포트
 import { JoinRoomDto } from './dto/join-room.dto';
@@ -45,6 +49,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly gameSessionService: GameSessionService,
     private readonly gameEngineService: GameEngineService,
     private readonly prisma: PrismaService,
+    private readonly roomsService: RoomsService, // RoomsService 주입
   ) {}
 
   afterInit() {
@@ -155,106 +160,166 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  @UseGuards(WsJwtAuthGuard) // 가드 적용
   @SubscribeMessage('set_marbles')
-  handleSetMarbles(
+  async handleSetMarbles( // async 추가
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: SetMarblesDto, // DTO 사용
+    @MessageBody() data: SetMarblesDto,
+    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
   ) {
     const { roomId, names } = data;
     const prefixedRoomId = prefixRoomId(roomId);
+
+    // 권한 확인
+    const isManager = await this.roomsService.isManager(roomId, user.id);
+    if (!isManager) {
+      throw new WsException('방의 매니저만 마블을 설정할 수 있습니다.');
+    }
+
     try {
       this.gameSessionService.setMarbles(roomId, names);
       const gameState = this.gameSessionService.getGameState(roomId);
       this.server.to(prefixedRoomId).emit('game_state', gameState);
-      this.logger.log(`방 ${prefixedRoomId}(${roomId}) 마블 설정 변경 by ${client.id}`);
+      this.logger.log(`방 ${prefixedRoomId}(${roomId}) 마블 설정 변경 by ${user.nickname} (${client.id})`);
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error setting marbles in room ${prefixedRoomId}(${roomId}) by ${client.id}: ${message}`);
+      this.logger.error(`Error setting marbles in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
       throw new WsException(`마블 설정 중 오류 발생: ${message}`);
     }
   }
 
+  @UseGuards(WsJwtAuthGuard) // 가드 적용
   @SubscribeMessage('set_winning_rank')
-  handleSetWinningRank(
+  async handleSetWinningRank( // async 추가
      @ConnectedSocket() client: Socket,
-     @MessageBody() data: SetWinningRankDto, // DTO 사용
+     @MessageBody() data: SetWinningRankDto,
+     @SocketCurrentUser() user: User, // 사용자 정보 가져오기
   ) {
     const { roomId, rank } = data;
     const prefixedRoomId = prefixRoomId(roomId);
+
+    // 권한 확인
+    const isManager = await this.roomsService.isManager(roomId, user.id);
+    if (!isManager) {
+      throw new WsException('방의 매니저만 우승 순위를 설정할 수 있습니다.');
+    }
+
      try {
       this.gameSessionService.setWinningRank(roomId, rank);
       const gameState = this.gameSessionService.getGameState(roomId);
       this.server.to(prefixedRoomId).emit('game_state', gameState);
-      this.logger.log(`방 ${prefixedRoomId}(${roomId}) 우승 순위 ${rank}로 설정 by ${client.id}`);
+      this.logger.log(`방 ${prefixedRoomId}(${roomId}) 우승 순위 ${rank}로 설정 by ${user.nickname} (${client.id})`);
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error setting winning rank in room ${prefixedRoomId}(${roomId}) by ${client.id}: ${message}`);
+      this.logger.error(`Error setting winning rank in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
       throw new WsException(`우승 순위 설정 중 오류 발생: ${message}`);
     }
   }
 
+  @UseGuards(WsJwtAuthGuard) // 가드 적용
   @SubscribeMessage('set_map')
-  handleSetMap(
+  async handleSetMap( // async 추가
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: SetMapDto, // DTO 사용
+    @MessageBody() data: SetMapDto,
+    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
   ) {
     const { roomId, mapIndex } = data;
     const prefixedRoomId = prefixRoomId(roomId);
+
+    // 권한 확인
+    const isManager = await this.roomsService.isManager(roomId, user.id);
+    if (!isManager) {
+      throw new WsException('방의 매니저만 맵을 설정할 수 있습니다.');
+    }
+
     try {
       this.gameSessionService.setMap(roomId, mapIndex);
       const gameState = this.gameSessionService.getGameState(roomId);
       this.server.to(prefixedRoomId).emit('game_state', gameState);
-      this.logger.log(`방 ${prefixedRoomId}(${roomId}) 맵 ${mapIndex}로 설정 by ${client.id}`);
+      this.logger.log(`방 ${prefixedRoomId}(${roomId}) 맵 ${mapIndex}로 설정 by ${user.nickname} (${client.id})`);
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error setting map in room ${prefixedRoomId}(${roomId}) by ${client.id}: ${message}`);
+      this.logger.error(`Error setting map in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
       throw new WsException(`맵 설정 중 오류 발생: ${message}`);
     }
   }
 
+  @UseGuards(WsJwtAuthGuard) // 가드 적용
   @SubscribeMessage('set_speed')
-  handleSetSpeed(
+  async handleSetSpeed( // async 추가
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: SetSpeedDto, // DTO 사용
+    @MessageBody() data: SetSpeedDto,
+    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
   ) {
     const { roomId, speed } = data;
     const prefixedRoomId = prefixRoomId(roomId);
+
+    // 권한 확인
+    const isManager = await this.roomsService.isManager(roomId, user.id);
+    if (!isManager) {
+      throw new WsException('방의 매니저만 속도를 설정할 수 있습니다.');
+    }
+
     try {
       this.gameSessionService.setSpeed(roomId, speed);
       this.server.to(prefixedRoomId).emit('speed_changed', { speed });
-      this.logger.log(`방 ${prefixedRoomId}(${roomId}) 속도 ${speed}로 설정 by ${client.id}`);
+      this.logger.log(`방 ${prefixedRoomId}(${roomId}) 속도 ${speed}로 설정 by ${user.nickname} (${client.id})`);
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error setting speed in room ${prefixedRoomId}(${roomId}) by ${client.id}: ${message}`);
+      this.logger.error(`Error setting speed in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
       throw new WsException(`속도 설정 중 오류 발생: ${message}`);
     }
   }
 
+  @UseGuards(WsJwtAuthGuard) // 가드 적용
   @SubscribeMessage('start_game')
-  handleStartGame(@ConnectedSocket() client: Socket, @MessageBody() data: StartGameDto) { // DTO 사용
+  async handleStartGame( // async 추가
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: StartGameDto,
+    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
+  ) {
     const { roomId } = data;
     const prefixedRoomId = prefixRoomId(roomId);
+
+    // 권한 확인
+    const isManager = await this.roomsService.isManager(roomId, user.id);
+    if (!isManager) {
+      throw new WsException('방의 매니저만 게임을 시작할 수 있습니다.');
+    }
+
     try {
       this.gameSessionService.startGame(roomId);
       this.server.to(prefixedRoomId).emit('game_started');
       this.gameEngineService.startGameLoop(roomId, this.server);
-      this.logger.log(`방 ${prefixedRoomId}(${roomId}) 게임 시작 by ${client.id}`);
+      this.logger.log(`방 ${prefixedRoomId}(${roomId}) 게임 시작 by ${user.nickname} (${client.id})`);
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error starting game in room ${prefixedRoomId}(${roomId}) by ${client.id}: ${message}`);
+      this.logger.error(`Error starting game in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
       throw new WsException(`게임 시작 중 오류 발생: ${message}`);
     }
   }
 
+  @UseGuards(WsJwtAuthGuard) // 가드 적용
   @SubscribeMessage('reset_game')
-  handleResetGame(@ConnectedSocket() client: Socket, @MessageBody() data: ResetGameDto) { // DTO 사용
+  async handleResetGame( // async 추가
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: ResetGameDto,
+    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
+  ) {
     const { roomId } = data;
     const prefixedRoomId = prefixRoomId(roomId);
+
+    // 권한 확인
+    const isManager = await this.roomsService.isManager(roomId, user.id);
+    if (!isManager) {
+      throw new WsException('방의 매니저만 게임을 리셋할 수 있습니다.');
+    }
+
     try {
       this.gameEngineService.stopGameLoop(roomId);
       this.gameSessionService.resetGame(roomId);
@@ -263,11 +328,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(prefixedRoomId).emit('game_reset');
       this.server.to(prefixedRoomId).emit('game_state', gameState);
 
-      this.logger.log(`방 ${prefixedRoomId}(${roomId}) 게임 리셋 by ${client.id}`);
+      this.logger.log(`방 ${prefixedRoomId}(${roomId}) 게임 리셋 by ${user.nickname} (${client.id})`);
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error resetting game in room ${prefixedRoomId}(${roomId}) by ${client.id}: ${message}`);
+      this.logger.error(`Error resetting game in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
       throw new WsException(`게임 리셋 중 오류 발생: ${message}`);
     }
   }
