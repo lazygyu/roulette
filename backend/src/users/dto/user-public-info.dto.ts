@@ -1,12 +1,9 @@
 import { Expose } from 'class-transformer';
 
-export class GetProfileResponseDto {
+export class UserPublicInfoDto {
   @Expose()
   id: number;
-  
-  @Expose()
-  username: string;
-  
+
   @Expose()
   nickname: string;
 }
