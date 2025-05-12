@@ -3,18 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "license": "MIT",
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
+  "workspaces": {
+    "packages": [
+      "frontend",
+      "backend"
+    ]
+  },
   "devDependencies": {
     "@babel/core": "^7.26.10",
     "@babel/plugin-proposal-decorators": "^7.25.9",
-    "@parcel/packager-raw-url": "^2.14.4",
-    "@parcel/transformer-babel": "^2.14.4",
-    "@parcel/transformer-sass": "^2.14.4",
-    "@parcel/transformer-typescript-tsc": "^2.14.4",
-    "@parcel/transformer-webmanifest": "^2.14.4",
     "@swc/cli": "^0.6.0",
     "@swc/core": "^1.10.7",
     "@types/express": "^5.0.0",
@@ -28,7 +25,6 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.2",
     "jest": "^29.7.0",
-    "parcel": "^2.14.4",
     "path-browserify": "^1.0.0",
     "prettier": "^3.4.2",
     "process": "^0.11.10",
@@ -47,7 +43,7 @@
     "build": "yarn workspace frontend build && yarn workspace backend build",
     "lint": "yarn workspace frontend lint && yarn workspace backend lint",
     "frontend:lint": "yarn workspace frontend lint",
-    "frontend:dev": "yarn workspace frontend start",
+    "frontend:dev": "yarn workspace frontend dev",
     "frontend:build": "yarn workspace frontend build",
     "backend:dev": "yarn workspace backend start:dev",
     "backend:build": "yarn workspace backend build",
