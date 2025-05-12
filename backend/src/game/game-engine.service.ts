@@ -29,24 +29,30 @@ export class GameEngineService implements OnModuleDestroy { // OnModuleDestroy �
 
     const interval = setInterval(() => {
       try {
-        // GameSessionService에서 숫자 ID로 게임 상태 가져오기
-        const gameState = this.gameSessionService.getGameState(roomId);
-        if (gameState) {
+        const room = this.gameSessionService.getRoom(roomId); // GameRoom 가져오기
+        if (room && room.game) {
+          if (room.isRunning) { // 게임이 실제로 실행 중일 때만 업데이트
+            room.game.update(); // Roulette 인스턴스의 update() 호출
+          }
+
+          const gameState = room.game.getGameState(); // 업데이트된 상태 가져오기
+
           // 게임 상태 업데이트 전송 (접두사 붙은 ID 사용)
           server.to(prefixedRoomId).emit('game_state', gameState);
 
-          // 게임이 종료되었는지 확인
-          if (!gameState.isRunning) {
-            this.logger.log(`Game in room ${roomId} has ended. Stopping loop.`);
+          // 게임이 종료되었는지 확인 (gameState.isRunning은 room.game.update()에 의해 변경될 수 있음)
+          if (!gameState.isRunning && room.isRunning) { // room.isRunning은 아직 true일 수 있으므로 gameState.isRunning으로 판단
+            this.logger.log(`Game in room ${roomId} has ended according to gameState. Stopping loop and notifying GameSessionService.`);
+            this.gameSessionService.endGame(roomId); // GameSessionService에 게임 종료 알림
             this.stopGameLoop(roomId); // 숫자 ID로 루프 중지
             // 게임 종료 이벤트 전송 (접두사 붙은 ID 사용)
             server.to(prefixedRoomId).emit('game_over', {
-              winner: gameState.winner, // winner 정보가 gameState에 있다고 가정
+              winner: gameState.winner,
             });
           }
         } else {
           // 게임 상태를 가져올 수 없으면 루프 중지 (예: 방이 사라짐)
-          this.logger.warn(`Could not get game state for room ${roomId}. Stopping loop.`);
+          this.logger.warn(`Room or game not found for room ${roomId}. Stopping loop.`);
           this.stopGameLoop(roomId); // 숫자 ID로 루프 중지
         }
       } catch (error: unknown) {

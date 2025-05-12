@@ -104,6 +104,23 @@ export class GameSessionService { // 클래스 이름 변경
     // interval 시작 로직은 GameEngineService로 이동됨
   }
 
+  // 게임 종료 처리: isRunning 상태를 false로 변경
+  endGame(roomId: number): void {
+    const room = this.getRoom(roomId);
+    if (room && room.isRunning) {
+      room.isRunning = false;
+      // 필요하다면, 게임 종료와 관련된 추가 정리 로직 (예: Roulette 인스턴스 내부 상태 정리)을 여기에 추가할 수 있습니다.
+      // room.game.finalize(); // 예시: Roulette 클래스에 finalize 메소드가 있다면
+      console.log(`Game in room ${roomId} officially ended in GameSessionService.`);
+    } else if (room && !room.isRunning) {
+      console.warn(`Attempted to end game in room ${roomId} that was not running.`);
+    } else {
+      // 방이 없는 경우 NotFoundException을 발생시키거나 경고 로그를 남길 수 있습니다.
+      // throw new NotFoundException(`Room with ID ${roomId} not found when trying to end game.`);
+      console.warn(`Attempted to end game in non-existent room: ${roomId}`);
+    }
+  }
+
   // 게임 설정 (마블): roomId 타입을 number로 변경
   setMarbles(roomId: number, names: string[]): void {
     const room = this.getRoom(roomId);
