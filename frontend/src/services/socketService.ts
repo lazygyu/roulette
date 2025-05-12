@@ -51,10 +51,12 @@ class SocketService {
       const socketUrl = `${protocol}//${host}:${port}/game`;
 
       console.log(`Connecting to socket server at ${socketUrl} for room ${roomId}...`);
-      const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem('access_token'); // 로컬 스토리지에서 토큰 가져오기
       this.socket = io(socketUrl, {
+        // auth 옵션을 사용하여 토큰 전달 (WsJwtAuthGuard에서 handshake.auth.token으로 추출)
+        // "Bearer " 접두사 제거
         auth: {
-          token: token ? `Bearer ${token}` : undefined,
+          token: token, // 토큰 값만 전달
         },
       });
 

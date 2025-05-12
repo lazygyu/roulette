@@ -18,6 +18,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   ],
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy],
-  exports: [AuthService],
+  // JwtModule과 UsersModule을 export하여 다른 모듈에서 JwtService와 UsersService를 사용할 수 있도록 합니다.
+  exports: [AuthService, JwtModule, UsersModule],
 })
 export class AuthModule {}
