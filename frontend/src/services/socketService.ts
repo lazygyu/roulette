@@ -109,42 +109,42 @@ class SocketService {
 
     // 기존 리스너 제거 후 새로 등록 (중복 방지)
     this.socket.off('game_state').on('game_state', (gameState: GameState) => {
-      console.debug('socketService: Received game_state:', gameState);
+      // console.debug('socketService: Received game_state:', gameState);
       this.gameStateListeners.forEach((listener) => listener(gameState));
     });
 
     this.socket.off('available_maps').on('available_maps', (maps: MapInfo[]) => {
-      console.debug('socketService: Received available_maps:', maps);
+      // console.debug('socketService: Received available_maps:', maps);
       this.availableMapsListeners.forEach((listener) => listener(maps));
     });
 
     this.socket.off('player_joined').on('player_joined', (data: PlayerJoinedData) => {
-      console.debug('socketService: Received player_joined:', data);
+      // console.debug('socketService: Received player_joined:', data);
       this.playerJoinedListeners.forEach((listener) => listener(data));
     });
 
     this.socket.off('player_left').on('player_left', (data: PlayerLeftData) => {
-      console.debug('socketService: Received player_left:', data);
+      // console.debug('socketService: Received player_left:', data);
       this.playerLeftListeners.forEach((listener) => listener(data));
     });
 
     this.socket.off('game_started').on('game_started', () => {
-      console.debug('socketService: Received game_started');
+      // console.debug('socketService: Received game_started');
       this.gameStartedListeners.forEach((listener) => listener());
     });
 
     this.socket.off('game_reset').on('game_reset', () => {
-      console.debug('socketService: Received game_reset');
+      // console.debug('socketService: Received game_reset');
       this.gameResetListeners.forEach((listener) => listener());
     });
 
     this.socket.off('game_over').on('game_over', (data: GameOverData) => {
-      console.debug('socketService: Received game_over:', data);
+      // console.debug('socketService: Received game_over:', data);
       this.gameOverListeners.forEach((listener) => listener(data));
     });
 
     this.socket.off('speed_changed').on('speed_changed', (data: SpeedChangedData) => {
-      console.debug('socketService: Received speed_changed:', data);
+      // console.debug('socketService: Received speed_changed:', data);
       this.speedChangedListeners.forEach((listener) => listener(data));
     });
   }
