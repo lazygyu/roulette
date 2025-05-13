@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRoomDto } from './dto/create-room.dto';
-import { Game, GameRanking, Room, User } from '@prisma/client'; // GameRanking 임포트 추가
+import { Game, GameRanking, Room, User, GameStatus } from '@prisma/client'; // GameStatus 임포트 추가
 import { GameDto } from '../game/dto/game.dto';
 import { GetGameRankingResponseDto } from '../game/dto/get-game-ranking-response.dto';
 import { GameRankingEntryDto } from '../game/dto/game-ranking-entry.dto';
@@ -22,6 +22,25 @@ export class RoomsService {
         manager: true,
       },
     });
+
+    // 프론트엔드 기본값 참조
+    const defaultMarbles = ["a", "b", "c"];
+    const defaultWinningRank = 1;
+    const defaultMapIndex = 0; // roulette.ts에서 _stage = stages[0] 확인
+    const defaultSpeed = 1.0; // options.ts에서 speed: number = 1 확인
+
+    // 방 생성 후, 해당 방에 대한 기본 게임 정보 생성
+    await this.prisma.game.create({
+      data: {
+        roomId: newRoom.id,
+        status: GameStatus.WAITING, // 기본 상태는 WAITING
+        marbles: defaultMarbles,
+        winningRank: defaultWinningRank,
+        mapIndex: defaultMapIndex,
+        speed: defaultSpeed,
+      }
+    });
+
     return newRoom;
   }
 
