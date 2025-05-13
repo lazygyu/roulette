@@ -6,7 +6,8 @@ import socketService from '../services/socketService'; // 경로 변경
 import options from '../options'; // 실제 인스턴스 사용
 import { getRoomDetails } from '../services/api'; // getRoomDetails 임포트 추가
 import { useAuth } from '../contexts/AuthContext'; // useAuth 임포트 추가
-import { GameStatus, RoomInfo } from '../types/gameTypes'; // GameStatus, RoomInfo 임포트 추가
+import { GameStatus, RoomInfo, MarbleState } from '../types/gameTypes'; // GameStatus, RoomInfo, MarbleState 임포트 추가
+import RankingDisplay from '../components/RankingDisplay'; // RankingDisplay 컴포넌트 임포트
 import { TranslatedLanguages, TranslationKeys, Translations } from '../data/languages'; // localization.ts에서 가져옴
 
 // GamePage에 필요한 window 속성들을 전역 Window 인터페이스에 선택적으로 추가
@@ -42,6 +43,7 @@ const GamePage: React.FC = () => {
   const [isManager, setIsManager] = useState(false); // 매니저 상태 추가
   const [roomName, setRoomName] = useState<string | null>(null); // 방 이름 상태 추가
   const [roomDetails, setRoomDetails] = useState<RoomInfo | null>(null); // 전체 방 정보 저장
+  const [showRankingModal, setShowRankingModal] = useState(false); // 랭킹 모달 표시 상태
 
   // For localization
   const [currentLocale, setCurrentLocale] = useState<TranslatedLanguages>('en');
@@ -315,6 +317,9 @@ const GamePage: React.FC = () => {
                   if (fetchedRoomDetails.game) {
                     const gameInfo = fetchedRoomDetails.game;
                     if (gameInfo.status === GameStatus.FINISHED) {
+                      if (gameInfo.ranking && gameInfo.ranking.length > 0) {
+                        setShowRankingModal(true); // 랭킹 정보가 있으면 모달 표시
+                      }
                       // 게임 종료 상태 UI 처리
                       if (btnStartEl) {
                         btnStartEl.disabled = true;
@@ -326,7 +331,7 @@ const GamePage: React.FC = () => {
                       if (sltMapRef.current) sltMapRef.current.disabled = true;
                       if (chkSkillRef.current) chkSkillRef.current.disabled = true;
                       // 다른 설정 UI도 비활성화 또는 메시지 표시
-                      alert('이미 종료된 게임입니다. 설정을 변경하거나 다시 시작할 수 없습니다.');
+                      // alert('이미 종료된 게임입니다. 설정을 변경하거나 다시 시작할 수 없습니다.'); // 모달로 대체되므로 alert 제거 또는 조건부 표시
                     } else if (gameInfo.status === GameStatus.WAITING || gameInfo.status === GameStatus.IN_PROGRESS) {
                       // WAITING 또는 IN_PROGRESS 상태일 때 설정 불러오기
                       if (inNamesRef.current && gameInfo.marbles && gameInfo.marbles.length > 0) {
@@ -736,6 +741,13 @@ const GamePage: React.FC = () => {
         ref={rouletteCanvasContainerRef}
         style={{ width: '100%', height: '100%', position: 'fixed', top: 0, left: 0 }}
       />
+      {showRankingModal && roomDetails?.game?.ranking && (
+        <RankingDisplay
+          ranking={roomDetails.game.ranking as MarbleState[] | null} // 타입 단언
+          roomName={roomName}
+          onClose={() => setShowRankingModal(false)}
+        />
+      )}
     </>
   );
 };
