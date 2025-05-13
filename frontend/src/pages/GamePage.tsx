@@ -45,12 +45,17 @@ const GamePage: React.FC = () => {
   // roomDetails는 이제 게임 상세 정보를 포함하지 않을 수 있음
   const [roomDetails, setRoomDetails] = useState<RoomInfo | null>(null); 
   const [gameDetails, setGameDetails] = useState<GameInfo | null>(null); // 게임 상세 정보 상태 추가
+  const gameDetailsRef = useRef(gameDetails); // Ref to hold the latest gameDetails
   const [finalRanking, setFinalRanking] = useState<RankingEntry[] | null>(null); // 최종 랭킹 정보 상태 추가
   const [showRankingModal, setShowRankingModal] = useState(false); // 랭킹 모달 표시 상태
 
   // For localization
   const [currentLocale, setCurrentLocale] = useState<TranslatedLanguages>('en');
   const { user } = useAuth(); // AuthContext에서 사용자 정보 가져오기
+
+  useEffect(() => {
+    gameDetailsRef.current = gameDetails;
+  }, [gameDetails]);
 
   useEffect(() => {
     let rouletteInstance: Roulette | null = null; // Roulette 인스턴스를 저장할 변수
@@ -455,18 +460,63 @@ const GamePage: React.FC = () => {
       // GameState 업데이트 처리
       // let unsubscribeGameState: (() => void) | undefined; // useEffect 스코프로 이동
       if (socketService && rouletteInstance) {
+    // window.roullete 대신 rouletteInstance 사용
+    unsubscribeGameState = socketService.onGameStateUpdate((gameState) => {
+      if (rouletteInstance) {
         // window.roullete 대신 rouletteInstance 사용
-        unsubscribeGameState = socketService.onGameStateUpdate((gameState) => {
-          if (rouletteInstance) {
-            // window.roullete 대신 rouletteInstance 사용
-            rouletteInstance.updateStateFromServer(gameState);
+        rouletteInstance.updateStateFromServer(gameState);
 
-            const inGameDiv = document.querySelector('#inGame');
-            if (inGameDiv) {
-              inGameDiv.classList.toggle('hide', !gameState.shakeAvailable);
+        const inGameDiv = document.querySelector('#inGame');
+        if (inGameDiv) {
+          inGameDiv.classList.toggle('hide', !gameState.shakeAvailable);
+        }
+
+        // Check if the game has finished based on the received gameState
+        const gamePotentiallyOverBySocket = !gameState.isRunning && gameState.winners && gameState.winners.length >= gameState.winnerRank;
+
+        // Check against the latest gameDetails status using the ref
+        if (gamePotentiallyOverBySocket && gameDetailsRef.current && gameDetailsRef.current.status !== GameStatus.FINISHED) {
+          if (roomId) {
+            const numericRoomId = parseInt(roomId, 10);
+            if (!isNaN(numericRoomId)) {
+              console.log('Game potentially finished (socket event). Fetching authoritative game details and ranking...');
+              
+              getRoomGameDetails(numericRoomId)
+                .then(authoritativeGameDetails => {
+                  // 백엔드에서 받은 최종 게임 정보로 gameDetails 상태 업데이트
+                  setGameDetails(authoritativeGameDetails); 
+
+                  // 업데이트된 게임 상태가 FINISHED인지 확인 후 랭킹 요청
+                  if (authoritativeGameDetails.status === GameStatus.FINISHED) {
+                    // 게임 종료에 따른 UI 컨트롤 비활성화 (btnStartEl 등은 setupGameInteractions 스코프에 있어 직접 접근 불가)
+                    // 이 부분은 gameDetails 상태 변경에 따른 useEffect나 JSX 조건부 렌더링으로 처리되는 것이 더 React적입니다.
+                    // 예를 들어, <button disabled={gameDetails?.status === GameStatus.FINISHED}>Start</button>
+                    // 여기서는 API 호출에 집중합니다.
+                    console.log('Authoritative game status is FINISHED. Fetching ranking.');
+                    return getGameRanking(numericRoomId);
+                  }
+                  console.log('Authoritative game status is NOT FINISHED, or ranking not needed yet.');
+                  return null; // FINISHED 상태가 아니면 랭킹을 가져오지 않음
+                })
+                .then(rankingData => {
+                  if (rankingData) { // rankingData가 null이 아닐 때만 처리 (즉, 게임이 FINISHED였을 때)
+                    setFinalRanking(rankingData.rankings);
+                    if (rankingData.rankings && rankingData.rankings.length > 0) {
+                      setShowRankingModal(true);
+                      console.log('Ranking modal should be shown.');
+                    } else {
+                      console.log('Ranking data received, but no rankings to display or modal not shown.');
+                    }
+                  }
+                })
+                .catch(error => {
+                  console.error('GamePage: Error fetching authoritative game details or ranking on game end (socket event):', error);
+                });
             }
           }
-        });
+        }
+      }
+    });
       }
 
       if (chkAutoRecordingElFromRef) {
@@ -577,7 +627,7 @@ const GamePage: React.FC = () => {
       document.documentElement.lang = originalDocumentLang;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, user]); // roomId 또는 user가 변경되면 useEffect를 다시 실행
+  }, [roomId, user]); // gameDetails is not added here to avoid re-subscribing on every gameDetails change. gameDetailsRef handles staleness.
 
   // BuyMeACoffee 스크립트 로딩
   useEffect(() => {
@@ -630,7 +680,7 @@ const GamePage: React.FC = () => {
         여기서는 gtag 초기화는 useEffect에서 처리했습니다.
       */}
 
-      <div id="settings" className="settings" style={!isManager ? { display: 'none' } : undefined}>
+      <div id="settings" className="settings" style={(!isManager || gameDetails?.status === GameStatus.FINISHED) ? { display: 'none' } : {}}>
         <div className="right">
           <div className="row">
             <label>

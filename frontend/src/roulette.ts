@@ -79,16 +79,16 @@ export class Roulette extends EventTarget {
     // The renderer will pick up these state changes in the next frame.
 
     // Handle game over state change specifically if needed (e.g., showing settings)
-    if (!this._isRunning && this._winner) {
+    // if (!this._isRunning && this._winner) { // GamePage.tsx will handle UI changes based on its state
       // Check if game just ended
       // Use timeout to allow final render/animation?
-      setTimeout(() => {
-        const settingsDiv = document.querySelector('#settings');
-        const donateDiv = document.querySelector('#donate');
-        if (settingsDiv) settingsDiv.classList.remove('hide');
-        if (donateDiv) donateDiv.classList.remove('hide');
-      }, 1500); // Delay showing settings after game over
-    }
+      // setTimeout(() => {
+      //   const settingsDiv = document.querySelector('#settings');
+      //   const donateDiv = document.querySelector('#donate');
+      //   if (settingsDiv) settingsDiv.classList.remove('hide');
+      //   if (donateDiv) donateDiv.classList.remove('hide');
+      // }, 1500); // Delay showing settings after game over
+    // }
   }
 
   constructor() {
