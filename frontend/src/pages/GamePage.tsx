@@ -120,6 +120,12 @@ const GamePage: React.FC = () => {
     };
 
     const submitParticipantNamesToBackend = () => {
+      // 추가: 게임이 종료된 상태면 아무 작업도 하지 않음
+      if (gameDetails?.status === GameStatus.FINISHED) {
+        console.log('Game is finished. Cannot set marbles.');
+        return;
+      }
+
       const names = getNames();
       // window.socketService 대신 직접 socketService 사용
       if (socketService) socketService.setMarbles(names);
@@ -379,9 +385,9 @@ const GamePage: React.FC = () => {
                     }
                   }
                   // 초기 셔플 (게임이 FINISHED가 아닐 때만)
-                  if (fetchedGameDetails?.status !== GameStatus.FINISHED) {
-                    btnShuffleEl?.dispatchEvent(new Event('click'));
-                  }
+                  // if (fetchedGameDetails?.status !== GameStatus.FINISHED) {
+                  //   btnShuffleEl?.dispatchEvent(new Event('click')); // 이 라인을 제거하여 초기 setMarbles 호출 방지
+                  // }
                 })
                 .catch((apiError) => {
                   console.error('GamePage: Failed to fetch room or game details:', apiError);
