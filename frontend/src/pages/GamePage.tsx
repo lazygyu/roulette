@@ -6,8 +6,7 @@ import socketService from '../services/socketService'; // 경로 변경
 import options from '../options'; // 실제 인스턴스 사용
 import { getRoomDetails } from '../services/api'; // getRoomDetails 임포트 추가
 import { useAuth } from '../contexts/AuthContext'; // useAuth 임포트 추가
-// GameState 등의 타입은 roulette.ts나 socketService에서 가져오므로 여기서 직접 임포트 불필요할 수 있음
-// 필요하다면 import { GameState, MapInfo } from '../types/gameTypes'; 추가
+import { GameStatus, RoomInfo } from '../types/gameTypes'; // GameStatus, RoomInfo 임포트 추가
 import { TranslatedLanguages, TranslationKeys, Translations } from '../data/languages'; // localization.ts에서 가져옴
 
 // GamePage에 필요한 window 속성들을 전역 Window 인터페이스에 선택적으로 추가
@@ -42,6 +41,7 @@ const GamePage: React.FC = () => {
   const [winnerSelectionType, setWinnerSelectionType] = useState('first');
   const [isManager, setIsManager] = useState(false); // 매니저 상태 추가
   const [roomName, setRoomName] = useState<string | null>(null); // 방 이름 상태 추가
+  const [roomDetails, setRoomDetails] = useState<RoomInfo | null>(null); // 전체 방 정보 저장
 
   // For localization
   const [currentLocale, setCurrentLocale] = useState<TranslatedLanguages>('en');
@@ -161,11 +161,17 @@ const GamePage: React.FC = () => {
     };
     const handleBtnShuffleClick = submitParticipantNamesToBackend;
     const handleBtnStartClick = () => {
+      if (roomDetails?.game?.status === GameStatus.FINISHED) {
+        alert('이미 종료된 게임입니다. 다시 시작할 수 없습니다.');
+        return;
+      }
+
       const currentParticipantCount = window.roullete?.getCount() ?? 0;
       const canStartGame = currentParticipantCount > 0;
 
       if (!canStartGame) {
         console.log('Cannot start game: No participants found in roulette instance.');
+        alert('참여자가 없습니다. 참여자를 추가해주세요.');
         return;
       }
 
@@ -291,33 +297,87 @@ const GamePage: React.FC = () => {
             const numericRoomId = parseInt(roomId, 10);
             if (!isNaN(numericRoomId)) {
               getRoomDetails(numericRoomId)
-                .then((roomDetails) => {
-                  setRoomName(roomDetails.name); // 방 이름 설정
+                .then((fetchedRoomDetails) => { // 변수명 변경
+                  setRoomDetails(fetchedRoomDetails); // 전체 방 정보 저장
+                  setRoomName(fetchedRoomDetails.name); // 방 이름 설정
 
                   // 매니저 상태 확인 (로그인한 경우에만)
                   const currentUser = user; // useEffect 실행 시점의 user 값을 사용
-                  if (currentUser && roomDetails.managerId === currentUser.id) {
+                  if (currentUser && fetchedRoomDetails.managerId === currentUser.id) {
                     setIsManager(true);
                     console.log('GamePage: Current user is the manager.');
                   } else {
                     setIsManager(false);
                     console.log('GamePage: Current user is not the manager or user not logged in.');
                   }
+
+                  // 게임 상태에 따른 UI 초기화
+                  if (fetchedRoomDetails.game) {
+                    const gameInfo = fetchedRoomDetails.game;
+                    if (gameInfo.status === GameStatus.FINISHED) {
+                      // 게임 종료 상태 UI 처리
+                      if (btnStartEl) {
+                        btnStartEl.disabled = true;
+                        btnStartEl.innerText = 'Game Finished';
+                      }
+                      if (btnShuffleEl) btnShuffleEl.disabled = true;
+                      if (inNamesRef.current) inNamesRef.current.disabled = true;
+                      if (inWinningRankRef.current) inWinningRankRef.current.disabled = true;
+                      if (sltMapRef.current) sltMapRef.current.disabled = true;
+                      if (chkSkillRef.current) chkSkillRef.current.disabled = true;
+                      // 다른 설정 UI도 비활성화 또는 메시지 표시
+                      alert('이미 종료된 게임입니다. 설정을 변경하거나 다시 시작할 수 없습니다.');
+                    } else if (gameInfo.status === GameStatus.WAITING || gameInfo.status === GameStatus.IN_PROGRESS) {
+                      // WAITING 또는 IN_PROGRESS 상태일 때 설정 불러오기
+                      if (inNamesRef.current && gameInfo.marbles && gameInfo.marbles.length > 0) {
+                        inNamesRef.current.value = gameInfo.marbles.join(',\n'); // 줄바꿈으로 표시
+                      }
+                      if (inWinningRankRef.current && gameInfo.winningRank !== null) {
+                        inWinningRankRef.current.value = gameInfo.winningRank.toString();
+                        if (gameInfo.winningRank === 1) {
+                           setWinnerSelectionType('first');
+                           localWinnerType = 'first';
+                        } else {
+                           // TODO: 마지막 순위인지 확인하는 로직 (totalMarbleCount 필요)
+                           setWinnerSelectionType('custom');
+                           localWinnerType = 'custom';
+                        }
+                      }
+                      if (sltMapRef.current && gameInfo.mapIndex !== null) {
+                        sltMapRef.current.value = gameInfo.mapIndex.toString();
+                      }
+                      if (chkSkillRef.current && window.options) {
+                        // TODO: gameInfo에 skill 사용 여부 필드가 있다면 그것을 사용
+                        // options.useSkills = gameInfo.useSkills;
+                        // chkSkillRef.current.checked = gameInfo.useSkills;
+                      }
+                      if (window.options && gameInfo.speed !== null) {
+                        window.options.speed = gameInfo.speed;
+                        // UI에 스피드 설정 요소가 있다면 업데이트
+                      }
+                       if (gameInfo.status === GameStatus.IN_PROGRESS && btnStartEl) {
+                        btnStartEl.disabled = true;
+                        btnStartEl.innerText = 'Game In Progress';
+                        if (btnShuffleEl) btnShuffleEl.disabled = true;
+                        if (inNamesRef.current) inNamesRef.current.disabled = true;
+                      }
+                    }
+                  }
+                  // 소켓 연결 및 방 참여 성공 후 초기 셔플 실행 (게임이 FINISHED가 아닐 때만)
+                  if (fetchedRoomDetails.game?.status !== GameStatus.FINISHED) {
+                    btnShuffleEl?.dispatchEvent(new Event('click')); // Initial shuffle
+                  }
                 })
                 .catch((apiError) => {
                   console.error('GamePage: Failed to fetch room details:', apiError);
-                  // API 호출 실패 시 기본값 설정 또는 오류 처리
                   setRoomName('Error loading room');
                   setIsManager(false);
                 });
             } else {
               console.error('GamePage: Invalid Room ID format:', roomId);
               setRoomName('Invalid Room ID');
-              setIsManager(false); // ID 형식이 잘못된 경우
+              setIsManager(false);
             }
-
-            // 소켓 연결 및 방 참여 성공 후 초기 셔플 실행
-            btnShuffleEl?.dispatchEvent(new Event('click')); // Initial shuffle
           })
           .catch((error: any) => {
             console.error(`GamePage: Failed to connect to socket for room ${roomId}`, error);

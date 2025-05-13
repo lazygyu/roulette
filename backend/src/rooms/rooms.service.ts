@@ -1,14 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRoomDto } from './dto/create-room.dto';
-import { Room, User } from '@prisma/client';
+import { Game, Room, User } from '@prisma/client'; // Game 임포트 추가
 
 @Injectable()
 export class RoomsService {
   constructor(private prisma: PrismaService) {}
 
-  async createRoom(createRoomDto: CreateRoomDto, managerId: number): Promise<Room & { manager: User }> {
-    return await this.prisma.room.create({
+  async createRoom(createRoomDto: CreateRoomDto, managerId: number): Promise<Room & { manager: User; game: Game | null }> {
+    const newRoom = await this.prisma.room.create({
       data: {
         name: createRoomDto.name,
         password: createRoomDto.password,
@@ -16,14 +16,17 @@ export class RoomsService {
       },
       include: {
         manager: true,
+        game: true, // game 정보 포함 (생성 시점에는 null)
       },
     });
+    return newRoom;
   }
 
-  async deleteRoom(id: number): Promise<Room & { manager: User }> {
+  async deleteRoom(id: number): Promise<Room & { manager: User; game: Game | null }> {
     // 방이 존재하는지 확인
     const room = await this.prisma.room.findUnique({
       where: { id },
+      include: { game: true }, // game 정보 포함
     });
 
     if (!room) {
@@ -34,17 +37,17 @@ export class RoomsService {
     return this.prisma.room.update({
       where: { id },
       data: { deletedAt: new Date() },
-      include: { manager: true },
+      include: { manager: true, game: true }, // game 정보 포함
     });
   }
 
-  async getRoom(id: number): Promise<Room & { manager: User }> {
+  async getRoom(id: number): Promise<Room & { manager: User; game: Game | null }> {
     const room = await this.prisma.room.findUnique({
       where: {
         id,
         deletedAt: null,
       },
-      include: { manager: true },
+      include: { manager: true, game: true }, // game 정보 포함
     });
 
     if (!room) {

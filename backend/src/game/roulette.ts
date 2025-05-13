@@ -34,6 +34,12 @@ export class Roulette {
     return this._isReady;
   }
 
+  // Getter for current map index
+  get currentMapIndex(): number {
+    if (!this._stage) return -1; // Or throw an error if stage should always exist
+    return stages.findIndex(stage => stage === this._stage);
+  }
+
   constructor() {
     this._init();
   }

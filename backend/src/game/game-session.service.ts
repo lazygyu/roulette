@@ -1,5 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { Roulette } from './roulette';
+import { PrismaService } from '../prisma/prisma.service'; // PrismaService 임포트
+import { GameStatus, Prisma } from '@prisma/client'; // GameStatus 및 Prisma 임포트
+import { stages } from './data/maps'; // stages 임포트 추가
 
 // Player 인터페이스는 동일하게 유지
 interface Player {
@@ -19,11 +22,11 @@ export interface GameRoom {
 }
 
 @Injectable()
-export class GameSessionService { // 클래스 이름 변경
+export class GameSessionService {
   // 내부 rooms Map의 key 타입을 number로 변경
   private rooms: Map<number, GameRoom> = new Map();
 
-  constructor() {}
+  constructor(private prisma: PrismaService) {} // PrismaService 주입
 
   // 방 생성: roomId 타입을 number로 변경
   createRoom(roomId: number): GameRoom {
@@ -89,29 +92,83 @@ export class GameSessionService { // 클래스 이름 변경
     }
   }
 
-  // 게임 시작: roomId 타입을 number로 변경, interval 로직 제거
-  startGame(roomId: number): void {
+  // 게임 시작: roomId 타입을 number로 변경, DB 연동 추가
+  async startGame(roomId: number): Promise<void> {
     const room = this.getRoom(roomId);
     if (!room) {
       throw new NotFoundException(`Room with ID ${roomId} not found.`);
     }
-    if (room.isRunning) {
-       console.warn(`Game in room ${roomId} is already running.`);
-       return; // 이미 시작된 게임이면 아무것도 안 함
+
+    // DB에서 게임 상태 확인
+    const gameData = await this.prisma.game.findUnique({ where: { roomId } });
+    if (gameData && gameData.status === GameStatus.FINISHED) {
+      throw new ConflictException(`Game in room ${roomId} is already FINISHED. Cannot start again.`);
     }
+    if (gameData && gameData.status === GameStatus.IN_PROGRESS) {
+      // 기존 로직 유지: 이미 실행 중이면 경고만 하고 종료 (room.isRunning으로도 체크됨)
+      console.warn(`Game in room ${roomId} is already IN_PROGRESS.`);
+      if (!room.isRunning) { // DB는 IN_PROGRESS인데 메모리는 아닐 경우 동기화
+        room.isRunning = true;
+      }
+      return;
+    }
+
+    // 메모리 내 게임 시작
     room.isRunning = true;
     room.game.start();
-    // interval 시작 로직은 GameEngineService로 이동됨
+
+    // DB 업데이트 또는 생성 (status를 IN_PROGRESS로)
+    // 현재 게임 설정을 DB에 반영
+    const currentGameState = room.game.getGameState(); // 시작 시점의 설정 가져오기
+    const currentMapIndex = room.game.currentMapIndex; // getter 사용
+
+    await this.prisma.game.upsert({
+      where: { roomId },
+      update: {
+        status: GameStatus.IN_PROGRESS,
+        mapIndex: currentMapIndex !== -1 ? currentMapIndex : null, // 현재 맵 인덱스 사용
+        marbles: currentGameState.marbles.map(m => m.name), // 현재 마블 이름 목록
+        winningRank: currentGameState.winnerRank,
+        speed: room.game.getSpeed(),
+      },
+      create: {
+        roomId,
+        status: GameStatus.IN_PROGRESS,
+        mapIndex: currentMapIndex !== -1 ? currentMapIndex : null, // 현재 맵 인덱스 사용
+        marbles: currentGameState.marbles.map(m => m.name),
+        winningRank: currentGameState.winnerRank,
+        speed: room.game.getSpeed(),
+      },
+    });
+    // interval 시작 로직은 GameEngineService로 이동됨 (GameGateway에서 호출)
   }
 
-  // 게임 종료 처리: isRunning 상태를 false로 변경
-  endGame(roomId: number): void {
+  // 게임 종료 처리: isRunning 상태를 false로 변경, DB 연동 추가
+  async endGame(roomId: number): Promise<void> {
     const room = this.getRoom(roomId);
     if (room && room.isRunning) {
-      room.isRunning = false;
-      // 필요하다면, 게임 종료와 관련된 추가 정리 로직 (예: Roulette 인스턴스 내부 상태 정리)을 여기에 추가할 수 있습니다.
-      // room.game.finalize(); // 예시: Roulette 클래스에 finalize 메소드가 있다면
-      console.log(`Game in room ${roomId} officially ended in GameSessionService.`);
+      room.isRunning = false; // 메모리 상태 업데이트
+
+      // 최종 게임 상태 가져오기
+      const finalGameState = room.game.getGameState();
+
+      // DB 업데이트 (status를 FINISHED로, ranking 저장)
+      try {
+        await this.prisma.game.update({
+          where: { roomId },
+          data: {
+            status: GameStatus.FINISHED,
+            // finalGameState.winners는 MarbleState[] 타입이므로 그대로 JSON으로 저장 가능
+            ranking: finalGameState.winners as unknown as Prisma.InputJsonValue,
+          },
+        });
+        console.log(`Game in room ${roomId} officially ended and saved to DB.`);
+      } catch (error) {
+        console.error(`Failed to update game status to FINISHED for room ${roomId}:`, error);
+        // 에러 처리 (예: 로깅, 재시도 로직 등)
+        // 일단 메모리 상태는 변경되었으므로 계속 진행
+      }
+
     } else if (room && !room.isRunning) {
       console.warn(`Attempted to end game in room ${roomId} that was not running.`);
     } else {
@@ -121,53 +178,100 @@ export class GameSessionService { // 클래스 이름 변경
     }
   }
 
-  // 게임 설정 (마블): roomId 타입을 number로 변경
-  setMarbles(roomId: number, names: string[]): void {
+  // 게임 설정 (마블): roomId 타입을 number로 변경, DB 연동 추가
+  async setMarbles(roomId: number, names: string[]): Promise<void> {
     const room = this.getRoom(roomId);
     if (!room) {
       throw new NotFoundException(`Room with ID ${roomId} not found.`);
     }
-    if (room.isRunning) {
-       console.warn(`Cannot set marbles while game is running in room ${roomId}.`);
-       return; // 게임 중에는 설정 변경 불가 (혹은 다른 정책 적용)
+
+    // DB에서 게임 상태 확인
+    const gameData = await this.prisma.game.findUnique({ where: { roomId } });
+    if (gameData && (gameData.status === GameStatus.IN_PROGRESS || gameData.status === GameStatus.FINISHED)) {
+      throw new ConflictException(`Game in room ${roomId} is already ${gameData.status}. Cannot set marbles.`);
     }
+
+    // 메모리 내 게임 객체 업데이트
     room.game.setMarbles(names);
+
+    // DB 업데이트 또는 생성
+    await this.prisma.game.upsert({
+      where: { roomId },
+      update: { marbles: names, status: GameStatus.WAITING },
+      create: { roomId, marbles: names, status: GameStatus.WAITING },
+    });
   }
 
-  // 우승 순위 설정: roomId 타입을 number로 변경
-  setWinningRank(roomId: number, rank: number): void {
+  // 우승 순위 설정: roomId 타입을 number로 변경, DB 연동 추가
+  async setWinningRank(roomId: number, rank: number): Promise<void> {
     const room = this.getRoom(roomId);
-     if (!room) {
+    if (!room) {
       throw new NotFoundException(`Room with ID ${roomId} not found.`);
     }
-     if (room.isRunning) {
-       console.warn(`Cannot set winning rank while game is running in room ${roomId}.`);
-       return;
+
+    // DB에서 게임 상태 확인
+    const gameData = await this.prisma.game.findUnique({ where: { roomId } });
+    if (gameData && (gameData.status === GameStatus.IN_PROGRESS || gameData.status === GameStatus.FINISHED)) {
+      throw new ConflictException(`Game in room ${roomId} is already ${gameData.status}. Cannot set winning rank.`);
     }
+
+    // 메모리 내 게임 객체 업데이트
     room.game.setWinningRank(rank);
+
+    // DB 업데이트 또는 생성
+    await this.prisma.game.upsert({
+      where: { roomId },
+      update: { winningRank: rank, status: GameStatus.WAITING },
+      create: { roomId, winningRank: rank, status: GameStatus.WAITING },
+    });
   }
 
-  // 맵 설정: roomId 타입을 number로 변경
-  setMap(roomId: number, mapIndex: number): void {
+  // 맵 설정: roomId 타입을 number로 변경, DB 연동 추가
+  async setMap(roomId: number, mapIndex: number): Promise<void> {
     const room = this.getRoom(roomId);
-     if (!room) {
+    if (!room) {
       throw new NotFoundException(`Room with ID ${roomId} not found.`);
     }
-     if (room.isRunning) {
-       console.warn(`Cannot set map while game is running in room ${roomId}.`);
-       return;
+
+    // DB에서 게임 상태 확인
+    const gameData = await this.prisma.game.findUnique({ where: { roomId } });
+    if (gameData && (gameData.status === GameStatus.IN_PROGRESS || gameData.status === GameStatus.FINISHED)) {
+      throw new ConflictException(`Game in room ${roomId} is already ${gameData.status}. Cannot set map.`);
     }
+
+    // 메모리 내 게임 객체 업데이트
     room.game.setMap(mapIndex);
+
+    // DB 업데이트 또는 생성
+    await this.prisma.game.upsert({
+      where: { roomId },
+      update: { mapIndex: mapIndex, status: GameStatus.WAITING },
+      create: { roomId, mapIndex: mapIndex, status: GameStatus.WAITING },
+    });
   }
 
-  // 게임 속도 설정: roomId 타입을 number로 변경
-  setSpeed(roomId: number, speed: number): void {
+  // 게임 속도 설정: roomId 타입을 number로 변경, DB 연동 추가
+  async setSpeed(roomId: number, speed: number): Promise<void> {
     const room = this.getRoom(roomId);
-     if (!room) {
+    if (!room) {
       throw new NotFoundException(`Room with ID ${roomId} not found.`);
     }
-    // 게임 중에도 속도 변경은 가능하도록 허용 (게임 로직에 따라 다를 수 있음)
+
+    // DB에서 게임 상태 확인 (FINISHED 상태에서는 변경 불가)
+    const gameData = await this.prisma.game.findUnique({ where: { roomId } });
+    if (gameData && gameData.status === GameStatus.FINISHED) {
+      throw new ConflictException(`Game in room ${roomId} is already FINISHED. Cannot set speed.`);
+    }
+
+    // 메모리 내 게임 객체 업데이트
     room.game.setSpeed(speed);
+
+    // DB 업데이트 또는 생성 (status는 변경하지 않음, WAITING이 기본값)
+    await this.prisma.game.upsert({
+      where: { roomId },
+      update: { speed: speed },
+      create: { roomId, speed: speed, status: GameStatus.WAITING }, // 생성 시 WAITING
+    });
   }
 
   // 게임 상태 가져오기: roomId 타입을 number로 변경
@@ -184,15 +288,31 @@ export class GameSessionService { // 클래스 이름 변경
     return room ? room.game.getMaps() : [];
   }
 
-  // 게임 리셋: roomId 타입을 number로 변경, interval 로직 제거
-  resetGame(roomId: number): void {
+  // 게임 리셋: roomId 타입을 number로 변경, DB 연동 추가
+  async resetGame(roomId: number): Promise<void> {
     const room = this.getRoom(roomId);
-     if (!room) {
+    if (!room) {
       throw new NotFoundException(`Room with ID ${roomId} not found.`);
     }
-    // interval 중지 로직은 GameEngineService로 이동됨
+
+    // DB에서 게임 상태 확인 (FINISHED 상태에서는 리셋 불가?) - 요구사항에 따라 결정
+    const gameData = await this.prisma.game.findUnique({ where: { roomId } });
+    // if (gameData && gameData.status === GameStatus.FINISHED) {
+    //   throw new ConflictException(`Game in room ${roomId} is already FINISHED. Cannot reset.`);
+    // }
+
+    // 메모리 내 게임 객체 리셋
     room.isRunning = false;
     room.game.reset();
+
+    // DB 업데이트 (status를 WAITING으로, ranking을 null로)
+    if (gameData) { // 게임 데이터가 있을 때만 업데이트
+      await this.prisma.game.update({
+        where: { roomId },
+        data: { status: GameStatus.WAITING, ranking: Prisma.DbNull }, // Prisma.DbNull 사용
+      });
+    }
+    // 게임 데이터가 없으면 아무것도 안 함 (리셋할 대상이 없음)
   }
 
   // 플레이어 목록 가져오기: roomId 타입을 number로 변경

@@ -10,6 +10,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum GameStatus {
+  WAITING
+  IN_PROGRESS
+  FINISHED
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   username  String   @unique // username은 고유해야 합니다.
@@ -29,6 +35,21 @@ model Room {
   updatedAt DateTime @updatedAt
   deletedAt DateTime? // 소프트 삭제를 위한 필드 추가
   manager   User     @relation(fields: [managerId], references: [id]) // User 모델과의 관계 설정
+  game      Game?    // Room과 Game의 1:1 관계
 
   @@index([managerId]) // managerId에 인덱스 추가
+}
+
+model Game {
+  id          Int        @id @default(autoincrement())
+  roomId      Int        @unique // Room 외래 키, 방당 하나의 게임만 허용
+  room        Room       @relation(fields: [roomId], references: [id])
+  status      GameStatus @default(WAITING) // 게임 상태 (Enum 사용)
+  mapIndex    Int?       // 설정된 맵 인덱스
+  marbles     String[]   // 설정된 마블 이름 목록
+  winningRank Int?       // 설정된 우승 순위
+  speed       Float?     // 설정된 게임 속도
+  ranking     Json?      // 최종 순위 (종료 시 저장)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
