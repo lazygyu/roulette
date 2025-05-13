@@ -151,22 +151,38 @@ export class GameSessionService {
 
       // 최종 게임 상태 가져오기
       const finalGameState = room.game.getGameState();
+      const winningRank = finalGameState.winnerRank ?? 1; // 설정된 우승 순위, 없으면 1등
 
-      // DB 업데이트 (status를 FINISHED로, ranking 저장)
+      // DB 업데이트 (status를 FINISHED로)
       try {
-        await this.prisma.game.update({
+        const updatedGame = await this.prisma.game.update({
           where: { roomId },
           data: {
             status: GameStatus.FINISHED,
-            // finalGameState.winners는 MarbleState[] 타입이므로 그대로 JSON으로 저장 가능
-            ranking: finalGameState.winners as unknown as Prisma.InputJsonValue,
+            // ranking 필드는 GameRanking 테이블로 이전되었으므로 여기서 제거
           },
         });
-        console.log(`Game in room ${roomId} officially ended and saved to DB.`);
+
+        // GameRanking 테이블에 순위 정보 저장
+        if (finalGameState.winners && finalGameState.winners.length > 0) {
+          const rankingCreateData = finalGameState.winners.map((winner, index) => {
+            const rank = index + 1;
+            return {
+              gameId: updatedGame.id, // Game 테이블의 ID 사용
+              marbleName: winner.name,
+              rank: rank,
+              isWinner: rank === winningRank, // 설정된 우승 순위와 현재 순위 비교
+            };
+          });
+
+          await this.prisma.gameRanking.createMany({
+            data: rankingCreateData,
+          });
+        }
+        console.log(`Game in room ${roomId} officially ended and ranking saved to DB.`);
       } catch (error) {
-        console.error(`Failed to update game status to FINISHED for room ${roomId}:`, error);
+        console.error(`Failed to update game status to FINISHED or save ranking for room ${roomId}:`, error);
         // 에러 처리 (예: 로깅, 재시도 로직 등)
-        // 일단 메모리 상태는 변경되었으므로 계속 진행
       }
 
     } else if (room && !room.isRunning) {
@@ -305,11 +321,21 @@ export class GameSessionService {
     room.isRunning = false;
     room.game.reset();
 
-    // DB 업데이트 (status를 WAITING으로, ranking을 null로)
+    // DB 업데이트 (status를 WAITING으로), 관련된 GameRanking 삭제
     if (gameData) { // 게임 데이터가 있을 때만 업데이트
-      await this.prisma.game.update({
-        where: { roomId },
-        data: { status: GameStatus.WAITING, ranking: Prisma.DbNull }, // Prisma.DbNull 사용
+      await this.prisma.$transaction(async (tx) => {
+        // 기존 랭킹 정보 삭제
+        await tx.gameRanking.deleteMany({
+          where: { gameId: gameData.id },
+        });
+        // 게임 상태 업데이트
+        await tx.game.update({
+          where: { roomId },
+          data: { 
+            status: GameStatus.WAITING,
+            // ranking 필드는 이미 제거됨
+          },
+        });
       });
     }
     // 게임 데이터가 없으면 아무것도 안 함 (리셋할 대상이 없음)

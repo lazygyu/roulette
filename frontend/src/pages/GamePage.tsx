@@ -4,9 +4,9 @@ import '../styles.css'; // 전역 스타일 import
 import { Roulette } from '../roulette';
 import socketService from '../services/socketService'; // 경로 변경
 import options from '../options'; // 실제 인스턴스 사용
-import { getRoomDetails } from '../services/api'; // getRoomDetails 임포트 추가
+import { getRoomDetails, getRoomGameDetails, getGameRanking } from '../services/api'; // getRoomGameDetails, getGameRanking 임포트 추가
 import { useAuth } from '../contexts/AuthContext'; // useAuth 임포트 추가
-import { GameStatus, RoomInfo, MarbleState } from '../types/gameTypes'; // GameStatus, RoomInfo, MarbleState 임포트 추가
+import { GameStatus, RoomInfo, MarbleState, RankingEntry, GameInfo } from '../types/gameTypes'; // RankingEntry, GameInfo 임포트 추가
 import RankingDisplay from '../components/RankingDisplay'; // RankingDisplay 컴포넌트 임포트
 import { TranslatedLanguages, TranslationKeys, Translations } from '../data/languages'; // localization.ts에서 가져옴
 
@@ -42,7 +42,10 @@ const GamePage: React.FC = () => {
   const [winnerSelectionType, setWinnerSelectionType] = useState('first');
   const [isManager, setIsManager] = useState(false); // 매니저 상태 추가
   const [roomName, setRoomName] = useState<string | null>(null); // 방 이름 상태 추가
-  const [roomDetails, setRoomDetails] = useState<RoomInfo | null>(null); // 전체 방 정보 저장
+  // roomDetails는 이제 게임 상세 정보를 포함하지 않을 수 있음
+  const [roomDetails, setRoomDetails] = useState<RoomInfo | null>(null); 
+  const [gameDetails, setGameDetails] = useState<GameInfo | null>(null); // 게임 상세 정보 상태 추가
+  const [finalRanking, setFinalRanking] = useState<RankingEntry[] | null>(null); // 최종 랭킹 정보 상태 추가
   const [showRankingModal, setShowRankingModal] = useState(false); // 랭킹 모달 표시 상태
 
   // For localization
@@ -163,7 +166,8 @@ const GamePage: React.FC = () => {
     };
     const handleBtnShuffleClick = submitParticipantNamesToBackend;
     const handleBtnStartClick = () => {
-      if (roomDetails?.game?.status === GameStatus.FINISHED) {
+      // roomDetails.game 대신 gameDetails 사용
+      if (gameDetails?.status === GameStatus.FINISHED) {
         alert('이미 종료된 게임입니다. 다시 시작할 수 없습니다.');
         return;
       }
@@ -295,72 +299,78 @@ const GamePage: React.FC = () => {
           .then(() => {
             console.log(`GamePage: Successfully connected to socket for room ${roomId}`);
 
-            // roomId가 유효하면 방 정보 가져오기 (로그인 여부와 무관)
+            // roomId가 유효하면 방 기본 정보 및 게임 상세 정보 가져오기
             const numericRoomId = parseInt(roomId, 10);
             if (!isNaN(numericRoomId)) {
+              // 1. 방 기본 정보 가져오기
               getRoomDetails(numericRoomId)
-                .then((fetchedRoomDetails) => {
-                  setRoomDetails(fetchedRoomDetails); // 전체 방 정보 저장
-                  setRoomName(fetchedRoomDetails.name); // 방 이름 설정
+                .then((fetchedRoomBasicDetails) => {
+                  setRoomDetails(fetchedRoomBasicDetails);
+                  setRoomName(fetchedRoomBasicDetails.name);
 
-                  // 매니저 상태 확인 (로그인한 경우에만)
-                  const currentUser = user; // useEffect 실행 시점의 user 값을 사용
-                  if (currentUser && fetchedRoomDetails.managerId === currentUser.id) {
+                  const currentUser = user;
+                  if (currentUser && fetchedRoomBasicDetails.managerId === currentUser.id) {
                     setIsManager(true);
-                    console.log('GamePage: Current user is the manager.');
                   } else {
                     setIsManager(false);
-                    console.log('GamePage: Current user is not the manager or user not logged in.');
                   }
 
-                  // 게임 상태에 따른 UI 초기화
-                  if (fetchedRoomDetails.game) {
-                    const gameInfo = fetchedRoomDetails.game;
-                    if (gameInfo.status === GameStatus.FINISHED) {
-                      if (gameInfo.ranking && gameInfo.ranking.length > 0) {
-                        setShowRankingModal(true); // 랭킹 정보가 있으면 모달 표시
-                      }
+                  // 2. 게임 상세 정보 가져오기
+                  return getRoomGameDetails(numericRoomId);
+                })
+                .then((fetchedGameDetails) => {
+                  setGameDetails(fetchedGameDetails);
+
+                  // 게임 상태에 따른 UI 초기화 (fetchedGameDetails 사용)
+                  if (fetchedGameDetails) {
+                    if (fetchedGameDetails.status === GameStatus.FINISHED) {
+                      // 게임 종료 시 랭킹 정보 가져오기
+                      getGameRanking(numericRoomId)
+                        .then(rankingData => {
+                          setFinalRanking(rankingData.rankings);
+                          if (rankingData.rankings && rankingData.rankings.length > 0) {
+                            setShowRankingModal(true);
+                          }
+                        })
+                        .catch(rankingError => {
+                          console.error('GamePage: Failed to fetch game ranking:', rankingError);
+                        });
+
                       // 게임 종료 상태 UI 처리
                       if (btnStartEl) {
                         btnStartEl.disabled = true;
                         btnStartEl.innerText = 'Game Finished';
                       }
+                      // ... (다른 UI 요소 비활성화)
                       if (btnShuffleEl) btnShuffleEl.disabled = true;
                       if (inNamesRef.current) inNamesRef.current.disabled = true;
                       if (inWinningRankRef.current) inWinningRankRef.current.disabled = true;
                       if (sltMapRef.current) sltMapRef.current.disabled = true;
                       if (chkSkillRef.current) chkSkillRef.current.disabled = true;
-                      // 다른 설정 UI도 비활성화 또는 메시지 표시
-                      // alert('이미 종료된 게임입니다. 설정을 변경하거나 다시 시작할 수 없습니다.'); // 모달로 대체되므로 alert 제거 또는 조건부 표시
-                    } else if (gameInfo.status === GameStatus.WAITING || gameInfo.status === GameStatus.IN_PROGRESS) {
+
+                    } else if (fetchedGameDetails.status === GameStatus.WAITING || fetchedGameDetails.status === GameStatus.IN_PROGRESS) {
                       // WAITING 또는 IN_PROGRESS 상태일 때 설정 불러오기
-                      if (inNamesRef.current && gameInfo.marbles && gameInfo.marbles.length > 0) {
-                        inNamesRef.current.value = gameInfo.marbles.join(','); // 줄바꿈으로 표시
+                      if (inNamesRef.current && fetchedGameDetails.marbles && fetchedGameDetails.marbles.length > 0) {
+                        inNamesRef.current.value = fetchedGameDetails.marbles.join(',');
                       }
-                      if (inWinningRankRef.current && gameInfo.winningRank !== null) {
-                        inWinningRankRef.current.value = gameInfo.winningRank.toString();
-                        if (gameInfo.winningRank === 1) {
+                      if (inWinningRankRef.current && fetchedGameDetails.winningRank !== null) {
+                        inWinningRankRef.current.value = fetchedGameDetails.winningRank.toString();
+                        if (fetchedGameDetails.winningRank === 1) {
                           setWinnerSelectionType('first');
                           localWinnerType = 'first';
                         } else {
-                          // TODO: 마지막 순위인지 확인하는 로직 (totalMarbleCount 필요)
                           setWinnerSelectionType('custom');
                           localWinnerType = 'custom';
                         }
                       }
-                      if (sltMapRef.current && gameInfo.mapIndex !== null) {
-                        sltMapRef.current.value = gameInfo.mapIndex.toString();
+                      if (sltMapRef.current && fetchedGameDetails.mapIndex !== null) {
+                        sltMapRef.current.value = fetchedGameDetails.mapIndex.toString();
                       }
-                      if (chkSkillRef.current && window.options) {
-                        // TODO: gameInfo에 skill 사용 여부 필드가 있다면 그것을 사용
-                        // options.useSkills = gameInfo.useSkills;
-                        // chkSkillRef.current.checked = gameInfo.useSkills;
+                      // ... (기타 설정 UI 업데이트) ...
+                      if (window.options && fetchedGameDetails.speed !== null) {
+                        window.options.speed = fetchedGameDetails.speed;
                       }
-                      if (window.options && gameInfo.speed !== null) {
-                        window.options.speed = gameInfo.speed;
-                        // UI에 스피드 설정 요소가 있다면 업데이트
-                      }
-                      if (gameInfo.status === GameStatus.IN_PROGRESS && btnStartEl) {
+                      if (fetchedGameDetails.status === GameStatus.IN_PROGRESS && btnStartEl) {
                         btnStartEl.disabled = true;
                         btnStartEl.innerText = 'Game In Progress';
                         if (btnShuffleEl) btnShuffleEl.disabled = true;
@@ -368,14 +378,14 @@ const GamePage: React.FC = () => {
                       }
                     }
                   }
-                  // 소켓 연결 및 방 참여 성공 후 초기 셔플 실행 (게임이 FINISHED가 아닐 때만)
-                  if (fetchedRoomDetails.game?.status !== GameStatus.FINISHED) {
-                    btnShuffleEl?.dispatchEvent(new Event('click')); // Initial shuffle
+                  // 초기 셔플 (게임이 FINISHED가 아닐 때만)
+                  if (fetchedGameDetails?.status !== GameStatus.FINISHED) {
+                    btnShuffleEl?.dispatchEvent(new Event('click'));
                   }
                 })
                 .catch((apiError) => {
-                  console.error('GamePage: Failed to fetch room details:', apiError);
-                  setRoomName('Error loading room');
+                  console.error('GamePage: Failed to fetch room or game details:', apiError);
+                  setRoomName('Error loading room/game');
                   setIsManager(false);
                 });
             } else {
@@ -741,9 +751,9 @@ const GamePage: React.FC = () => {
         ref={rouletteCanvasContainerRef}
         style={{ width: '100%', height: '100%', position: 'fixed', top: 0, left: 0 }}
       />
-      {showRankingModal && roomDetails?.game?.ranking && (
+      {showRankingModal && finalRanking && (
         <RankingDisplay
-          ranking={roomDetails.game.ranking as MarbleState[] | null} // 타입 단언
+          ranking={finalRanking} // 타입은 RankingEntry[] | null
           roomName={roomName}
           onClose={() => setShowRankingModal(false)}
         />

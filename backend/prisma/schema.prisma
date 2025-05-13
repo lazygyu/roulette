@@ -49,7 +49,22 @@ model Game {
   marbles     String[]   // 설정된 마블 이름 목록
   winningRank Int?       // 설정된 우승 순위
   speed       Float?     // 설정된 게임 속도
-  ranking     Json?      // 최종 순위 (종료 시 저장)
+  // ranking     Json?      // 최종 순위 (종료 시 저장) -> GameRanking 모델로 대체
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  rankings    GameRanking[] // Game과 GameRanking 간의 1:N 관계
+}
+
+// 새로운 GameRanking 모델 추가
+model GameRanking {
+  id         Int      @id @default(autoincrement())
+  gameId     Int      // Game 모델과의 외래 키
+  game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade) // 게임 삭제 시 관련 랭킹도 삭제
+  marbleName String   // 마블 이름
+  rank       Int      // 순위
+  isWinner   Boolean  @default(false) // 최종 승자 여부
+  createdAt  DateTime @default(now())
+
+  @@unique([gameId, rank]) // 한 게임 내에서 순위는 고유해야 함
+  @@index([gameId])        // gameId로 인덱싱
 }

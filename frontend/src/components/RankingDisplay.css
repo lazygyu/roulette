@@ -8,42 +8,37 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1001; /* 다른 UI 요소들 위에 표시되도록 z-index 설정 */
+  z-index: 1000;
 }
 
 .ranking-modal-content {
   background-color: white;
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   width: 80%;
   max-width: 500px;
   text-align: center;
-  color: #333;
 }
 
 .ranking-modal-content h2 {
   margin-top: 0;
-  margin-bottom: 20px;
-  font-size: 1.8em;
-  color: #555;
+  color: #333;
 }
 
 .ranking-modal-content ul {
   list-style-type: none;
   padding: 0;
-  margin: 0 0 20px 0;
-  max-height: 300px; /* 랭킹이 길 경우 스크롤 */
-  overflow-y: auto;
+  margin: 20px 0;
 }
 
 .ranking-modal-content li {
-  padding: 10px 0;
+  padding: 8px 0;
   border-bottom: 1px solid #eee;
-  font-size: 1.2em;
+  font-size: 1.1em;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
 }
 
 .ranking-modal-content li:last-child {
@@ -52,24 +47,34 @@
 
 .ranking-modal-content .rank-number {
   font-weight: bold;
-  margin-right: 15px;
-  min-width: 30px; /* 순위 숫자 너비 고정 */
-  text-align: right;
+  margin-right: 10px;
+  color: #555;
 }
 
 .ranking-modal-content .marble-name {
-  font-weight: normal;
+  flex-grow: 1;
+  text-align: left;
 }
+
+.ranking-modal-content .ranking-winner .marble-name {
+  font-weight: bold;
+  color: gold; /* 승자 강조 색상 */
+}
+
+.ranking-modal-content .ranking-winner .rank-number {
+  color: gold; /* 승자 강조 색상 */
+}
+
 
 .close-ranking-button {
   background-color: #007bff;
   color: white;
   border: none;
-  padding: 12px 25px;
+  padding: 10px 20px;
   border-radius: 5px;
   cursor: pointer;
   font-size: 1em;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s;
 }
 
 .close-ranking-button:hover {

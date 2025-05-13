@@ -83,9 +83,16 @@ export interface GameInfo {
   marbles: string[]; // 마블 이름 목록
   winningRank: number | null;
   speed: number | null;
-  ranking: MarbleState[] | null; // 최종 랭킹 (MarbleState 배열 또는 null)
+  // ranking: MarbleState[] | null; // 최종 랭킹 -> 별도 API로 분리되므로 제거 또는 RankingEntry[] 타입으로 변경
   createdAt: string; // Date는 string으로 변환될 수 있음
   updatedAt: string;
+}
+
+export interface RankingEntry {
+  marbleName: string;
+  rank: number;
+  isWinner: boolean;
+  // 필요시 마블 색상 등 추가 정보 포함 가능
 }
 
 // GET /rooms/:id 응답 전체를 나타내는 타입 (가칭)
@@ -103,7 +110,7 @@ export interface RoomInfo {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null; // 소프트 삭제 필드
-  game: GameInfo | null; // 추가된 게임 정보
+  game: GameInfo | null; // GameInfo는 이제 ranking을 포함하지 않음
 }
 
 
