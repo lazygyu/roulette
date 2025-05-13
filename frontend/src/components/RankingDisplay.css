@@ -80,3 +80,57 @@
 .close-ranking-button:hover {
   background-color: #0056b3;
 }
+
+/* 추가된 스타일 */
+.final-winner-section {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f0f0f0; /* 약간 다른 배경색으로 강조 */
+  border-radius: 8px;
+  border: 2px solid #ffd700; /* 금색 테두리 */
+}
+
+.winner-label {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #e67e22; /* 주황색 계열 */
+  margin-bottom: 5px;
+}
+
+.winner-name {
+  font-size: 2.2em; /* 크기 약간 증가 */
+  font-weight: bold;
+  color: #27ae60; /* 더 선명한 초록색 */
+  margin-bottom: 5px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1); /* 약간의 텍스트 그림자 */
+}
+
+.winner-rank {
+  font-size: 1.1em; /* 크기 약간 증가 */
+  color: #34495e; /* 어두운 회색/파란색 계열 */
+}
+
+.ranking-modal-content h3 { /* Overall Ranking 제목 스타일 */
+  margin-top: 25px; /* 간격 조정 */
+  margin-bottom: 15px; /* 간격 조정 */
+  text-align: center;
+  color: #2c3e50; /* 더 진한 제목 색상 */
+  font-size: 1.4em; /* 크기 조정 */
+}
+
+/* 리스트 내의 승자 항목 스타일 (기존 .ranking-winner와 구분하기 위해 .ranking-winner-entry 사용) */
+.ranking-winner-entry .marble-name {
+  font-weight: bold;
+  color: #c0392b; /* 다른 강조색 (예: 빨간색 계열) */
+}
+.ranking-winner-entry .rank-number {
+  font-weight: bold;
+  color: #c0392b;
+}
+
+
+/* 일반 랭킹 항목 스타일 (필요시 추가) */
+.ranking-entry {
+  /* 일반 랭킹 항목 스타일 */
+}

@@ -149,9 +149,9 @@ export class GameSessionService {
     if (room && room.isRunning) {
       room.isRunning = false; // 메모리 상태 업데이트
 
-      // 최종 게임 상태 가져오기
-      const finalGameState = room.game.getGameState();
-      const winningRank = finalGameState.winnerRank ?? 1; // 설정된 우승 순위, 없으면 1등
+      // 최종 게임 상태 가져오기 (roulette.ts에서 모든 마블의 최종 순위 정보를 가져오도록 수정)
+      // const finalGameState = room.game.getGameState(); // 기존 방식
+      // const winningRank = finalGameState.winnerRank ?? 1; // 설정된 우승 순위, 없으면 1등
 
       // DB 업데이트 (status를 FINISHED로)
       try {
@@ -159,29 +159,43 @@ export class GameSessionService {
           where: { roomId },
           data: {
             status: GameStatus.FINISHED,
-            // ranking 필드는 GameRanking 테이블로 이전되었으므로 여기서 제거
           },
         });
 
-        // GameRanking 테이블에 순위 정보 저장
-        if (finalGameState.winners && finalGameState.winners.length > 0) {
-          const rankingCreateData = finalGameState.winners.map((winner, index) => {
-            const rank = index + 1;
+        // Roulette 클래스에서 모든 마블의 최종 랭킹 정보 가져오기
+        const allMarblesFinalRanking = room.game.getFinalRankingForAllMarbles();
+
+        if (allMarblesFinalRanking && allMarblesFinalRanking.length > 0) {
+          const rankingCreateData = allMarblesFinalRanking.map(entry => {
+            // entry.finalRank가 숫자일 수도 있고, 'DNF' 같은 문자열일 수도 있음.
+            // GameRanking 테이블의 rank 컬럼은 Int이므로, 문자열인 경우 적절히 변환하거나
+            // DNF를 나타내는 매우 큰 숫자로 저장할 수 있음. 여기서는 일단 숫자로 가정.
+            // isWinnerGoal은 roulette.ts에서 이미 계산된 값 (설정된 winningRank와 일치 여부)
+            let rankToStore: number;
+            if (typeof entry.finalRank === 'number') {
+              rankToStore = entry.finalRank;
+            } else {
+              // 'DNF' 또는 기타 문자열 순위 처리
+              // 예: 매우 큰 숫자로 저장하여 DNF를 나타냄
+              rankToStore = 9999; // DNF를 나타내는 임의의 큰 수
+            }
+
             return {
-              gameId: updatedGame.id, // Game 테이블의 ID 사용
-              marbleName: winner.name,
-              rank: rank,
-              isWinner: rank === winningRank, // 설정된 우승 순위와 현재 순위 비교
+              gameId: updatedGame.id,
+              marbleName: entry.name,
+              rank: rankToStore,
+              isWinner: entry.isWinnerGoal, // roulette.ts에서 계산된 isWinnerGoal 사용
             };
           });
 
           await this.prisma.gameRanking.createMany({
             data: rankingCreateData,
+            skipDuplicates: true, // 혹시 모를 중복 방지 (gameId, marbleName 복합키가 있다면)
           });
         }
-        console.log(`Game in room ${roomId} officially ended and ranking saved to DB.`);
+        console.log(`Game in room ${roomId} officially ended and all marbles ranking saved to DB.`);
       } catch (error) {
-        console.error(`Failed to update game status to FINISHED or save ranking for room ${roomId}:`, error);
+        console.error(`Failed to update game status to FINISHED or save all marbles ranking for room ${roomId}:`, error);
         // 에러 처리 (예: 로깅, 재시도 로직 등)
       }
 
