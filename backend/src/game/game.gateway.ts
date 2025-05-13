@@ -96,14 +96,38 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const { roomId, userInfo } = data; // roomId는 이제 number
     const finalUserInfo = userInfo || { nickname: generateAnonymousNickname(client.id) };
 
-    const roomExists = await this.prisma.room.findUnique({
+    const roomEntity = await this.prisma.room.findUnique({ // roomExists -> roomEntity
       where: { id: roomId }, // 숫자 roomId 직접 사용
-      select: { id: true },
+      select: { id: true, deletedAt: true }, // deletedAt도 선택하여 소프트 삭제된 방인지 확인
     });
 
-    if (!roomExists) {
-      this.logger.warn(`존재하지 않는 방(ID: ${roomId}) 접근 시도: ${client.id}`);
-      throw new WsException(`존재하지 않는 방입니다: ${roomId}`);
+    if (!roomEntity || roomEntity.deletedAt) { // 방이 없거나 소프트 삭제된 경우
+      this.logger.warn(`존재하지 않거나 삭제된 방(ID: ${roomId}) 접근 시도: ${client.id}`);
+      throw new WsException(`존재하지 않거나 접근할 수 없는 방입니다: ${roomId}`);
+    }
+
+    // 방이 메모리에 로드되어 있는지 확인하고, 없다면 DB에서 로드
+    if (!this.gameSessionService.isRoomLoaded(roomId)) {
+      try {
+        this.logger.log(`방 ${roomId}가 메모리에 없습니다. DB에서 로드합니다.`);
+        const loadedRoom = await this.gameSessionService.loadRoomFromDB(roomId);
+        if (!loadedRoom) {
+          // loadRoomFromDB가 null을 반환하는 경우는 gameData가 DB에 없을 때 newRoom을 만들어 반환하므로,
+          // 이론적으로 이 지점에 도달하기 어려움.
+          // 하지만 방어적으로, 만약 loadRoomFromDB가 어떤 이유로 null을 반환하고,
+          // 메모리에도 방 생성이 안되었다면 에러 처리.
+          this.logger.error(`DB에서 방 ${roomId} 로드 실패 또는 메모리 생성 실패.`);
+          throw new WsException(`방 ${roomId}에 접속 중 오류가 발생했습니다.`);
+        }
+        this.logger.log(`방 ${roomId}가 DB로부터 메모리에 성공적으로 로드/설정되었습니다.`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(`방 ${roomId} 로드 중 예외 발생: ${message}`);
+        if (error instanceof WsException) throw error; // WsException은 그대로 던짐
+        throw new WsException(`방 ${roomId}에 접속 중 내부 오류가 발생했습니다.`);
+      }
+    } else {
+      this.logger.log(`방 ${roomId}는 이미 메모리에 로드되어 있습니다.`);
     }
 
     const prefixedRoomId = prefixRoomId(roomId);

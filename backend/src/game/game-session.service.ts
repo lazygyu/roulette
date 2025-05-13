@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { Roulette } from './roulette';
 import { PrismaService } from '../prisma/prisma.service'; // PrismaService 임포트
-import { GameStatus, Prisma } from '@prisma/client'; // GameStatus 및 Prisma 임포트
+import { Game, GameStatus, Prisma } from '@prisma/client'; // GameStatus 및 Prisma 임포트
 import { stages } from './data/maps'; // stages 임포트 추가
 
 // Player 인터페이스는 동일하게 유지
@@ -23,20 +23,104 @@ export interface GameRoom {
 
 @Injectable()
 export class GameSessionService {
+  private readonly logger = new Logger(GameSessionService.name);
   // 내부 rooms Map의 key 타입을 number로 변경
   private rooms: Map<number, GameRoom> = new Map();
 
   constructor(private prisma: PrismaService) {} // PrismaService 주입
 
-  // 방 생성: roomId 타입을 number로 변경
-  createRoom(roomId: number): GameRoom {
+  // 방이 메모리에 로드되었는지 확인
+  isRoomLoaded(roomId: number): boolean {
+    return this.rooms.has(roomId);
+  }
+
+  // DB에서 방 정보를 로드하여 메모리에 적재
+  async loadRoomFromDB(roomId: number): Promise<GameRoom | null> {
+    this.logger.log(`Attempting to load room ${roomId} from DB into memory.`);
+    const gameData = await this.prisma.game.findUnique({
+      where: { roomId },
+      // include: { rankings: true }, // FINISHED 상태일 때 랭킹 정보 로드 (필요시 주석 해제)
+    });
+
+    if (!gameData) {
+      this.logger.warn(`Game data for room ${roomId} not found in DB.`);
+      // 방은 존재하지만 게임 데이터가 없는 경우, WAITING 상태로 새로 생성될 수 있도록 null 대신 빈 방을 만들 수도 있음.
+      // 여기서는 일단 null을 반환하거나, 혹은 createRoom을 호출하여 기본 방을 만들도록 할 수 있음.
+      // 현재 로직상으로는 GameGateway에서 room 존재 여부를 먼저 체크하므로, gameData가 없는 경우는
+      // 아직 게임이 시작되지 않았거나, DB에 game 레코드가 없는 상태로 간주.
+      // 이 경우, createRoom을 통해 새로운 GameRoom 인스턴스를 만들고 기본값으로 초기화.
+      const newRoom = await this.createRoom(roomId); // await 추가
+      this.logger.log(`No game data in DB for room ${roomId}. Created a new default game session in memory.`);
+      return newRoom;
+    }
+
+    this.logger.log(`Game data found for room ${roomId} in DB. Status: ${gameData.status}`);
+    // 방이 메모리에 없다면 생성, 있다면 가져오기 (보통은 isRoomLoaded 체크 후 호출되므로 새로 생성됨)
+    const room = await this.createRoom(roomId); // await 추가
+
+    try {
+      // DB 데이터로 게임 상태 설정
+      if (gameData.mapIndex !== null && gameData.mapIndex !== undefined) {
+        room.game.setMap(gameData.mapIndex);
+        this.logger.log(`Room ${roomId}: Map set to index ${gameData.mapIndex} from DB.`);
+      }
+      if (gameData.marbles && gameData.marbles.length > 0) {
+        room.game.setMarbles(gameData.marbles); // setMarbles는 내부적으로 reset을 호출할 수 있으므로 순서 중요
+        this.logger.log(`Room ${roomId}: Marbles set from DB: ${gameData.marbles.join(', ')}.`);
+      }
+      if (gameData.winningRank !== null && gameData.winningRank !== undefined) {
+        room.game.setWinningRank(gameData.winningRank);
+        this.logger.log(`Room ${roomId}: Winning rank set to ${gameData.winningRank} from DB.`);
+      }
+      if (gameData.speed !== null && gameData.speed !== undefined) {
+        room.game.setSpeed(gameData.speed);
+        this.logger.log(`Room ${roomId}: Speed set to ${gameData.speed} from DB.`);
+      }
+
+      switch (gameData.status) {
+        case GameStatus.IN_PROGRESS:
+          room.isRunning = true;
+          // room.game.start(); // IN_PROGRESS 상태일 때 게임을 '시작' 상태로 만듦.
+                             // roulette.ts의 start()는 현재 상태를 초기화하지 않고, isActive 플래그와 물리엔진을 활성화.
+                             // 만약 마블 위치 등 더 상세한 상태 복원이 필요하면 roulette.ts 수정 필요.
+                             // 현재는 설정만 로드하고, 실제 게임 루프는 GameEngineService에서 관리.
+          this.logger.log(`Room ${roomId}: Status set to IN_PROGRESS. isRunning: true.`);
+          break;
+        case GameStatus.WAITING:
+          room.isRunning = false;
+          this.logger.log(`Room ${roomId}: Status set to WAITING. isRunning: false.`);
+          break;
+        case GameStatus.FINISHED:
+          room.isRunning = false;
+          // TODO: FINISHED 상태일 때, gameData.rankings (주석 해제 시)를 사용하여
+          // room.game 객체에 최종 랭킹 정보를 설정하거나, getFinalRankingForAllMarbles가 이를 활용하도록.
+          // 예: room.game.setFinalRankings(gameData.rankings);
+          this.logger.log(`Room ${roomId}: Status set to FINISHED. isRunning: false.`);
+          break;
+        default:
+          room.isRunning = false;
+          this.logger.warn(`Room ${roomId}: Unknown game status '${gameData.status}' from DB. Defaulting to WAITING.`);
+      }
+      this.logger.log(`Room ${roomId} successfully loaded from DB and configured in memory.`);
+      return room;
+    } catch (error) {
+      this.logger.error(`Error configuring game room ${roomId} from DB data: ${error instanceof Error ? error.message : String(error)}`);
+      // 설정 중 에러 발생 시, 메모리에서 해당 방을 제거하거나, 기본 상태로 둘 수 있음.
+      // 여기서는 일단 null을 반환하여 게이트웨이에서 처리하도록 함.
+      this.removeRoom(roomId); // 설정 실패 시 메모리에서 방 제거
+      throw new InternalServerErrorException(`Failed to configure game room ${roomId} from database.`);
+    }
+  }
+
+  // 방 생성: roomId 타입을 number로 변경, async 및 Promise<GameRoom>으로 변경
+  async createRoom(roomId: number): Promise<GameRoom> {
     if (this.rooms.has(roomId)) {
       // 이미 존재하는 방이면 반환 (혹은 에러 처리)
       // 여기서는 기존 방을 반환하는 것으로 유지
       return this.rooms.get(roomId)!;
     }
 
-    const game = new Roulette();
+    const game = await Roulette.createInstance(); // Roulette.createInstance() 사용 및 await
     const room: GameRoom = {
       id: roomId, // 숫자 ID 사용
       game,
@@ -53,12 +137,12 @@ export class GameSessionService {
     return this.rooms.get(roomId);
   }
 
-  // 방에 플레이어 추가: roomId 타입을 number로 변경
-  addPlayer(roomId: number, playerId: string, userInfo: { nickname: string }): void {
+  // 방에 플레이어 추가: roomId 타입을 number로 변경, async 추가
+  async addPlayer(roomId: number, playerId: string, userInfo: { nickname: string }): Promise<void> {
     let room = this.getRoom(roomId);
     if (!room) {
       // 방이 없으면 새로 생성 (혹은 에러 처리 - 여기서는 생성)
-      room = this.createRoom(roomId);
+      room = await this.createRoom(roomId); // await 추가
     }
 
     room.players.set(playerId, {

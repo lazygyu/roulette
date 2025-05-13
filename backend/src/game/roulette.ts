@@ -4,7 +4,7 @@ import { StageDef, stages } from './data/maps';
 import { parseName } from './utils/utils';
 import { IPhysics } from './IPhysics';
 import { Box2dPhysics } from './physics/physics-box2d';
-import { MapEntityState } from './types/MapEntity.type';
+import { MapEntityState } from './types/MapEntity.type'; // getGameState에서 사용
 
 export class Roulette {
   private _marbles: Marble[] = [];
@@ -27,11 +27,12 @@ export class Roulette {
   private _isRunning: boolean = false;
   private _winner: Marble | null = null;
 
-  private physics!: IPhysics;
+  private physics!: IPhysics; // Box2dPhysics 인스턴스가 할당됨
 
-  private _isReady: boolean = false;
+  // _isReady 플래그는 createInstance 완료 시 항상 true이므로, Box2dPhysics의 상태를 확인하는 방식으로 변경
   get isReady() {
-    return this._isReady;
+    // Box2dPhysics의 world 객체가 생성되었는지 여부로 판단 (init 완료 시 생성됨)
+    return !!(this.physics && (this.physics as any).world && (this.physics as any).initialized);
   }
 
   // Getter for current map index
@@ -40,16 +41,22 @@ export class Roulette {
     return stages.findIndex(stage => stage === this._stage);
   }
 
-  constructor() {
-    this._init();
+  // 생성자를 private으로 변경하여 외부 직접 생성을 막고 createInstance를 통하도록 강제
+  private constructor() {
+    // 초기화 로직은 _init으로 이동하고, createInstance에서 호출
+  }
+
+  public static async createInstance(): Promise<Roulette> {
+    const roulette = new Roulette(); // private 생성자 호출
+    await roulette._init(); // 비동기 초기화 완료 대기
+    return roulette;
   }
 
   private async _init() {
     this.physics = new Box2dPhysics();
-    await this.physics.init();
-    this._stage = stages[0];
-    this._loadMap();
-    this._isReady = true;
+    await this.physics.init(); // 물리 엔진 초기화 대기
+    this._stage = stages[0]; // 기본 맵 설정
+    this._loadMap(); // 맵 로드 (물리 엔진 초기화 후)
   }
 
   private _updateMarbles(deltaTime: number) {
@@ -154,7 +161,10 @@ export class Roulette {
   }
 
   public update() {
-    if (!this.isReady || !this._isRunning) return; // 준비 안됐거나, 게임 종료 시 업데이트 중단
+    if (!this.isReady || !this._isRunning) { // isReady 조건은 물리엔진 초기화 여부 확인
+      // if (!this.isReady) console.warn("Roulette not ready for update, physics might not be initialized.");
+      return;
+    }
     if (!this._lastTime) this._lastTime = Date.now();
     const currentTime = Date.now();
 
