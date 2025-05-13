@@ -121,13 +121,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const gameState = this.gameSessionService.getGameState(roomId);
     const maps = this.gameSessionService.getMaps(roomId);
-    client.emit('game_state', gameState);
-    client.emit('available_maps', maps);
+    // client.emit('game_state', gameState); // 클라이언트가 join_room의 ack 콜백으로 gameState를 받도록 변경
+    client.emit('available_maps', maps); // available_maps는 계속 emit
 
     this.logger.log(
       `새로운 플레이어 참여: ${finalUserInfo.nickname} (${client.id}) - 방 ${prefixedRoomId}(${roomId}) (${new Date().toLocaleString()})`,
     );
-    return { success: true, message: `방 ${roomId}에 참여했습니다.` };
+    // ack 콜백에 gameState 포함
+    return { success: true, message: `방 ${roomId}에 참여했습니다.`, gameState };
   }
 
   @SubscribeMessage('leave_room')

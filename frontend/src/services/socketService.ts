@@ -18,6 +18,13 @@ interface SpeedChangedData {
   speed: number;
 }
 
+// join_room 응답 타입 정의
+interface JoinRoomResponse {
+  success: boolean;
+  message?: string;
+  gameState?: GameState; // 초기 게임 상태 포함 가능
+}
+
 
 class SocketService {
   private socket: Socket | null = null;
@@ -65,10 +72,15 @@ class SocketService {
 
         console.log(`Attempting to join room: ${roomId}`);
         // connect 성공 시 바로 joinRoom 호출
-        this.joinRoom(roomId, (response) => {
+        this.joinRoom(roomId, (response: JoinRoomResponse) => { // JoinRoomResponse 타입 사용
           if (response.success) {
             console.log(`socketService: Successfully joined room ${roomId} (ack received).`);
             // this.currentRoomId = roomId; // joinRoom 성공 시 roomId 설정 (선택적 위치)
+            if (response.gameState) {
+              console.log('socketService: Initial gameState received on join_room ack:', response.gameState);
+              // 초기 게임 상태 리스너들에게 전달
+              this.gameStateListeners.forEach((listener) => listener(response.gameState!));
+            }
             resolve();
           } else {
             console.error(`socketService: Failed to join room ${roomId}: ${response.message}`);
@@ -207,7 +219,7 @@ class SocketService {
   }
 
   // --- Room and Game Actions ---
-  private joinRoom(roomId: string, callback: (response: { success: boolean; message?: string }) => void): void {
+  private joinRoom(roomId: string, callback: (response: JoinRoomResponse) => void): void { // 콜백 타입 JoinRoomResponse로 변경
     if (!this.socket) {
       console.error('socketService: Socket not connected for joinRoom.');
       callback({ success: false, message: 'Socket not connected.' });
@@ -216,7 +228,7 @@ class SocketService {
     const userInfo = {
       nickname: localStorage.getItem('user_nickname') || `User_${Math.floor(Math.random() * 1000)}`,
     };
-    this.socket.emit('join_room', { roomId, userInfo }, (response: { success: boolean; message?: string }) => {
+    this.socket.emit('join_room', { roomId, userInfo }, (response: JoinRoomResponse) => { // 응답 타입 JoinRoomResponse로 변경
       if (response.success) {
         localStorage.setItem('user_nickname', userInfo.nickname);
         this.currentRoomId = roomId; // 방 참여 성공 시 currentRoomId 설정

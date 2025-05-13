@@ -462,9 +462,50 @@ const GamePage: React.FC = () => {
       if (socketService && rouletteInstance) {
     // window.roullete 대신 rouletteInstance 사용
     unsubscribeGameState = socketService.onGameStateUpdate((gameState) => {
+      // gameState가 null일 수 있는 경우를 대비 (이론적으로는 서버에서 항상 유효한 객체를 보내야 함)
+      if (!gameState) {
+        console.warn('GamePage: Received null or undefined gameState from socketService.onGameStateUpdate');
+        return;
+      }
+
       if (rouletteInstance) {
         // window.roullete 대신 rouletteInstance 사용
+        console.log('GamePage: Updating roulette instance with gameState from onGameStateUpdate:', gameState);
         rouletteInstance.updateStateFromServer(gameState);
+
+        // GamePage의 gameDetails 상태도 업데이트 (중요: UI 반응성을 위해)
+        // GameState와 GameInfo 간의 필드 매핑이 필요할 수 있음.
+        // GameState가 GameInfo의 모든 필드를 포함하지 않을 수 있으므로 주의.
+        setGameDetails(prevDetails => {
+          // gameState의 isRunning으로 status 결정
+          // gameState.winner가 있고 isRunning이 false이면 FINISHED
+          // gameState.winner가 없고 isRunning이 true이면 IN_PROGRESS
+          // gameState.winner가 없고 isRunning이 false이면 WAITING (또는 다른 초기 상태)
+          let newStatus: GameStatus;
+          if (!gameState.isRunning && gameState.winner) {
+            newStatus = GameStatus.FINISHED;
+          } else if (gameState.isRunning) {
+            newStatus = GameStatus.IN_PROGRESS;
+          } else {
+            newStatus = GameStatus.WAITING;
+          }
+          
+          // gameState의 marbles (MarbleState[])를 GameInfo의 marbles (string[])로 변환
+          const marbleNames = gameState.marbles ? gameState.marbles.map(m => m.name) : (prevDetails?.marbles || []);
+
+          // gameId, mapIndex, speed 등은 gameState에 직접 없을 수 있으므로 prevDetails에서 가져오거나 기본값 사용
+          // API 응답(GameInfo)이 더 완전한 정보를 가질 수 있으므로, prevDetails를 신중히 병합.
+          return {
+            id: prevDetails?.id || 0, // Game ID는 API를 통해 받아오는 것이 일반적
+            status: newStatus,
+            mapIndex: prevDetails?.mapIndex ?? null, // mapIndex는 API 또는 rouletteInstance 내부 상태에서 가져올 수 있음
+            marbles: marbleNames,
+            winningRank: gameState.winnerRank ?? prevDetails?.winningRank ?? null,
+            speed: prevDetails?.speed ?? null, // speed는 API 또는 rouletteInstance 내부 상태
+            createdAt: prevDetails?.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+        });
 
         const inGameDiv = document.querySelector('#inGame');
         if (inGameDiv) {
