@@ -297,7 +297,7 @@ const GamePage: React.FC = () => {
             const numericRoomId = parseInt(roomId, 10);
             if (!isNaN(numericRoomId)) {
               getRoomDetails(numericRoomId)
-                .then((fetchedRoomDetails) => { // 변수명 변경
+                .then((fetchedRoomDetails) => {
                   setRoomDetails(fetchedRoomDetails); // 전체 방 정보 저장
                   setRoomName(fetchedRoomDetails.name); // 방 이름 설정
 
@@ -330,17 +330,17 @@ const GamePage: React.FC = () => {
                     } else if (gameInfo.status === GameStatus.WAITING || gameInfo.status === GameStatus.IN_PROGRESS) {
                       // WAITING 또는 IN_PROGRESS 상태일 때 설정 불러오기
                       if (inNamesRef.current && gameInfo.marbles && gameInfo.marbles.length > 0) {
-                        inNamesRef.current.value = gameInfo.marbles.join(',\n'); // 줄바꿈으로 표시
+                        inNamesRef.current.value = gameInfo.marbles.join(','); // 줄바꿈으로 표시
                       }
                       if (inWinningRankRef.current && gameInfo.winningRank !== null) {
                         inWinningRankRef.current.value = gameInfo.winningRank.toString();
                         if (gameInfo.winningRank === 1) {
-                           setWinnerSelectionType('first');
-                           localWinnerType = 'first';
+                          setWinnerSelectionType('first');
+                          localWinnerType = 'first';
                         } else {
-                           // TODO: 마지막 순위인지 확인하는 로직 (totalMarbleCount 필요)
-                           setWinnerSelectionType('custom');
-                           localWinnerType = 'custom';
+                          // TODO: 마지막 순위인지 확인하는 로직 (totalMarbleCount 필요)
+                          setWinnerSelectionType('custom');
+                          localWinnerType = 'custom';
                         }
                       }
                       if (sltMapRef.current && gameInfo.mapIndex !== null) {
@@ -355,7 +355,7 @@ const GamePage: React.FC = () => {
                         window.options.speed = gameInfo.speed;
                         // UI에 스피드 설정 요소가 있다면 업데이트
                       }
-                       if (gameInfo.status === GameStatus.IN_PROGRESS && btnStartEl) {
+                      if (gameInfo.status === GameStatus.IN_PROGRESS && btnStartEl) {
                         btnStartEl.disabled = true;
                         btnStartEl.innerText = 'Game In Progress';
                         if (btnShuffleEl) btnShuffleEl.disabled = true;
@@ -593,7 +593,11 @@ const GamePage: React.FC = () => {
     <>
       <div className="game-top-bar">
         <span className="room-name">{roomName || 'Loading room...'}</span>
-        {isManager && <span className="manager-icon" title="Manager">👑</span>}
+        {isManager && (
+          <span className="manager-icon" title="Manager">
+            👑
+          </span>
+        )}
         <span className="user-nickname">{user?.nickname || '익명 유저'}</span> {/* 로그인 안했으면 '익명 유저' 표시 */}
       </div>
       {/*
@@ -605,7 +609,7 @@ const GamePage: React.FC = () => {
         여기서는 gtag 초기화는 useEffect에서 처리했습니다.
       */}
 
-      <div id="settings" className="settings" style={{ display: isManager ? 'block' : 'none' }}>
+      <div id="settings" className="settings" style={!isManager ? { display: 'none' } : undefined}>
         <div className="right">
           <div className="row">
             <label>
