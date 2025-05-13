@@ -41,6 +41,7 @@ const GamePage: React.FC = () => {
   // 예를 들어:
   const [winnerSelectionType, setWinnerSelectionType] = useState('first');
   const [isManager, setIsManager] = useState(false); // 매니저 상태 추가
+  const [roomName, setRoomName] = useState<string | null>(null); // 방 이름 상태 추가
 
   // For localization
   const [currentLocale, setCurrentLocale] = useState<TranslatedLanguages>('en');
@@ -286,39 +287,36 @@ const GamePage: React.FC = () => {
           .then(() => {
             console.log(`GamePage: Successfully connected to socket for room ${roomId}`);
 
-            // 매니저 상태 확인 (user가 유효한지 다시 확인)
-            const currentUser = user; // useEffect 실행 시점의 user 값을 사용
-            console.log(`==========================currentUser: ${JSON.stringify(currentUser)}, roomId: ${roomId}`);
-            if (currentUser && roomId) {
-              // roomId가 string이므로 number로 변환 필요
-              const numericRoomId = parseInt(roomId, 10);
-              console.log(`numericRoomId: ${numericRoomId}, currentUser ID: ${currentUser.id}`);
-              if (!isNaN(numericRoomId)) {
-                getRoomDetails(numericRoomId)
-                  .then((roomDetails) => {
-                    if (roomDetails.managerId === currentUser.id) {
-                      // currentUser.id와 비교
-                      setIsManager(true);
-                      console.log('GamePage: Current user is the manager.');
-                    } else {
-                      setIsManager(false);
-                      console.log('GamePage: Current user is not the manager.');
-                    }
-                  })
-                  .catch((apiError) => {
-                    console.error('GamePage: Failed to fetch room details:', apiError);
-                    // API 호출 실패 시 매니저가 아닌 것으로 간주하거나 오류 처리
+            // roomId가 유효하면 방 정보 가져오기 (로그인 여부와 무관)
+            const numericRoomId = parseInt(roomId, 10);
+            if (!isNaN(numericRoomId)) {
+              getRoomDetails(numericRoomId)
+                .then((roomDetails) => {
+                  setRoomName(roomDetails.name); // 방 이름 설정
+
+                  // 매니저 상태 확인 (로그인한 경우에만)
+                  const currentUser = user; // useEffect 실행 시점의 user 값을 사용
+                  if (currentUser && roomDetails.managerId === currentUser.id) {
+                    setIsManager(true);
+                    console.log('GamePage: Current user is the manager.');
+                  } else {
                     setIsManager(false);
-                  });
-              } else {
-                console.error('GamePage: Invalid Room ID format:', roomId);
-                setIsManager(false); // ID 형식이 잘못된 경우
-              }
+                    console.log('GamePage: Current user is not the manager or user not logged in.');
+                  }
+                })
+                .catch((apiError) => {
+                  console.error('GamePage: Failed to fetch room details:', apiError);
+                  // API 호출 실패 시 기본값 설정 또는 오류 처리
+                  setRoomName('Error loading room');
+                  setIsManager(false);
+                });
             } else {
-              console.log('GamePage: Current user or Room ID not available for manager check.');
-              setIsManager(false); // 사용자 정보나 roomId가 없으면 매니저 아님
+              console.error('GamePage: Invalid Room ID format:', roomId);
+              setRoomName('Invalid Room ID');
+              setIsManager(false); // ID 형식이 잘못된 경우
             }
-            // 소켓 연결 및 방 참여 성공 후 초기 셔플 실행 (매니저 확인과 별개로 실행 가능)
+
+            // 소켓 연결 및 방 참여 성공 후 초기 셔플 실행
             btnShuffleEl?.dispatchEvent(new Event('click')); // Initial shuffle
           })
           .catch((error: any) => {
@@ -533,6 +531,11 @@ const GamePage: React.FC = () => {
 
   return (
     <>
+      <div className="game-top-bar">
+        <span className="room-name">{roomName || 'Loading room...'}</span>
+        {isManager && <span className="manager-icon" title="Manager">👑</span>}
+        <span className="user-nickname">{user?.nickname || '익명 유저'}</span> {/* 로그인 안했으면 '익명 유저' 표시 */}
+      </div>
       {/*
         <head> 내부의 link 태그 및 meta 태그들은 public/index.html에 유지하는 것이 일반적입니다.
         React 컴포넌트는 주로 <body> 내부의 내용을 렌더링합니다.
