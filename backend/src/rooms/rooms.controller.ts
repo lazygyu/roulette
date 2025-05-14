@@ -43,7 +43,6 @@ export class RoomsController {
       managerId: room.managerId,
       deletedAt: room.deletedAt,
       manager: { id: room.manager.id, nickname: room.manager.nickname }, // username 제거
-      // game: null, // GetRoomResponseDto에서 game 필드 제거됨
     };
   }
 

@@ -149,4 +149,30 @@ export class RoomsService {
 
     return room.managerId === userId;
   }
+
+  async verifyRoomPassword(roomId: number, plainPassword?: string): Promise<boolean> {
+    const room = await this.prisma.room.findUnique({
+      where: { id: roomId, deletedAt: null }, // 삭제되지 않은 방만 고려
+      select: { password: true },
+    });
+
+    if (!room) {
+      // GameGateway에서 이미 방 존재 여부를 확인할 수 있지만, 여기서도 방어적으로 처리
+      throw new NotFoundException(`Room with ID ${roomId} not found for password verification.`);
+    }
+
+    if (!room.password) { // 방에 비밀번호가 설정되어 있지 않으면 항상 통과
+      return true;
+    }
+
+    if (!plainPassword) { // 방에는 비밀번호가 있는데, 클라이언트가 비밀번호를 제공하지 않은 경우
+      return false;
+    }
+
+    // TODO: 실제 환경에서는 bcrypt.compare 사용 권장
+    // const isMatch = await bcrypt.compare(plainPassword, room.password);
+    // return isMatch;
+
+    return plainPassword === room.password; // 현재는 단순 문자열 비교로 가정
+  }
 }
