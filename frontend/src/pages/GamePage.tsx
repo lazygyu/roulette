@@ -79,17 +79,20 @@ const GamePage: React.FC = () => {
             if (inWinningRankRef.current) inWinningRankRef.current.disabled = true;
             if (sltMapRef.current) sltMapRef.current.disabled = true;
             if (chkSkillRef.current) chkSkillRef.current.disabled = true;
-          } else if (fetchedGameDetails.status === GameStatus.WAITING || fetchedGameDetails.status === GameStatus.IN_PROGRESS) {
+          } else if (
+            fetchedGameDetails.status === GameStatus.WAITING ||
+            fetchedGameDetails.status === GameStatus.IN_PROGRESS
+          ) {
             if (inNamesRef.current && fetchedGameDetails.marbles && fetchedGameDetails.marbles.length > 0) {
               inNamesRef.current.value = fetchedGameDetails.marbles.join(',');
             }
             if (inWinningRankRef.current && fetchedGameDetails.winningRank !== null) {
               inWinningRankRef.current.value = fetchedGameDetails.winningRank.toString();
-               if (fetchedGameDetails.winningRank === 1) {
-                 setWinnerSelectionType('first');
-               } else {
-                 setWinnerSelectionType('custom');
-               }
+              if (fetchedGameDetails.winningRank === 1) {
+                setWinnerSelectionType('first');
+              } else {
+                setWinnerSelectionType('custom');
+              }
             }
             if (sltMapRef.current && fetchedGameDetails.mapIndex !== null) {
               sltMapRef.current.value = fetchedGameDetails.mapIndex.toString();
@@ -113,8 +116,8 @@ const GamePage: React.FC = () => {
 
   const handlePasswordJoin = () => {
     if (!roomId) {
-        setJoinError('Room ID is missing.');
-        return;
+      setJoinError('Room ID is missing.');
+      return;
     }
     if (!passwordInput) {
       setJoinError('Password is required.');
@@ -124,18 +127,17 @@ const GamePage: React.FC = () => {
 
     const numericRoomId = parseInt(roomId, 10);
     if (isNaN(numericRoomId)) {
-        setJoinError('Invalid Room ID format.');
-        return;
+      setJoinError('Invalid Room ID format.');
+      return;
     }
-
 
     socketService.joinRoom(roomId, passwordInput, (response) => {
       if (response.success) {
         setShowPasswordModal(false);
-        setPasswordInput(''); 
+        setPasswordInput('');
         console.log(`Successfully joined room ${roomId} with password.`);
         if (response.gameState && window.roullete) {
-           window.roullete.updateStateFromServer(response.gameState);
+          window.roullete.updateStateFromServer(response.gameState);
         }
         const btnStartElement = document.querySelector<HTMLButtonElement>('#btnStart');
         const btnShuffleElement = document.querySelector<HTMLButtonElement>('#btnShuffle');
@@ -144,10 +146,10 @@ const GamePage: React.FC = () => {
         console.error(`Failed to join room ${roomId} with password: ${response.message}`);
         setJoinError(response.message || 'Failed to join room. Incorrect password?');
         if (response.requiresPassword) {
-          setShowPasswordModal(true); 
+          setShowPasswordModal(true);
         } else {
-           alert(response.message || '방 입장에 실패했습니다. 이전 페이지로 돌아갑니다.');
-           navigate(-1);
+          alert(response.message || '방 입장에 실패했습니다. 이전 페이지로 돌아갑니다.');
+          navigate(-1);
         }
       }
     });
@@ -164,7 +166,7 @@ const GamePage: React.FC = () => {
   }, [showPasswordModal]);
 
   useEffect(() => {
-    let rouletteInstance: Roulette | null = null; 
+    let rouletteInstance: Roulette | null = null;
     let originalDocumentLang = document.documentElement.lang;
     let unsubscribeMaps: (() => void) | undefined;
     let unsubscribeGameState: (() => void) | undefined;
@@ -176,13 +178,8 @@ const GamePage: React.FC = () => {
     let inWinningRankElFromQuery: HTMLInputElement | null = null;
     let btnLastWinnerEl: HTMLButtonElement | null = null;
     let btnFirstWinnerEl: HTMLButtonElement | null = null;
-    // btnShakeEl is related to #inGame, removing
     let sltMapEl: HTMLSelectElement | null = null;
-    let chkAutoRecordingElFromRef: HTMLInputElement | null = null; 
-    // notice related elements are removed
-    // let closeNoticeButtonEl: HTMLButtonElement | null = null;
-    // let openNoticeButtonEl: HTMLButtonElement | null = null;
-    // let noticeElFromQuery: HTMLElement | null = null;
+    let chkAutoRecordingElFromRef: HTMLInputElement | null = null;
 
     const getNames = (): string[] => {
       if (!inNamesEl) return [];
@@ -205,7 +202,7 @@ const GamePage: React.FC = () => {
       return { name, weight, count };
     };
 
-    let localWinnerType = 'first'; 
+    let localWinnerType = 'first';
 
     const setWinnerRank = (rank: number) => {
       if (inWinningRankRef.current) inWinningRankRef.current.value = rank.toString();
@@ -282,7 +279,6 @@ const GamePage: React.FC = () => {
       window.gtag?.('event', 'start', { event_category: 'roulette', event_label: 'start', value: 1 });
       socketService.startGame();
       document.querySelector('#settings')?.classList.add('hide');
-      // document.querySelector('#donate')?.classList.add('hide'); // #donate is removed
     };
     const handleChkSkillChange = (e: Event) => {
       if (window.options) window.options.useSkills = (e.target as HTMLInputElement).checked;
@@ -305,10 +301,7 @@ const GamePage: React.FC = () => {
       setWinnerSelectionType('first');
       setWinnerRank(1);
     };
-    // const handleBtnShakeClick = () => { // Related to #inGame, removing
-    //   window.roullete?.shake();
-    //   window.gtag?.('event', 'shake', { event_category: 'roulette', event_label: 'shake', value: 1 });
-    // };
+
     const handleMapChange = (e: Event) => {
       const index = parseInt((e.target as HTMLSelectElement).value, 10);
       if (!isNaN(index)) socketService.setMap(index);
@@ -316,19 +309,12 @@ const GamePage: React.FC = () => {
     const handleAutoRecordingChange = (e: Event) => {
       if (window.roullete) window.roullete.setAutoRecording((e.target as HTMLInputElement).checked);
     };
-    // const handleCloseNotice = () => { // Related to #notice, removing
-    //   if (noticeElFromQuery) noticeElFromQuery.style.display = 'none';
-    //   localStorage.setItem('lastViewedNotification', '1');
-    // };
-    // const handleOpenNotice = () => { // Related to #notice, removing
-    //   if (noticeElFromQuery) noticeElFromQuery.style.display = 'flex';
-    // };
 
     window.options = options;
     window.dataLayer = window.dataLayer || [];
     function gtagForPage(...args: any[]) {
       window.dataLayer!.push(args);
-    } 
+    }
     window.gtag = gtagForPage;
     gtagForPage('js', new Date());
     gtagForPage('config', 'G-5899C1DJM0');
@@ -368,10 +354,6 @@ const GamePage: React.FC = () => {
       inWinningRankElFromQuery = document.querySelector<HTMLInputElement>('#in_winningRank');
       btnLastWinnerEl = document.querySelector<HTMLButtonElement>('.btn-last-winner');
       btnFirstWinnerEl = document.querySelector<HTMLButtonElement>('.btn-first-winner');
-      // btnShakeEl = document.querySelector<HTMLButtonElement>('#btnShake'); // Related to #inGame, removing
-      // closeNoticeButtonEl = document.querySelector<HTMLButtonElement>('#closeNotice'); // Related to #notice, removing
-      // openNoticeButtonEl = document.querySelector<HTMLButtonElement>('#btnNotice'); // Related to #notice, removing
-      // noticeElFromQuery = document.querySelector<HTMLElement>('#notice'); // Related to #notice, removing
 
       if (roomId) {
         const numericRoomId = parseInt(roomId, 10);
@@ -429,13 +411,12 @@ const GamePage: React.FC = () => {
       inWinningRankElFromQuery?.addEventListener('change', handleInWinningRankChange);
       btnLastWinnerEl?.addEventListener('click', handleBtnLastWinnerClick);
       btnFirstWinnerEl?.addEventListener('click', handleBtnFirstWinnerClick);
-      // btnShakeEl?.addEventListener('click', handleBtnShakeClick); // Related to #inGame, removing
 
       if (sltMapEl) {
         sltMapEl.innerHTML = '<option value="">Loading maps...</option>';
         sltMapEl.disabled = true;
         unsubscribeMaps = socketService.onAvailableMapsUpdate((maps) => {
-          if (!sltMapRef.current) return; 
+          if (!sltMapRef.current) return;
           sltMapRef.current.innerHTML = '';
           maps.forEach((map) => {
             const option = document.createElement('option');
@@ -443,11 +424,11 @@ const GamePage: React.FC = () => {
             option.innerHTML = map.title;
             option.setAttribute('data-trans', '');
             if (window.translateElement) window.translateElement(option);
-            sltMapRef.current!.append(option); 
+            sltMapRef.current!.append(option);
           });
-          sltMapRef.current!.disabled = false; 
+          sltMapRef.current!.disabled = false;
         });
-        sltMapRef.current!.addEventListener('change', handleMapChange); 
+        sltMapRef.current!.addEventListener('change', handleMapChange);
       }
 
       if (rouletteInstance) {
@@ -469,20 +450,17 @@ const GamePage: React.FC = () => {
               }
               const marbleNames = gameState.marbles ? gameState.marbles.map((m) => m.name) : prevDetails?.marbles || [];
               return {
-                id: prevDetails?.id || 0, 
+                id: prevDetails?.id || 0,
                 status: newStatus,
-                mapIndex: prevDetails?.mapIndex ?? null, 
+                mapIndex: prevDetails?.mapIndex ?? null,
                 marbles: marbleNames,
                 winningRank: gameState.winnerRank ?? prevDetails?.winningRank ?? null,
-                speed: prevDetails?.speed ?? null, 
+                speed: prevDetails?.speed ?? null,
                 createdAt: prevDetails?.createdAt || new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
               };
             });
-            // const inGameDiv = document.querySelector('#inGame'); // Related to #inGame, removing
-            // if (inGameDiv) { // Related to #inGame, removing
-            //   inGameDiv.classList.toggle('hide', !gameState.shakeAvailable); // Related to #inGame, removing
-            // } // Related to #inGame, removing
+
             const gamePotentiallyOverBySocket =
               !gameState.isRunning && gameState.winners && gameState.winners.length >= gameState.winnerRank;
             if (
@@ -499,7 +477,7 @@ const GamePage: React.FC = () => {
                       if (authoritativeGameDetails.status === GameStatus.FINISHED) {
                         return getGameRanking(numericRoomId);
                       }
-                      return null; 
+                      return null;
                     })
                     .then((rankingData) => {
                       if (rankingData) {
@@ -526,55 +504,31 @@ const GamePage: React.FC = () => {
         chkAutoRecordingElFromRef.addEventListener('change', handleAutoRecordingChange);
         if (window.options && rouletteInstance) {
           chkAutoRecordingElFromRef.checked = window.options.autoRecording;
-          rouletteInstance.setAutoRecording(window.options.autoRecording); 
+          rouletteInstance.setAutoRecording(window.options.autoRecording);
         }
       }
-
-      // const checkDonateButtonLoaded = () => { // Related to #donate, removing
-      //   const btn = document.querySelector('span.bmc-btn-text');
-      //   if (!btn) {
-      //     donateButtonCheckTimeoutId = setTimeout(checkDonateButtonLoaded, 100);
-      //   } else {
-      //     btn.setAttribute('data-trans', '');
-      //     if (window.translateElement) window.translateElement(btn as HTMLElement);
-      //   }
-      // };
-      // donateButtonCheckTimeoutId = setTimeout(checkDonateButtonLoaded, 100); // Related to #donate, removing
-
-      // const currentNotice = 1;  // Related to #notice, removing
-      // const noticeKey = 'lastViewedNotification'; // Related to #notice, removing
-      // const checkNotice = () => { // Related to #notice, removing
-      //   const lastViewed = localStorage.getItem(noticeKey);
-      //   if (lastViewed === null || Number(lastViewed) < currentNotice) {
-      //     handleOpenNotice(); 
-      //   }
-      // };
-      // closeNoticeButtonEl?.addEventListener('click', handleCloseNotice); // Related to #notice, removing
-      // openNoticeButtonEl?.addEventListener('click', handleOpenNotice); // Related to #notice, removing
-      // checkNotice(); // Related to #notice, removing
     };
 
     const initializeRouletteAndGame = async () => {
       if (rouletteCanvasContainerRef.current) {
         rouletteInstance = new Roulette();
-        window.roullete = rouletteInstance; 
+        window.roullete = rouletteInstance;
 
         try {
           await rouletteInstance.initialize(rouletteCanvasContainerRef.current);
-          setupGameInteractions(); 
+          setupGameInteractions();
         } catch (error) {
           console.error('[GamePage] Roulette initialization failed:', error);
           alert('게임 엔진 초기화에 실패했습니다. 페이지를 새로고침 해주세요.');
         }
       } else {
-        setTimeout(initializeRouletteAndGame, 100); 
+        setTimeout(initializeRouletteAndGame, 100);
       }
     };
 
-    initializeRouletteAndGame(); 
+    initializeRouletteAndGame();
 
     return () => {
-      // if (donateButtonCheckTimeoutId) clearTimeout(donateButtonCheckTimeoutId); // Related to #donate, removing
       if (unsubscribeMaps) unsubscribeMaps();
       if (unsubscribeGameState) unsubscribeGameState();
       if (inNamesEl) {
@@ -587,45 +541,16 @@ const GamePage: React.FC = () => {
       inWinningRankElFromQuery?.removeEventListener('change', handleInWinningRankChange);
       btnLastWinnerEl?.removeEventListener('click', handleBtnLastWinnerClick);
       btnFirstWinnerEl?.removeEventListener('click', handleBtnFirstWinnerClick);
-      // btnShakeEl?.removeEventListener('click', handleBtnShakeClick); // Related to #inGame, removing
-      sltMapEl?.removeEventListener('change', handleMapChange); 
+      sltMapEl?.removeEventListener('change', handleMapChange);
       chkAutoRecordingElFromRef?.removeEventListener('change', handleAutoRecordingChange);
-      // closeNoticeButtonEl?.removeEventListener('click', handleCloseNotice); // Related to #notice, removing
-      // openNoticeButtonEl?.removeEventListener('click', handleOpenNotice); // Related to #notice, removing
       socketService.disconnect();
-      delete window.roullete; 
+      delete window.roullete;
       delete window.options;
       delete window.translateElement;
       document.documentElement.lang = originalDocumentLang;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, user]); 
-
-  // useEffect(() => { // Related to #donate, removing
-  //   const scriptId = 'bmc-script';
-  //   const donateContainer = document.getElementById('donate'); 
-  //   if (!donateContainer || document.getElementById(scriptId)) return;
-  //   const script = document.createElement('script');
-  //   script.id = scriptId;
-  //   script.src = 'https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js';
-  //   script.setAttribute('data-name', 'bmc-button');
-  //   script.setAttribute('data-slug', 'lazygyu');
-  //   script.setAttribute('data-color', '#FFDD00');
-  //   script.setAttribute('data-emoji', '');
-  //   script.setAttribute('data-font', 'Comic');
-  //   script.setAttribute('data-text', 'Buy me a coffee');
-  //   script.setAttribute('data-outline-color', '#000000');
-  //   script.setAttribute('data-font-color', '#000000');
-  //   script.setAttribute('data-coffee-color', '#ffffff');
-  //   script.async = true;
-  //   donateContainer.appendChild(script);
-  //   return () => {
-  //     const existingScript = document.getElementById(scriptId);
-  //     if (donateContainer && existingScript) {
-  //       donateContainer.removeChild(existingScript);
-  //     }
-  //   };
-  // }, []);
+  }, [roomId, user]);
 
   return (
     <>
@@ -704,10 +629,6 @@ const GamePage: React.FC = () => {
             ref={inNamesRef}
           ></textarea>
           <div className="actions">
-            {/* <button id="btnNotice"> // Related to #notice, removing
-              <i className="icon megaphone"></i>
-            </button>
-            <div className="sep"></div> */}
             <button id="btnShuffle">
               <i className="icon shuffle"></i>
               <span data-trans>Shuffle</span>
@@ -720,36 +641,6 @@ const GamePage: React.FC = () => {
         </div>
       </div>
 
-      {/* <div id="donate"></div> */} {/* Removed #donate */}
-      {/* <div id="inGame" className="settings hide"> // Removed #inGame
-        <button id="btnShake" data-trans>
-          Shake!
-        </button>
-      </div> */}
-      {/* <div id="notice" style={{ display: 'none' }}> // Removed #notice
-        <h1>Notice</h1>
-        <div className="notice-body">
-          <p>이 프로그램은 무료이며 사용에 아무런 제한이 없습니다.</p>
-          <p>
-            이 프로그램의 사용이나 프로그램을 이용한 영상 제작, 방송 등에 원작자는 아무런 제재를 가하거나 이의를
-            제기하지 않습니다. 자유롭게 사용하셔도 됩니다.
-          </p>
-          <p>다만 저작권자를 사칭하는 것은 저작권법을 위반하는 범죄입니다.</p>
-          <p>
-            저작권자를 사칭하여 권리 침해를 주장하는 경우를 보거나 겪으시는 분은
-            <a href="mailto:lazygyu+legal@gmail.com" target="_blank" rel="noopener noreferrer">
-              lazygyu+legal@gmail.com
-            </a>{' '}
-            으로 제보 부탁드립니다.
-          </p>
-          <p>감사합니다.</p>
-        </div>
-        <div className="notice-action">
-          <button id="closeNotice" data-trans>
-            Close
-          </button>
-        </div>
-      </div> */}
       <div className="copyright">
         &copy; 2025.
         <a href="https://lazygyu.net" target="_blank" rel="noopener noreferrer">
@@ -765,11 +656,7 @@ const GamePage: React.FC = () => {
         style={{ width: '100%', height: '100%', position: 'fixed', top: 0, left: 0 }}
       />
       {showRankingModal && finalRanking && (
-        <RankingDisplay
-          ranking={finalRanking} 
-          roomName={roomName}
-          onClose={() => setShowRankingModal(false)}
-        />
+        <RankingDisplay ranking={finalRanking} roomName={roomName} onClose={() => setShowRankingModal(false)} />
       )}
       {showPasswordModal && (
         <div
@@ -783,7 +670,7 @@ const GamePage: React.FC = () => {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 2000, 
+            zIndex: 2000,
           }}
         >
           <div
@@ -807,7 +694,14 @@ const GamePage: React.FC = () => {
             />
             <button
               onClick={handlePasswordJoin}
-              style={{ padding: '8px 12px', borderRadius: '4px', border: 'none', backgroundColor: '#007bff', color: 'white', cursor: 'pointer' }}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '4px',
+                border: 'none',
+                backgroundColor: '#007bff',
+                color: 'white',
+                cursor: 'pointer',
+              }}
             >
               Join
             </button>
