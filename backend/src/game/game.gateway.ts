@@ -38,7 +38,9 @@ import { GetMapsDto } from './dto/get-maps.dto';
   },
   namespace: 'game',
 })
-@UsePipes(new ValidationPipe({ transform: true, whitelist: true, exceptionFactory: (errors) => new WsException(errors) })) // 게이트웨이 레벨에서 ValidationPipe 적용
+@UsePipes(
+  new ValidationPipe({ transform: true, whitelist: true, exceptionFactory: (errors) => new WsException(errors) }),
+) // 게이트웨이 레벨에서 ValidationPipe 적용
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(GameGateway.name);
 
@@ -56,7 +58,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log('Game WebSocket Gateway 초기화 완료');
   }
 
-  async handleConnection(client: Socket & { user?: User }) { // client 타입에 user 추가 및 async 추가
+  async handleConnection(client: Socket) {
+    // client 타입을 Socket으로 변경
     const token = client.handshake.auth.token || client.handshake.headers.authorization?.split(' ')[1];
     this.logger.log(`새로운 클라이언트 연결 시도: ${client.id} (토큰 존재 여부: ${!!token})`);
 
@@ -86,7 +89,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  handleDisconnect(client: Socket & { user?: User }) { // client 타입에 user 추가
+  handleDisconnect(client: Socket) {
+    // client 타입을 Socket으로 변경
     this.logger.log(`클라이언트 연결 종료: ${client.id} (${new Date().toLocaleString()})`);
     const joinedPrefixedRoomIds = Array.from(client.rooms.values()).filter((room) => room !== client.id);
 
@@ -95,17 +99,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       try {
         roomId = unprefixRoomId(prefixedRoomId);
         const players = this.gameSessionService.getPlayers(roomId);
-        const player = players.find(p => p.id === client.id);
+        const player = players.find((p) => p.id === client.id);
         this.gameSessionService.removePlayer(roomId, client.id);
 
         client.to(prefixedRoomId).emit('player_left', {
           playerId: client.id,
           nickname: player?.userInfo.nickname || generateAnonymousNickname(client.id),
         });
-        this.logger.log(`방 ${prefixedRoomId}(${roomId})에서 플레이어 ${player?.userInfo.nickname || '익명'} (${client.id}) 퇴장`);
+        this.logger.log(
+          `방 ${prefixedRoomId}(${roomId})에서 플레이어 ${player?.userInfo.nickname || '익명'} (${client.id}) 퇴장`,
+        );
 
         if (this.gameEngineService.isLoopRunning(roomId)) {
-           this.logger.log(`Player left room ${prefixedRoomId}(${roomId}) while game loop was running.`);
+          this.logger.log(`Player left room ${prefixedRoomId}(${roomId}) while game loop was running.`);
         }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
@@ -118,9 +124,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: JoinRoomDto, // DTO 사용 (password 필드 포함)
+    @SocketCurrentUser() user: User, // 인증된 사용자 정보
   ) {
-    const { roomId, password, userInfo } = data; // password 추출
-    const finalUserInfo = userInfo || { nickname: generateAnonymousNickname(client.id) };
+    const { roomId, password } = data; // password 추출
+    const finalUserInfo = user || { nickname: generateAnonymousNickname(client.id) };
 
     let roomDetailsFromDb;
     try {
@@ -141,8 +148,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     // 비밀번호 검증
-    if (roomDetailsFromDb.password) { // 방에 비밀번호가 설정되어 있는 경우
-      if (!password) { // 클라이언트가 비밀번호를 보내지 않은 경우
+    if (roomDetailsFromDb.password) {
+      // 방에 비밀번호가 설정되어 있는 경우
+      if (!password) {
+        // 클라이언트가 비밀번호를 보내지 않은 경우
         this.logger.warn(`비밀번호가 필요한 방(ID: ${roomId})에 비밀번호 없이 접근 시도: ${client.id}`);
         throw new WsException('비밀번호가 필요합니다.');
       }
@@ -205,12 +214,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('leave_room')
-  handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() data: LeaveRoomDto) { // DTO 사용
+  handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() data: LeaveRoomDto) {
+    // DTO 사용
     const { roomId } = data;
     const prefixedRoomId = prefixRoomId(roomId);
     try {
       const players = this.gameSessionService.getPlayers(roomId);
-      const player = players.find(p => p.id === client.id);
+      const player = players.find((p) => p.id === client.id);
       const nickname = player?.userInfo.nickname || generateAnonymousNickname(client.id);
 
       client.leave(prefixedRoomId);
@@ -258,7 +268,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error setting marbles in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
+      this.logger.error(
+        `Error setting marbles in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`,
+      );
       throw new WsException(`마블 설정 중 오류 발생: ${message}`);
     }
   }
@@ -266,9 +278,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @UseGuards(WsUserAttachedGuard) // 가드 변경
   @SubscribeMessage('set_winning_rank')
   async handleSetWinningRank(
-     @ConnectedSocket() client: Socket,
-     @MessageBody() data: SetWinningRankDto,
-     @SocketCurrentUser() user: User,
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: SetWinningRankDto,
+    @SocketCurrentUser() user: User,
   ) {
     const { roomId, rank } = data;
     const prefixedRoomId = prefixRoomId(roomId);
@@ -279,7 +291,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       throw new WsException('방의 매니저만 우승 순위를 설정할 수 있습니다.');
     }
 
-     try {
+    try {
       this.gameSessionService.setWinningRank(roomId, rank);
       const gameState = this.gameSessionService.getGameState(roomId);
       this.server.to(prefixedRoomId).emit('game_state', gameState);
@@ -287,7 +299,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error setting winning rank in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
+      this.logger.error(
+        `Error setting winning rank in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`,
+      );
       throw new WsException(`우승 순위 설정 중 오류 발생: ${message}`);
     }
   }
@@ -316,7 +330,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error setting map in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
+      this.logger.error(
+        `Error setting map in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`,
+      );
       throw new WsException(`맵 설정 중 오류 발생: ${message}`);
     }
   }
@@ -344,7 +360,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error setting speed in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
+      this.logger.error(
+        `Error setting speed in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`,
+      );
       throw new WsException(`속도 설정 중 오류 발생: ${message}`);
     }
   }
@@ -373,7 +391,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error starting game in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
+      this.logger.error(
+        `Error starting game in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`,
+      );
       throw new WsException(`게임 시작 중 오류 발생: ${message}`);
     }
   }
@@ -406,13 +426,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error resetting game in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
+      this.logger.error(
+        `Error resetting game in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`,
+      );
       throw new WsException(`게임 리셋 중 오류 발생: ${message}`);
     }
   }
 
   @SubscribeMessage('get_game_state')
-  handleGetGameState(@ConnectedSocket() client: Socket, @MessageBody() data: GetGameStateDto) { // DTO 사용
+  handleGetGameState(@ConnectedSocket() client: Socket, @MessageBody() data: GetGameStateDto) {
+    // DTO 사용
     const { roomId } = data;
     try {
       const gameState = this.gameSessionService.getGameState(roomId);
@@ -425,9 +448,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('get_maps')
-  handleGetMaps(@ConnectedSocket() client: Socket, @MessageBody() data: GetMapsDto) { // DTO 사용
+  handleGetMaps(@ConnectedSocket() client: Socket, @MessageBody() data: GetMapsDto) {
+    // DTO 사용
     const { roomId } = data;
-     try {
+    try {
       const maps = this.gameSessionService.getMaps(roomId);
       return { success: true, maps };
     } catch (error: unknown) {
