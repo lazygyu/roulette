@@ -49,6 +49,12 @@ const GamePage: React.FC = () => {
   const [finalRanking, setFinalRanking] = useState<RankingEntry[] | null>(null); // 최종 랭킹 정보 상태 추가
   const [showRankingModal, setShowRankingModal] = useState(false); // 랭킹 모달 표시 상태
 
+  // 비밀번호 모달 관련 상태
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
+
   // For localization
   const [currentLocale, setCurrentLocale] = useState<TranslatedLanguages>('en');
   const { user } = useAuth(); // AuthContext에서 사용자 정보 가져오기
@@ -296,120 +302,81 @@ const GamePage: React.FC = () => {
       openNoticeButtonEl = document.querySelector<HTMLButtonElement>('#btnNotice');
       noticeElFromQuery = document.querySelector<HTMLElement>('#notice');
 
-      // roomId가 있을 경우에만 connect 시도
-      if (roomId) {
-        socketService
-          .connect(roomId)
+      const attemptJoinRoom = (currentRoomId: string, roomPassword?: string) => {
+        socketService.connect(currentRoomId)
           .then(() => {
-            console.log(`GamePage: Successfully connected to socket for room ${roomId}`);
+            console.log(`GamePage: Successfully connected to socket for room ${currentRoomId}`);
+            socketService.joinRoom(currentRoomId, roomPassword, (response) => {
+              if (response.success) {
+                setShowPasswordModal(false);
+                setPasswordError(null);
+                // 방 정보 및 게임 상세 정보 가져오기 (joinRoom 성공 후)
+                const numericRoomId = parseInt(currentRoomId, 10);
+                getRoomGameDetails(numericRoomId)
+                  .then(setGameDetails)
+                  .catch(err => console.error("Failed to get game details after join", err));
 
-            // roomId가 유효하면 방 기본 정보 및 게임 상세 정보 가져오기
-            const numericRoomId = parseInt(roomId, 10);
-            if (!isNaN(numericRoomId)) {
-              // 1. 방 기본 정보 가져오기
-              getRoomDetails(numericRoomId)
-                .then((fetchedRoomBasicDetails) => {
-                  setRoomDetails(fetchedRoomBasicDetails);
-                  setRoomName(fetchedRoomBasicDetails.name);
-
-                  const currentUser = user;
-                  if (currentUser && fetchedRoomBasicDetails.managerId === currentUser.id) {
-                    setIsManager(true);
-                  } else {
-                    setIsManager(false);
-                  }
-
-                  // 2. 게임 상세 정보 가져오기
-                  return getRoomGameDetails(numericRoomId);
-                })
-                .then((fetchedGameDetails) => {
-                  setGameDetails(fetchedGameDetails);
-
-                  // 게임 상태에 따른 UI 초기화 (fetchedGameDetails 사용)
-                  if (fetchedGameDetails) {
-                    if (fetchedGameDetails.status === GameStatus.FINISHED) {
-                      // 게임 종료 시 랭킹 정보 가져오기
-                      getGameRanking(numericRoomId)
-                        .then((rankingData) => {
-                          setFinalRanking(rankingData.rankings);
-                          if (rankingData.rankings && rankingData.rankings.length > 0) {
-                            setShowRankingModal(true);
-                          }
-                        })
-                        .catch((rankingError) => {
-                          console.error('GamePage: Failed to fetch game ranking:', rankingError);
-                        });
-
-                      // 게임 종료 상태 UI 처리
-                      if (btnStartEl) {
-                        btnStartEl.disabled = true;
-                        btnStartEl.innerText = 'Game Finished';
-                      }
-                      // ... (다른 UI 요소 비활성화)
-                      if (btnShuffleEl) btnShuffleEl.disabled = true;
-                      if (inNamesRef.current) inNamesRef.current.disabled = true;
-                      if (inWinningRankRef.current) inWinningRankRef.current.disabled = true;
-                      if (sltMapRef.current) sltMapRef.current.disabled = true;
-                      if (chkSkillRef.current) chkSkillRef.current.disabled = true;
-                    } else if (
-                      fetchedGameDetails.status === GameStatus.WAITING ||
-                      fetchedGameDetails.status === GameStatus.IN_PROGRESS
-                    ) {
-                      // WAITING 또는 IN_PROGRESS 상태일 때 설정 불러오기
-                      if (inNamesRef.current && fetchedGameDetails.marbles && fetchedGameDetails.marbles.length > 0) {
-                        inNamesRef.current.value = fetchedGameDetails.marbles.join(',');
-                      }
-                      if (inWinningRankRef.current && fetchedGameDetails.winningRank !== null) {
-                        inWinningRankRef.current.value = fetchedGameDetails.winningRank.toString();
-                        if (fetchedGameDetails.winningRank === 1) {
-                          setWinnerSelectionType('first');
-                          localWinnerType = 'first';
-                        } else {
-                          setWinnerSelectionType('custom');
-                          localWinnerType = 'custom';
-                        }
-                      }
-                      if (sltMapRef.current && fetchedGameDetails.mapIndex !== null) {
-                        sltMapRef.current.value = fetchedGameDetails.mapIndex.toString();
-                      }
-                      // ... (기타 설정 UI 업데이트) ...
-                      if (window.options && fetchedGameDetails.speed !== null) {
-                        window.options.speed = fetchedGameDetails.speed;
-                      }
-                      if (fetchedGameDetails.status === GameStatus.IN_PROGRESS && btnStartEl) {
-                        btnStartEl.disabled = true;
-                        btnStartEl.innerText = 'Game In Progress';
-                        if (btnShuffleEl) btnShuffleEl.disabled = true;
-                        if (inNamesRef.current) inNamesRef.current.disabled = true;
-                      }
-                    }
-                  }
-                  // 초기 셔플 (게임이 FINISHED가 아닐 때만)
-                  // if (fetchedGameDetails?.status !== GameStatus.FINISHED) {
-                  //   btnShuffleEl?.dispatchEvent(new Event('click')); // 이 라인을 제거하여 초기 setMarbles 호출 방지
-                  // }
-                })
-                .catch((apiError) => {
-                  console.error('GamePage: Failed to fetch room or game details:', apiError);
-                  setRoomName('Error loading room/game');
-                  setIsManager(false);
-                });
-            } else {
-              console.error('GamePage: Invalid Room ID format:', roomId);
-              setRoomName('Invalid Room ID');
-              setIsManager(false);
-            }
+                // 게임 상태에 따른 UI 초기화 등은 여기서 또는 gameStateUpdate 리스너에서 처리
+              } else {
+                console.error(`GamePage: Failed to join room ${currentRoomId}: ${response.message}`);
+                if (response.message?.includes('비밀번호')) {
+                  setPasswordError(response.message);
+                  setShowPasswordModal(true); // 비밀번호 오류 시 다시 모달 표시
+                } else {
+                  alert(response.message || '방 입장에 실패했습니다.');
+                  navigate(-1);
+                }
+              }
+            });
           })
           .catch((error: any) => {
-            console.error(`GamePage: Failed to connect to socket for room ${roomId}`, error);
-            alert(error.message || '방 입장에 실패했습니다. 이전 페이지로 돌아갑니다.');
-            navigate(-1); // 이전 페이지로 이동, 또는 navigate('/') 등으로 특정 페이지 지정
+            console.error(`GamePage: Failed to connect to socket for room ${currentRoomId}`, error);
+            alert(error.message || '소켓 연결에 실패했습니다. 이전 페이지로 돌아갑니다.');
+            navigate(-1);
           });
+      };
+
+
+      if (roomId) {
+        const numericRoomId = parseInt(roomId, 10);
+        if (!isNaN(numericRoomId)) {
+          getRoomDetails(numericRoomId)
+            .then((fetchedRoomBasicDetails) => {
+              setRoomDetails(fetchedRoomBasicDetails);
+              setRoomName(fetchedRoomBasicDetails.name);
+              const currentUser = user;
+              if (currentUser && fetchedRoomBasicDetails.managerId === currentUser.id) {
+                setIsManager(true);
+              } else {
+                setIsManager(false);
+              }
+
+              // fetchedRoomBasicDetails.password (실제 비밀번호 해시 또는 값) 유무로 판단
+              if (fetchedRoomBasicDetails.password) { 
+                setShowPasswordModal(true);
+              } else {
+                attemptJoinRoom(roomId);
+              }
+              // 게임 상세 정보는 joinRoom 성공 후 또는 gameStateUpdate 에서 가져오도록 변경
+            })
+            .catch((apiError) => {
+              console.error('GamePage: Failed to fetch room details:', apiError);
+              alert('방 정보를 가져오는데 실패했습니다.');
+              navigate(-1);
+            });
+        } else {
+          console.error('GamePage: Invalid Room ID format:', roomId);
+          setRoomName('Invalid Room ID');
+          setIsManager(false);
+          alert('잘못된 방 ID입니다.');
+          navigate('/');
+        }
       } else {
-        console.error('GamePage: Room ID is missing, cannot connect to socket.');
+        console.error('GamePage: Room ID is missing.');
         alert('잘못된 접근입니다. 방 ID가 없습니다.');
-        navigate('/'); // 홈페이지로 리디렉션
+        navigate('/');
       }
+
 
       const savedNames = localStorage.getItem('mbr_names');
       if (savedNames && inNamesEl) inNamesEl.value = savedNames;
@@ -465,13 +432,7 @@ const GamePage: React.FC = () => {
             rouletteInstance.updateStateFromServer(gameState);
 
             // GamePage의 gameDetails 상태도 업데이트 (중요: UI 반응성을 위해)
-            // GameState와 GameInfo 간의 필드 매핑이 필요할 수 있음.
-            // GameState가 GameInfo의 모든 필드를 포함하지 않을 수 있으므로 주의.
             setGameDetails((prevDetails) => {
-              // gameState의 isRunning으로 status 결정
-              // gameState.winner가 있고 isRunning이 false이면 FINISHED
-              // gameState.winner가 없고 isRunning이 true이면 IN_PROGRESS
-              // gameState.winner가 없고 isRunning이 false이면 WAITING (또는 다른 초기 상태)
               let newStatus: GameStatus;
               if (!gameState.isRunning && gameState.winner) {
                 newStatus = GameStatus.FINISHED;
@@ -480,19 +441,14 @@ const GamePage: React.FC = () => {
               } else {
                 newStatus = GameStatus.WAITING;
               }
-
-              // gameState의 marbles (MarbleState[])를 GameInfo의 marbles (string[])로 변환
               const marbleNames = gameState.marbles ? gameState.marbles.map((m) => m.name) : prevDetails?.marbles || [];
-
-              // gameId, mapIndex, speed 등은 gameState에 직접 없을 수 있으므로 prevDetails에서 가져오거나 기본값 사용
-              // API 응답(GameInfo)이 더 완전한 정보를 가질 수 있으므로, prevDetails를 신중히 병합.
               return {
-                id: prevDetails?.id || 0, // Game ID는 API를 통해 받아오는 것이 일반적
+                id: prevDetails?.id || 0,
                 status: newStatus,
-                mapIndex: prevDetails?.mapIndex ?? null, // mapIndex는 API 또는 rouletteInstance 내부 상태에서 가져올 수 있음
+                mapIndex: prevDetails?.mapIndex ?? null, // gameState에 mapIndex가 없으므로 prevDetails 우선
                 marbles: marbleNames,
                 winningRank: gameState.winnerRank ?? prevDetails?.winningRank ?? null,
-                speed: prevDetails?.speed ?? null, // speed는 API 또는 rouletteInstance 내부 상태
+                speed: prevDetails?.speed ?? null, // gameState에 speed가 없으므로 prevDetails 우선
                 createdAt: prevDetails?.createdAt || new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
               };
@@ -503,11 +459,9 @@ const GamePage: React.FC = () => {
               inGameDiv.classList.toggle('hide', !gameState.shakeAvailable);
             }
 
-            // Check if the game has finished based on the received gameState
             const gamePotentiallyOverBySocket =
               !gameState.isRunning && gameState.winners && gameState.winners.length >= gameState.winnerRank;
 
-            // Check against the latest gameDetails status using the ref
             if (
               gamePotentiallyOverBySocket &&
               gameDetailsRef.current &&
@@ -519,27 +473,18 @@ const GamePage: React.FC = () => {
                   console.log(
                     'Game potentially finished (socket event). Fetching authoritative game details and ranking...',
                   );
-
                   getRoomGameDetails(numericRoomId)
                     .then((authoritativeGameDetails) => {
-                      // 백엔드에서 받은 최종 게임 정보로 gameDetails 상태 업데이트
                       setGameDetails(authoritativeGameDetails);
-
-                      // 업데이트된 게임 상태가 FINISHED인지 확인 후 랭킹 요청
                       if (authoritativeGameDetails.status === GameStatus.FINISHED) {
-                        // 게임 종료에 따른 UI 컨트롤 비활성화 (btnStartEl 등은 setupGameInteractions 스코프에 있어 직접 접근 불가)
-                        // 이 부분은 gameDetails 상태 변경에 따른 useEffect나 JSX 조건부 렌더링으로 처리되는 것이 더 React적입니다.
-                        // 예를 들어, <button disabled={gameDetails?.status === GameStatus.FINISHED}>Start</button>
-                        // 여기서는 API 호출에 집중합니다.
                         console.log('Authoritative game status is FINISHED. Fetching ranking.');
                         return getGameRanking(numericRoomId);
                       }
                       console.log('Authoritative game status is NOT FINISHED, or ranking not needed yet.');
-                      return null; // FINISHED 상태가 아니면 랭킹을 가져오지 않음
+                      return null;
                     })
                     .then((rankingData) => {
                       if (rankingData) {
-                        // rankingData가 null이 아닐 때만 처리 (즉, 게임이 FINISHED였을 때)
                         setFinalRanking(rankingData.rankings);
                         if (rankingData.rankings && rankingData.rankings.length > 0) {
                           setShowRankingModal(true);
@@ -854,6 +799,64 @@ const GamePage: React.FC = () => {
         ref={rouletteCanvasContainerRef}
         style={{ width: '100%', height: '100%', position: 'fixed', top: 0, left: 0 }}
       />
+      {showPasswordModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 2000, // 다른 UI 요소 위에 표시되도록 z-index 설정
+          }}
+        >
+          <div style={{ background: 'white', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
+            <h3>비밀번호 입력</h3>
+            <input
+              type="password"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              placeholder="비밀번호"
+              style={{ margin: '10px 0', padding: '8px', width: '200px' }}
+            />
+            {passwordError && <p style={{ color: 'red' }}>{passwordError}</p>}
+            <button
+              onClick={() => {
+                if (roomId) {
+                  // attemptJoinRoom(roomId, passwordInput); // setupGameInteractions 내의 attemptJoinRoom 호출
+                  // 직접 socketService.joinRoom 호출로 변경
+                  socketService.joinRoom(roomId, passwordInput, (response) => {
+                    if (response.success) {
+                      setShowPasswordModal(false);
+                      setPasswordError(null);
+                      // 방 정보 및 게임 상세 정보 가져오기 (joinRoom 성공 후)
+                      const numericRoomId = parseInt(roomId, 10);
+                      getRoomGameDetails(numericRoomId)
+                        .then(setGameDetails)
+                        .catch(err => console.error("Failed to get game details after join", err));
+                    } else {
+                      setPasswordError(response.message || '비밀번호가 올바르지 않습니다.');
+                    }
+                  });
+                }
+              }}
+              style={{ padding: '10px 20px', marginLeft: '10px' }}
+            >
+              입장
+            </button>
+            <button
+              onClick={() => navigate('/')} // 이전 페이지 또는 홈으로 이동
+              style={{ padding: '10px 20px', marginLeft: '10px', backgroundColor: '#ccc' }}
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      )}
       {showRankingModal && finalRanking && (
         <RankingDisplay
           ranking={finalRanking} // 타입은 RankingEntry[] | null

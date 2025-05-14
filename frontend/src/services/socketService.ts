@@ -72,7 +72,8 @@ class SocketService {
 
         console.log(`Attempting to join room: ${roomId}`);
         // connect 성공 시 바로 joinRoom 호출
-        this.joinRoom(roomId, (response: JoinRoomResponse) => { // JoinRoomResponse 타입 사용
+        // 초기 연결 시에는 비밀번호 없이 접속 시도
+        this.joinRoom(roomId, undefined, (response: JoinRoomResponse) => { // password 자리에 undefined 전달, JoinRoomResponse 타입 사용
           if (response.success) {
             console.log(`socketService: Successfully joined room ${roomId} (ack received).`);
             // this.currentRoomId = roomId; // joinRoom 성공 시 roomId 설정 (선택적 위치)
@@ -219,21 +220,22 @@ class SocketService {
   }
 
   // --- Room and Game Actions ---
-  private joinRoom(roomId: string, callback: (response: JoinRoomResponse) => void): void { // 콜백 타입 JoinRoomResponse로 변경
+  public joinRoom(roomId: string, password?: string, callback?: (response: JoinRoomResponse) => void): void { // password 인자 추가, 콜백 타입 JoinRoomResponse로 변경
     if (!this.socket) {
       console.error('socketService: Socket not connected for joinRoom.');
-      callback({ success: false, message: 'Socket not connected.' });
+      if (callback) callback({ success: false, message: 'Socket not connected.' });
       return;
     }
     const userInfo = {
       nickname: localStorage.getItem('user_nickname') || `User_${Math.floor(Math.random() * 1000)}`,
     };
-    this.socket.emit('join_room', { roomId, userInfo }, (response: JoinRoomResponse) => { // 응답 타입 JoinRoomResponse로 변경
+    // 비밀번호를 포함하여 emit
+    this.socket.emit('join_room', { roomId, userInfo, password }, (response: JoinRoomResponse) => { // 응답 타입 JoinRoomResponse로 변경
       if (response.success) {
         localStorage.setItem('user_nickname', userInfo.nickname);
         this.currentRoomId = roomId; // 방 참여 성공 시 currentRoomId 설정
       }
-      callback(response);
+      if (callback) callback(response);
     });
   }
 
