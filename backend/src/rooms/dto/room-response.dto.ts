@@ -8,7 +8,6 @@ export class GetRoomResponseDto {
   @Expose()
   id: number;
 
-  @Expose()
   password: string | null;
 
   @Expose()

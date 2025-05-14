@@ -61,8 +61,9 @@ export interface GameState {
   winnerRank: number;
   totalMarbleCount: number;
   shakeAvailable: boolean;
-  mapIndex?: number; // 백엔드에서 현재 맵 인덱스를 보내준다면 추가
-  speed?: number; // 백엔드에서 현재 속도를 보내준다면 추가
+  // currentMapIndex?: number; // 백엔드에서 현재 맵 인덱스를 보내준다면 추가
+  // currentMapIndex?: number; // 백엔드에서 현재 맵 인덱스를 보내준다면 추가
+  // currentSpeed?: number; // 백엔드에서 현재 속도를 보내준다면 추가
 }
 
 // --- 추가된 타입 ---
