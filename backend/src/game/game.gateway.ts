@@ -11,14 +11,14 @@ import {
 import { Server, Socket } from 'socket.io';
 import { GameSessionService } from './game-session.service';
 import { GameEngineService } from './game-engine.service';
-import { Logger, UsePipes, ValidationPipe, UseGuards } from '@nestjs/common'; // UseGuards 임포트 추가
-import { PrismaService } from '../prisma/prisma.service';
+import { Logger, UsePipes, ValidationPipe, UseGuards } from '@nestjs/common';
 import { generateAnonymousNickname } from './utils/nickname.util';
 import { prefixRoomId, unprefixRoomId } from './utils/roomId.util';
-import { WsJwtAuthGuard } from '../auth/guards/ws-jwt-auth.guard'; // WsJwtAuthGuard 임포트
-import { SocketCurrentUser } from '../decorators/socket-user.decorator'; // SocketCurrentUser 임포트
-import { User } from '@prisma/client'; // User 임포트
-import { RoomsService } from '../rooms/rooms.service'; // RoomsService 임포트
+import { WsUserAttachedGuard } from '../auth/guards/ws-user-attached.guard';
+import { SocketCurrentUser } from '../decorators/socket-user.decorator';
+import { User } from '@prisma/client';
+import { RoomsService } from '../rooms/rooms.service';
+import { AuthService } from '../auth/auth.service'; // AuthService 임포트
 
 // DTO 임포트
 import { JoinRoomDto } from './dto/join-room.dto';
@@ -48,19 +48,45 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly gameSessionService: GameSessionService,
     private readonly gameEngineService: GameEngineService,
-    private readonly prisma: PrismaService,
-    private readonly roomsService: RoomsService, // RoomsService 주입
+    private readonly roomsService: RoomsService,
+    private readonly authService: AuthService,
   ) {}
 
   afterInit() {
     this.logger.log('Game WebSocket Gateway 초기화 완료');
   }
 
-  handleConnection(client: Socket) {
-    this.logger.log(`새로운 클라이언트 연결: ${client.id} (${new Date().toLocaleString()})`);
+  async handleConnection(client: Socket & { user?: User }) { // client 타입에 user 추가 및 async 추가
+    const token = client.handshake.auth.token || client.handshake.headers.authorization?.split(' ')[1];
+    this.logger.log(`새로운 클라이언트 연결 시도: ${client.id} (토큰 존재 여부: ${!!token})`);
+
+    if (token) {
+      try {
+        const user = await this.authService.getUserFromToken(token);
+        if (user) {
+          client.user = user; // 소켓에 사용자 정보 저장
+          this.logger.log(`클라이언트 ${user.nickname}(${client.id}) 인증 성공`);
+        } else {
+          this.logger.warn(`클라이언트 ${client.id} 인증 실패: 유효하지 않은 토큰 또는 사용자 없음`);
+          client.emit('auth_error', { message: '인증에 실패했습니다. 유효하지 않은 토큰입니다.' });
+          client.disconnect();
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(`클라이언트 ${client.id} 인증 중 오류 발생: ${message}`);
+        client.emit('auth_error', { message: `인증 중 오류 발생: ${message}` });
+        client.disconnect();
+      }
+    } else {
+      this.logger.log(`클라이언트 ${client.id} 익명으로 연결 (토큰 없음)`);
+      // 토큰 없이 연결하는 경우, 익명 사용자로 처리하거나 또는 연결을 거부할 수 있습니다.
+      // 현재 요구사항은 인증된 사용자만 특정 기능을 사용하도록 하는 것이므로,
+      // handleConnection에서는 토큰이 있는 경우에만 user를 할당합니다.
+      // 토큰이 없는 경우, WsUserAttachedGuard가 필요한 핸들러 접근을 막을 것입니다.
+    }
   }
 
-  handleDisconnect(client: Socket) {
+  handleDisconnect(client: Socket & { user?: User }) { // client 타입에 user 추가
     this.logger.log(`클라이언트 연결 종료: ${client.id} (${new Date().toLocaleString()})`);
     const joinedPrefixedRoomIds = Array.from(client.rooms.values()).filter((room) => room !== client.id);
 
@@ -208,12 +234,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @UseGuards(WsJwtAuthGuard) // 가드 적용
+  @UseGuards(WsUserAttachedGuard) // 가드 변경
   @SubscribeMessage('set_marbles')
-  async handleSetMarbles( // async 추가
-    @ConnectedSocket() client: Socket,
+  async handleSetMarbles(
+    @ConnectedSocket() client: Socket, // client 타입은 SocketCurrentUser를 통해 user가 주입되므로 그대로 둬도 무방
     @MessageBody() data: SetMarblesDto,
-    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
+    @SocketCurrentUser() user: User,
   ) {
     const { roomId, names } = data;
     const prefixedRoomId = prefixRoomId(roomId);
@@ -237,12 +263,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @UseGuards(WsJwtAuthGuard) // 가드 적용
+  @UseGuards(WsUserAttachedGuard) // 가드 변경
   @SubscribeMessage('set_winning_rank')
-  async handleSetWinningRank( // async 추가
+  async handleSetWinningRank(
      @ConnectedSocket() client: Socket,
      @MessageBody() data: SetWinningRankDto,
-     @SocketCurrentUser() user: User, // 사용자 정보 가져오기
+     @SocketCurrentUser() user: User,
   ) {
     const { roomId, rank } = data;
     const prefixedRoomId = prefixRoomId(roomId);
@@ -266,12 +292,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @UseGuards(WsJwtAuthGuard) // 가드 적용
+  @UseGuards(WsUserAttachedGuard) // 가드 변경
   @SubscribeMessage('set_map')
-  async handleSetMap( // async 추가
+  async handleSetMap(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: SetMapDto,
-    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
+    @SocketCurrentUser() user: User,
   ) {
     const { roomId, mapIndex } = data;
     const prefixedRoomId = prefixRoomId(roomId);
@@ -295,12 +321,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @UseGuards(WsJwtAuthGuard) // 가드 적용
+  @UseGuards(WsUserAttachedGuard) // 가드 변경
   @SubscribeMessage('set_speed')
-  async handleSetSpeed( // async 추가
+  async handleSetSpeed(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: SetSpeedDto,
-    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
+    @SocketCurrentUser() user: User,
   ) {
     const { roomId, speed } = data;
     const prefixedRoomId = prefixRoomId(roomId);
@@ -323,12 +349,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @UseGuards(WsJwtAuthGuard) // 가드 적용
+  @UseGuards(WsUserAttachedGuard) // 가드 변경
   @SubscribeMessage('start_game')
-  async handleStartGame( // async 추가
+  async handleStartGame(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: StartGameDto,
-    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
+    @SocketCurrentUser() user: User,
   ) {
     const { roomId } = data;
     const prefixedRoomId = prefixRoomId(roomId);
@@ -352,12 +378,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @UseGuards(WsJwtAuthGuard) // 가드 적용
+  @UseGuards(WsUserAttachedGuard) // 가드 변경
   @SubscribeMessage('reset_game')
-  async handleResetGame( // async 추가
+  async handleResetGame(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: ResetGameDto,
-    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
+    @SocketCurrentUser() user: User,
   ) {
     const { roomId } = data;
     const prefixedRoomId = prefixRoomId(roomId);
