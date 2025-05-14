@@ -32,6 +32,7 @@ const GamePage: React.FC = () => {
   const sltMapRef = useRef<HTMLSelectElement>(null);
   const chkAutoRecordingRef = useRef<HTMLInputElement>(null);
   const rouletteCanvasContainerRef = useRef<HTMLDivElement>(null); // 캔버스 컨테이너 Ref 추가
+  const passwordInputRef = useRef<HTMLInputElement>(null); // 비밀번호 입력 필드 Ref 추가
 
   const [winnerSelectionType, setWinnerSelectionType] = useState('first');
   const [isManager, setIsManager] = useState(false); // 매니저 상태 추가
@@ -155,6 +156,12 @@ const GamePage: React.FC = () => {
   useEffect(() => {
     gameDetailsRef.current = gameDetails;
   }, [gameDetails]);
+
+  useEffect(() => {
+    if (showPasswordModal && passwordInputRef.current) {
+      passwordInputRef.current.focus();
+    }
+  }, [showPasswordModal]);
 
   useEffect(() => {
     let rouletteInstance: Roulette | null = null; 
@@ -789,6 +796,7 @@ const GamePage: React.FC = () => {
           >
             <h3>Enter Room Password</h3>
             <input
+              ref={passwordInputRef} // Ref 할당
               type="password"
               value={passwordInput}
               onChange={(e) => setPasswordInput(e.target.value)}
