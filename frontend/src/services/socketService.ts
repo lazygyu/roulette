@@ -213,13 +213,9 @@ class SocketService {
       if (callback) callback({ success: false, message: 'Socket not connected.' });
       return;
     }
-    const userInfo = {
-      nickname: localStorage.getItem('user_nickname') || `User_${Math.floor(Math.random() * 1000)}`,
-    };
     // password를 emit 데이터에 포함
-    this.socket.emit('join_room', { roomId, userInfo, password }, (response: JoinRoomResponse) => {
+    this.socket.emit('join_room', { roomId, password }, (response: JoinRoomResponse) => {
       if (response.success) {
-        localStorage.setItem('user_nickname', userInfo.nickname);
         this.currentRoomId = roomId; // 방 참여 성공 시 currentRoomId 설정
       }
       if (callback) callback(response);
