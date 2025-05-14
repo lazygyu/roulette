@@ -104,7 +104,7 @@ export interface UserPublicInfo {
 export interface RoomInfo {
   id: number;
   name: string;
-  password?: string | null; // 비밀번호는 선택적
+  isPasswordRequired: boolean; // 비밀번호 필요 여부 필드 추가
   managerId: number;
   manager: UserPublicInfo; // UserPublicInfo 타입 사용
   createdAt: string;

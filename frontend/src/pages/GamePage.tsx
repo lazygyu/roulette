@@ -33,42 +33,136 @@ const GamePage: React.FC = () => {
   const chkAutoRecordingRef = useRef<HTMLInputElement>(null);
   const rouletteCanvasContainerRef = useRef<HTMLDivElement>(null); // 캔버스 컨테이너 Ref 추가
 
-  // 'ready'와 'winnerType'은 상태로 관리하는 것이 더 React 방식에 맞지만,
-  // 기존 코드의 직접적인 포팅을 위해 일단 변수로 유지하고, 필요시 상태로 전환할 수 있습니다.
-  // let ready = false; // 이 값은 getReady 함수 내부에서 설정되고 사용됩니다.
-  // let winnerType = 'first'; // 이 값은 setWinnerRank 및 버튼 클릭 핸들러에서 사용됩니다.
-  // React에서는 이런 변수들을 useState로 관리하는 것이 일반적입니다.
-  // 예를 들어:
   const [winnerSelectionType, setWinnerSelectionType] = useState('first');
   const [isManager, setIsManager] = useState(false); // 매니저 상태 추가
   const [roomName, setRoomName] = useState<string | null>(null); // 방 이름 상태 추가
-  // roomDetails는 이제 게임 상세 정보를 포함하지 않을 수 있음
   const [roomDetails, setRoomDetails] = useState<RoomInfo | null>(null);
   const [gameDetails, setGameDetails] = useState<GameInfo | null>(null); // 게임 상세 정보 상태 추가
   const gameDetailsRef = useRef(gameDetails); // Ref to hold the latest gameDetails
   const [finalRanking, setFinalRanking] = useState<RankingEntry[] | null>(null); // 최종 랭킹 정보 상태 추가
   const [showRankingModal, setShowRankingModal] = useState(false); // 랭킹 모달 표시 상태
+  const [showPasswordModal, setShowPasswordModal] = useState(false); // 비밀번호 입력 모달 표시 상태
+  const [passwordInput, setPasswordInput] = useState(''); // 사용자가 입력한 비밀번호
+  const [joinError, setJoinError] = useState<string | null>(null); // 방 참여 에러 메시지
+  // const [needsPasswordCheck, setNeedsPasswordCheck] = useState(true); // 비밀번호 확인 필요 여부 - 이 상태는 로직 흐름상 불필요해 보임
 
   // For localization
   const [currentLocale, setCurrentLocale] = useState<TranslatedLanguages>('en');
   const { user } = useAuth(); // AuthContext에서 사용자 정보 가져오기
+
+  // Helper function to fetch game details and initialize UI (moved inside GamePage component)
+  const fetchGameDetailsAndInitializeUI = (
+    numericRoomId: number,
+    btnStartEl: HTMLButtonElement | null,
+    btnShuffleEl: HTMLButtonElement | null,
+  ) => {
+    getRoomGameDetails(numericRoomId)
+      .then((fetchedGameDetails) => {
+        setGameDetails(fetchedGameDetails); // Update gameDetails state
+
+        if (fetchedGameDetails) {
+          if (fetchedGameDetails.status === GameStatus.FINISHED) {
+            getGameRanking(numericRoomId)
+              .then((rankingData) => {
+                setFinalRanking(rankingData.rankings);
+                if (rankingData.rankings && rankingData.rankings.length > 0) setShowRankingModal(true);
+              })
+              .catch((rankingError) => console.error('GamePage: Failed to fetch game ranking:', rankingError));
+
+            if (btnStartEl) {
+              btnStartEl.disabled = true;
+              btnStartEl.innerText = 'Game Finished';
+            }
+            if (btnShuffleEl) btnShuffleEl.disabled = true;
+            if (inNamesRef.current) inNamesRef.current.disabled = true;
+            if (inWinningRankRef.current) inWinningRankRef.current.disabled = true;
+            if (sltMapRef.current) sltMapRef.current.disabled = true;
+            if (chkSkillRef.current) chkSkillRef.current.disabled = true;
+          } else if (fetchedGameDetails.status === GameStatus.WAITING || fetchedGameDetails.status === GameStatus.IN_PROGRESS) {
+            if (inNamesRef.current && fetchedGameDetails.marbles && fetchedGameDetails.marbles.length > 0) {
+              inNamesRef.current.value = fetchedGameDetails.marbles.join(',');
+            }
+            if (inWinningRankRef.current && fetchedGameDetails.winningRank !== null) {
+              inWinningRankRef.current.value = fetchedGameDetails.winningRank.toString();
+               if (fetchedGameDetails.winningRank === 1) {
+                 setWinnerSelectionType('first');
+               } else {
+                 setWinnerSelectionType('custom');
+               }
+            }
+            if (sltMapRef.current && fetchedGameDetails.mapIndex !== null) {
+              sltMapRef.current.value = fetchedGameDetails.mapIndex.toString();
+            }
+            if (window.options && fetchedGameDetails.speed !== null) {
+              window.options.speed = fetchedGameDetails.speed;
+            }
+            if (fetchedGameDetails.status === GameStatus.IN_PROGRESS && btnStartEl) {
+              btnStartEl.disabled = true;
+              btnStartEl.innerText = 'Game In Progress';
+              if (btnShuffleEl) btnShuffleEl.disabled = true;
+              if (inNamesRef.current) inNamesRef.current.disabled = true;
+            }
+          }
+        }
+      })
+      .catch((apiError) => {
+        console.error('GamePage: Failed to fetch game details after joining:', apiError);
+      });
+  };
+
+  const handlePasswordJoin = () => {
+    if (!roomId) {
+        setJoinError('Room ID is missing.');
+        return;
+    }
+    if (!passwordInput) {
+      setJoinError('Password is required.');
+      return;
+    }
+    setJoinError(null); // Clear previous error
+
+    const numericRoomId = parseInt(roomId, 10);
+    if (isNaN(numericRoomId)) {
+        setJoinError('Invalid Room ID format.');
+        return;
+    }
+
+
+    socketService.joinRoom(roomId, passwordInput, (response) => {
+      if (response.success) {
+        setShowPasswordModal(false);
+        setPasswordInput(''); 
+        console.log(`Successfully joined room ${roomId} with password.`);
+        if (response.gameState && window.roullete) {
+           window.roullete.updateStateFromServer(response.gameState);
+        }
+        const btnStartElement = document.querySelector<HTMLButtonElement>('#btnStart');
+        const btnShuffleElement = document.querySelector<HTMLButtonElement>('#btnShuffle');
+        fetchGameDetailsAndInitializeUI(numericRoomId, btnStartElement, btnShuffleElement);
+      } else {
+        console.error(`Failed to join room ${roomId} with password: ${response.message}`);
+        setJoinError(response.message || 'Failed to join room. Incorrect password?');
+        if (response.requiresPassword) {
+          setShowPasswordModal(true); 
+        } else {
+           alert(response.message || '방 입장에 실패했습니다. 이전 페이지로 돌아갑니다.');
+           navigate(-1);
+        }
+      }
+    });
+  };
 
   useEffect(() => {
     gameDetailsRef.current = gameDetails;
   }, [gameDetails]);
 
   useEffect(() => {
-    let rouletteInstance: Roulette | null = null; // Roulette 인스턴스를 저장할 변수
+    let rouletteInstance: Roulette | null = null; 
     let originalDocumentLang = document.documentElement.lang;
     let donateButtonCheckTimeoutId: NodeJS.Timeout | undefined;
-    // let readyCheckTimeoutId: NodeJS.Timeout | undefined; // polling 방식 제거
-
-    // 구독 해제 함수들을 저장할 변수들
     let unsubscribeMaps: (() => void) | undefined;
     let unsubscribeGameState: (() => void) | undefined;
 
-    // DOM Elements (queried within initializeGamePage, references stored here for cleanup)
-    // These will be assigned when setupGameInteractions is called.
     let inNamesEl: HTMLTextAreaElement | null = null;
     let btnShuffleEl: HTMLButtonElement | null = null;
     let btnStartEl: HTMLButtonElement | null = null;
@@ -78,12 +172,11 @@ const GamePage: React.FC = () => {
     let btnFirstWinnerEl: HTMLButtonElement | null = null;
     let btnShakeEl: HTMLButtonElement | null = null;
     let sltMapEl: HTMLSelectElement | null = null;
-    let chkAutoRecordingElFromRef: HTMLInputElement | null = null; // from ref
+    let chkAutoRecordingElFromRef: HTMLInputElement | null = null; 
     let closeNoticeButtonEl: HTMLButtonElement | null = null;
     let openNoticeButtonEl: HTMLButtonElement | null = null;
     let noticeElFromQuery: HTMLElement | null = null;
 
-    // Event Handlers
     const getNames = (): string[] => {
       if (!inNamesEl) return [];
       const value = inNamesEl.value.trim();
@@ -105,12 +198,11 @@ const GamePage: React.FC = () => {
       return { name, weight, count };
     };
 
-    let localWinnerType = 'first'; // Keep this to mirror original logic closely
+    let localWinnerType = 'first'; 
 
     const setWinnerRank = (rank: number) => {
       if (inWinningRankRef.current) inWinningRankRef.current.value = rank.toString();
       if (window.options) window.options.winningRank = rank;
-      // window.socketService 대신 직접 socketService 사용
       socketService.setWinningRank(rank - 1);
 
       const btnFirstWinner = document.querySelector('.btn-first-winner');
@@ -124,18 +216,13 @@ const GamePage: React.FC = () => {
     };
 
     const submitParticipantNamesToBackend = () => {
-      // 추가: 게임이 종료된 상태면 아무 작업도 하지 않음
       if (gameDetails?.status === GameStatus.FINISHED) {
         console.log('Game is finished. Cannot set marbles.');
         return;
       }
-
       const names = getNames();
-      // window.socketService 대신 직접 socketService 사용
       socketService.setMarbles(names);
-
       localStorage.setItem('mbr_names', names.join(','));
-
       switch (localWinnerType) {
         case 'first':
           setWinnerRank(1);
@@ -175,23 +262,17 @@ const GamePage: React.FC = () => {
     };
     const handleBtnShuffleClick = submitParticipantNamesToBackend;
     const handleBtnStartClick = () => {
-      // roomDetails.game 대신 gameDetails 사용
       if (gameDetails?.status === GameStatus.FINISHED) {
         alert('이미 종료된 게임입니다. 다시 시작할 수 없습니다.');
         return;
       }
-
       const currentParticipantCount = window.roullete?.getCount() ?? 0;
       const canStartGame = currentParticipantCount > 0;
-
       if (!canStartGame) {
-        console.log('Cannot start game: No participants found in roulette instance.');
         alert('참여자가 없습니다. 참여자를 추가해주세요.');
         return;
       }
-
       window.gtag?.('event', 'start', { event_category: 'roulette', event_label: 'start', value: 1 });
-      // window.socketService 대신 직접 socketService 사용
       socketService.startGame();
       document.querySelector('#settings')?.classList.add('hide');
       document.querySelector('#donate')?.classList.add('hide');
@@ -224,31 +305,23 @@ const GamePage: React.FC = () => {
     const handleMapChange = (e: Event) => {
       const index = parseInt((e.target as HTMLSelectElement).value, 10);
       if (!isNaN(index)) socketService.setMap(index);
-      else console.error('invalid map index for setMap');
     };
     const handleAutoRecordingChange = (e: Event) => {
       if (window.roullete) window.roullete.setAutoRecording((e.target as HTMLInputElement).checked);
     };
     const handleCloseNotice = () => {
       if (noticeElFromQuery) noticeElFromQuery.style.display = 'none';
-      localStorage.setItem('lastViewedNotification', '1'); // Assuming currentNotice is 1
+      localStorage.setItem('lastViewedNotification', '1');
     };
     const handleOpenNotice = () => {
       if (noticeElFromQuery) noticeElFromQuery.style.display = 'flex';
     };
 
-    // --- Initialization Function (now split into parts) ---
-
-    // Part 1: One-time setup of window objects and non-DOM related initializations
-    // rouletteInstance = new Roulette(); // 인스턴스 생성은 아래 initializeRouletteAndGame 내에서 수행
-    // window.roullete = rouletteInstance; // window.roullete 할당도 initializeRouletteAndGame 내에서 수행
-    // window.socketService = socketService; // 더 이상 전역에 할당하지 않음
-    window.options = options; // options는 유지
-
+    window.options = options;
     window.dataLayer = window.dataLayer || [];
     function gtagForPage(...args: any[]) {
       window.dataLayer!.push(args);
-    } // Renamed to avoid conflict if gtag is already on window
+    } 
     window.gtag = gtagForPage;
     gtagForPage('js', new Date());
     gtagForPage('config', 'G-5899C1DJM0');
@@ -278,10 +351,7 @@ const GamePage: React.FC = () => {
     };
     setPageLoc(getBrowserLoc());
 
-    // Part 2: Function to set up DOM interactions and listeners (called after roulette is ready)
     const setupGameInteractions = () => {
-      console.log('Roulette is ready, proceeding with GamePage DOM & event setup.');
-      // Assign elements from refs and querySelector
       inNamesEl = inNamesRef.current;
       sltMapEl = sltMapRef.current;
       chkAutoRecordingElFromRef = chkAutoRecordingRef.current;
@@ -296,125 +366,52 @@ const GamePage: React.FC = () => {
       openNoticeButtonEl = document.querySelector<HTMLButtonElement>('#btnNotice');
       noticeElFromQuery = document.querySelector<HTMLElement>('#notice');
 
-      // roomId가 있을 경우에만 connect 시도
       if (roomId) {
-        socketService
-          .connect(roomId)
-          .then(() => {
+        const numericRoomId = parseInt(roomId, 10);
+        if (isNaN(numericRoomId)) {
+          alert('잘못된 방 ID입니다.');
+          navigate('/');
+          return;
+        }
+
+        getRoomDetails(numericRoomId)
+          .then((fetchedRoomBasicDetails) => {
+            setRoomDetails(fetchedRoomBasicDetails);
+            setRoomName(fetchedRoomBasicDetails.name);
+            const currentUser = user;
+            setIsManager(!!(currentUser && fetchedRoomBasicDetails.managerId === currentUser.id));
+            return socketService.connect(roomId).then(() => ({ fetchedRoomBasicDetails }));
+          })
+          .then(({ fetchedRoomBasicDetails }) => {
             console.log(`GamePage: Successfully connected to socket for room ${roomId}`);
-
-            // roomId가 유효하면 방 기본 정보 및 게임 상세 정보 가져오기
-            const numericRoomId = parseInt(roomId, 10);
-            if (!isNaN(numericRoomId)) {
-              // 1. 방 기본 정보 가져오기
-              getRoomDetails(numericRoomId)
-                .then((fetchedRoomBasicDetails) => {
-                  setRoomDetails(fetchedRoomBasicDetails);
-                  setRoomName(fetchedRoomBasicDetails.name);
-
-                  const currentUser = user;
-                  if (currentUser && fetchedRoomBasicDetails.managerId === currentUser.id) {
-                    setIsManager(true);
-                  } else {
-                    setIsManager(false);
-                  }
-
-                  // 2. 게임 상세 정보 가져오기
-                  return getRoomGameDetails(numericRoomId);
-                })
-                .then((fetchedGameDetails) => {
-                  setGameDetails(fetchedGameDetails);
-
-                  // 게임 상태에 따른 UI 초기화 (fetchedGameDetails 사용)
-                  if (fetchedGameDetails) {
-                    if (fetchedGameDetails.status === GameStatus.FINISHED) {
-                      // 게임 종료 시 랭킹 정보 가져오기
-                      getGameRanking(numericRoomId)
-                        .then((rankingData) => {
-                          setFinalRanking(rankingData.rankings);
-                          if (rankingData.rankings && rankingData.rankings.length > 0) {
-                            setShowRankingModal(true);
-                          }
-                        })
-                        .catch((rankingError) => {
-                          console.error('GamePage: Failed to fetch game ranking:', rankingError);
-                        });
-
-                      // 게임 종료 상태 UI 처리
-                      if (btnStartEl) {
-                        btnStartEl.disabled = true;
-                        btnStartEl.innerText = 'Game Finished';
-                      }
-                      // ... (다른 UI 요소 비활성화)
-                      if (btnShuffleEl) btnShuffleEl.disabled = true;
-                      if (inNamesRef.current) inNamesRef.current.disabled = true;
-                      if (inWinningRankRef.current) inWinningRankRef.current.disabled = true;
-                      if (sltMapRef.current) sltMapRef.current.disabled = true;
-                      if (chkSkillRef.current) chkSkillRef.current.disabled = true;
-                    } else if (
-                      fetchedGameDetails.status === GameStatus.WAITING ||
-                      fetchedGameDetails.status === GameStatus.IN_PROGRESS
-                    ) {
-                      // WAITING 또는 IN_PROGRESS 상태일 때 설정 불러오기
-                      if (inNamesRef.current && fetchedGameDetails.marbles && fetchedGameDetails.marbles.length > 0) {
-                        inNamesRef.current.value = fetchedGameDetails.marbles.join(',');
-                      }
-                      if (inWinningRankRef.current && fetchedGameDetails.winningRank !== null) {
-                        inWinningRankRef.current.value = fetchedGameDetails.winningRank.toString();
-                        if (fetchedGameDetails.winningRank === 1) {
-                          setWinnerSelectionType('first');
-                          localWinnerType = 'first';
-                        } else {
-                          setWinnerSelectionType('custom');
-                          localWinnerType = 'custom';
-                        }
-                      }
-                      if (sltMapRef.current && fetchedGameDetails.mapIndex !== null) {
-                        sltMapRef.current.value = fetchedGameDetails.mapIndex.toString();
-                      }
-                      // ... (기타 설정 UI 업데이트) ...
-                      if (window.options && fetchedGameDetails.speed !== null) {
-                        window.options.speed = fetchedGameDetails.speed;
-                      }
-                      if (fetchedGameDetails.status === GameStatus.IN_PROGRESS && btnStartEl) {
-                        btnStartEl.disabled = true;
-                        btnStartEl.innerText = 'Game In Progress';
-                        if (btnShuffleEl) btnShuffleEl.disabled = true;
-                        if (inNamesRef.current) inNamesRef.current.disabled = true;
-                      }
-                    }
-                  }
-                  // 초기 셔플 (게임이 FINISHED가 아닐 때만)
-                  // if (fetchedGameDetails?.status !== GameStatus.FINISHED) {
-                  //   btnShuffleEl?.dispatchEvent(new Event('click')); // 이 라인을 제거하여 초기 setMarbles 호출 방지
-                  // }
-                })
-                .catch((apiError) => {
-                  console.error('GamePage: Failed to fetch room or game details:', apiError);
-                  setRoomName('Error loading room/game');
-                  setIsManager(false);
-                });
+            if (fetchedRoomBasicDetails.isPasswordRequired) {
+              setShowPasswordModal(true);
             } else {
-              console.error('GamePage: Invalid Room ID format:', roomId);
-              setRoomName('Invalid Room ID');
-              setIsManager(false);
+              socketService.joinRoom(roomId, undefined, (joinResponse) => {
+                if (joinResponse.success) {
+                  if (joinResponse.gameState && rouletteInstance) {
+                    rouletteInstance.updateStateFromServer(joinResponse.gameState);
+                  }
+                  fetchGameDetailsAndInitializeUI(numericRoomId, btnStartEl, btnShuffleEl);
+                } else {
+                  alert(joinResponse.message || '방 입장에 실패했습니다. 이전 페이지로 돌아갑니다.');
+                  navigate(-1);
+                }
+              });
             }
           })
           .catch((error: any) => {
-            console.error(`GamePage: Failed to connect to socket for room ${roomId}`, error);
-            alert(error.message || '방 입장에 실패했습니다. 이전 페이지로 돌아갑니다.');
-            navigate(-1); // 이전 페이지로 이동, 또는 navigate('/') 등으로 특정 페이지 지정
+            alert(error.message || '방 정보를 가져오거나 연결에 실패했습니다. 이전 페이지로 돌아갑니다.');
+            navigate(-1);
           });
       } else {
-        console.error('GamePage: Room ID is missing, cannot connect to socket.');
         alert('잘못된 접근입니다. 방 ID가 없습니다.');
-        navigate('/'); // 홈페이지로 리디렉션
+        navigate('/');
       }
 
       const savedNames = localStorage.getItem('mbr_names');
       if (savedNames && inNamesEl) inNamesEl.value = savedNames;
 
-      // Add Event Listeners
       if (inNamesEl) {
         inNamesEl.addEventListener('input', handleInNamesInput);
         inNamesEl.addEventListener('blur', handleInNamesBlur);
@@ -427,13 +424,11 @@ const GamePage: React.FC = () => {
       btnFirstWinnerEl?.addEventListener('click', handleBtnFirstWinnerClick);
       btnShakeEl?.addEventListener('click', handleBtnShakeClick);
 
-      // window.updateMapSelector 대신 socketService.onAvailableMapsUpdate 사용
-      // let unsubscribeMaps: (() => void) | undefined; // useEffect 스코프로 이동
       if (sltMapEl) {
         sltMapEl.innerHTML = '<option value="">Loading maps...</option>';
         sltMapEl.disabled = true;
         unsubscribeMaps = socketService.onAvailableMapsUpdate((maps) => {
-          if (!sltMapRef.current) return; // Ref의 current를 직접 확인
+          if (!sltMapRef.current) return; 
           sltMapRef.current.innerHTML = '';
           maps.forEach((map) => {
             const option = document.createElement('option');
@@ -441,37 +436,22 @@ const GamePage: React.FC = () => {
             option.innerHTML = map.title;
             option.setAttribute('data-trans', '');
             if (window.translateElement) window.translateElement(option);
-            sltMapRef.current!.append(option); // Non-null assertion
+            sltMapRef.current!.append(option); 
           });
-          sltMapRef.current!.disabled = false; // Non-null assertion
+          sltMapRef.current!.disabled = false; 
         });
-        sltMapRef.current!.addEventListener('change', handleMapChange); // Non-null assertion
+        sltMapRef.current!.addEventListener('change', handleMapChange); 
       }
 
-      // GameState 업데이트 처리
-      // let unsubscribeGameState: (() => void) | undefined; // useEffect 스코프로 이동
       if (rouletteInstance) {
-        // window.roullete 대신 rouletteInstance 사용
         unsubscribeGameState = socketService.onGameStateUpdate((gameState) => {
-          // gameState가 null일 수 있는 경우를 대비 (이론적으로는 서버에서 항상 유효한 객체를 보내야 함)
           if (!gameState) {
             console.warn('GamePage: Received null or undefined gameState from socketService.onGameStateUpdate');
             return;
           }
-
           if (rouletteInstance) {
-            // window.roullete 대신 rouletteInstance 사용
-            console.log('GamePage: Updating roulette instance with gameState from onGameStateUpdate:', gameState);
             rouletteInstance.updateStateFromServer(gameState);
-
-            // GamePage의 gameDetails 상태도 업데이트 (중요: UI 반응성을 위해)
-            // GameState와 GameInfo 간의 필드 매핑이 필요할 수 있음.
-            // GameState가 GameInfo의 모든 필드를 포함하지 않을 수 있으므로 주의.
             setGameDetails((prevDetails) => {
-              // gameState의 isRunning으로 status 결정
-              // gameState.winner가 있고 isRunning이 false이면 FINISHED
-              // gameState.winner가 없고 isRunning이 true이면 IN_PROGRESS
-              // gameState.winner가 없고 isRunning이 false이면 WAITING (또는 다른 초기 상태)
               let newStatus: GameStatus;
               if (!gameState.isRunning && gameState.winner) {
                 newStatus = GameStatus.FINISHED;
@@ -480,34 +460,24 @@ const GamePage: React.FC = () => {
               } else {
                 newStatus = GameStatus.WAITING;
               }
-
-              // gameState의 marbles (MarbleState[])를 GameInfo의 marbles (string[])로 변환
               const marbleNames = gameState.marbles ? gameState.marbles.map((m) => m.name) : prevDetails?.marbles || [];
-
-              // gameId, mapIndex, speed 등은 gameState에 직접 없을 수 있으므로 prevDetails에서 가져오거나 기본값 사용
-              // API 응답(GameInfo)이 더 완전한 정보를 가질 수 있으므로, prevDetails를 신중히 병합.
               return {
-                id: prevDetails?.id || 0, // Game ID는 API를 통해 받아오는 것이 일반적
+                id: prevDetails?.id || 0, 
                 status: newStatus,
-                mapIndex: prevDetails?.mapIndex ?? null, // mapIndex는 API 또는 rouletteInstance 내부 상태에서 가져올 수 있음
+                mapIndex: prevDetails?.mapIndex ?? null, 
                 marbles: marbleNames,
                 winningRank: gameState.winnerRank ?? prevDetails?.winningRank ?? null,
-                speed: prevDetails?.speed ?? null, // speed는 API 또는 rouletteInstance 내부 상태
+                speed: prevDetails?.speed ?? null, 
                 createdAt: prevDetails?.createdAt || new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
               };
             });
-
             const inGameDiv = document.querySelector('#inGame');
             if (inGameDiv) {
               inGameDiv.classList.toggle('hide', !gameState.shakeAvailable);
             }
-
-            // Check if the game has finished based on the received gameState
             const gamePotentiallyOverBySocket =
               !gameState.isRunning && gameState.winners && gameState.winners.length >= gameState.winnerRank;
-
-            // Check against the latest gameDetails status using the ref
             if (
               gamePotentiallyOverBySocket &&
               gameDetailsRef.current &&
@@ -516,36 +486,19 @@ const GamePage: React.FC = () => {
               if (roomId) {
                 const numericRoomId = parseInt(roomId, 10);
                 if (!isNaN(numericRoomId)) {
-                  console.log(
-                    'Game potentially finished (socket event). Fetching authoritative game details and ranking...',
-                  );
-
                   getRoomGameDetails(numericRoomId)
                     .then((authoritativeGameDetails) => {
-                      // 백엔드에서 받은 최종 게임 정보로 gameDetails 상태 업데이트
                       setGameDetails(authoritativeGameDetails);
-
-                      // 업데이트된 게임 상태가 FINISHED인지 확인 후 랭킹 요청
                       if (authoritativeGameDetails.status === GameStatus.FINISHED) {
-                        // 게임 종료에 따른 UI 컨트롤 비활성화 (btnStartEl 등은 setupGameInteractions 스코프에 있어 직접 접근 불가)
-                        // 이 부분은 gameDetails 상태 변경에 따른 useEffect나 JSX 조건부 렌더링으로 처리되는 것이 더 React적입니다.
-                        // 예를 들어, <button disabled={gameDetails?.status === GameStatus.FINISHED}>Start</button>
-                        // 여기서는 API 호출에 집중합니다.
-                        console.log('Authoritative game status is FINISHED. Fetching ranking.');
                         return getGameRanking(numericRoomId);
                       }
-                      console.log('Authoritative game status is NOT FINISHED, or ranking not needed yet.');
-                      return null; // FINISHED 상태가 아니면 랭킹을 가져오지 않음
+                      return null; 
                     })
                     .then((rankingData) => {
                       if (rankingData) {
-                        // rankingData가 null이 아닐 때만 처리 (즉, 게임이 FINISHED였을 때)
                         setFinalRanking(rankingData.rankings);
                         if (rankingData.rankings && rankingData.rankings.length > 0) {
                           setShowRankingModal(true);
-                          console.log('Ranking modal should be shown.');
-                        } else {
-                          console.log('Ranking data received, but no rankings to display or modal not shown.');
                         }
                       }
                     })
@@ -563,12 +516,10 @@ const GamePage: React.FC = () => {
       }
 
       if (chkAutoRecordingElFromRef) {
-        // chkAutoRecordingElFromRef null 체크
         chkAutoRecordingElFromRef.addEventListener('change', handleAutoRecordingChange);
         if (window.options && rouletteInstance) {
-          // window.roullete 대신 rouletteInstance 사용
           chkAutoRecordingElFromRef.checked = window.options.autoRecording;
-          rouletteInstance.setAutoRecording(window.options.autoRecording); // window.roullete 대신 rouletteInstance 사용
+          rouletteInstance.setAutoRecording(window.options.autoRecording); 
         }
       }
 
@@ -583,62 +534,42 @@ const GamePage: React.FC = () => {
       };
       donateButtonCheckTimeoutId = setTimeout(checkDonateButtonLoaded, 100);
 
-      const currentNotice = 1; // Assuming this is constant
+      const currentNotice = 1; 
       const noticeKey = 'lastViewedNotification';
       const checkNotice = () => {
         const lastViewed = localStorage.getItem(noticeKey);
         if (lastViewed === null || Number(lastViewed) < currentNotice) {
-          handleOpenNotice(); // Use the hoisted handler
+          handleOpenNotice(); 
         }
       };
       closeNoticeButtonEl?.addEventListener('click', handleCloseNotice);
       openNoticeButtonEl?.addEventListener('click', handleOpenNotice);
       checkNotice();
-
-      // btnShuffleEl?.dispatchEvent(new Event('click')); // Initial shuffle - 위쪽 .then() 블록으로 이동
     };
 
-    // Part 3: Initialize Roulette and then setup game interactions
     const initializeRouletteAndGame = async () => {
       if (rouletteCanvasContainerRef.current) {
-        console.log('[GamePage] rouletteCanvasContainerRef.current is available. Initializing Roulette...');
         rouletteInstance = new Roulette();
-        window.roullete = rouletteInstance; // window.roullete에 할당
+        window.roullete = rouletteInstance; 
 
         try {
           await rouletteInstance.initialize(rouletteCanvasContainerRef.current);
-          console.log('[GamePage] Roulette initialized successfully.');
-          setupGameInteractions(); // Roulette 초기화 성공 후 게임 상호작용 설정
+          setupGameInteractions(); 
         } catch (error) {
           console.error('[GamePage] Roulette initialization failed:', error);
-          // 사용자에게 오류 알림 또는 다른 오류 처리 로직
           alert('게임 엔진 초기화에 실패했습니다. 페이지를 새로고침 해주세요.');
         }
       } else {
-        console.error('[GamePage] rouletteCanvasContainerRef.current is null. Cannot initialize Roulette.');
-        // 이 경우, DOM이 아직 준비되지 않았을 수 있으므로, 재시도 로직 또는 오류 처리가 필요할 수 있습니다.
-        // 간단한 재시도를 위해 setTimeout을 사용할 수 있지만, React 생명주기를 고려한 더 나은 방법이 권장됩니다.
-        // 여기서는 일단 오류를 기록하고, 실제 프로덕션에서는 더 견고한 처리가 필요합니다.
-        setTimeout(initializeRouletteAndGame, 100); // 간단한 재시도
+        setTimeout(initializeRouletteAndGame, 100); 
       }
     };
 
-    initializeRouletteAndGame(); // Start the initialization process
+    initializeRouletteAndGame(); 
 
     return () => {
-      console.log('[GamePage] useEffect cleanup function called.');
-      // if (readyCheckTimeoutId) clearTimeout(readyCheckTimeoutId); // polling 방식 제거
       if (donateButtonCheckTimeoutId) clearTimeout(donateButtonCheckTimeoutId);
-
-      // 구독 해제 함수 호출
-      if (unsubscribeMaps) {
-        unsubscribeMaps();
-      }
-      if (unsubscribeGameState) {
-        unsubscribeGameState();
-      }
-
-      // Remove Event Listeners (ensure elements were assigned before trying to remove)
+      if (unsubscribeMaps) unsubscribeMaps();
+      if (unsubscribeGameState) unsubscribeGameState();
       if (inNamesEl) {
         inNamesEl.removeEventListener('input', handleInNamesInput);
         inNamesEl.removeEventListener('blur', handleInNamesBlur);
@@ -650,35 +581,23 @@ const GamePage: React.FC = () => {
       btnLastWinnerEl?.removeEventListener('click', handleBtnLastWinnerClick);
       btnFirstWinnerEl?.removeEventListener('click', handleBtnFirstWinnerClick);
       btnShakeEl?.removeEventListener('click', handleBtnShakeClick);
-      sltMapEl?.removeEventListener('change', handleMapChange); // Optional chaining
+      sltMapEl?.removeEventListener('change', handleMapChange); 
       chkAutoRecordingElFromRef?.removeEventListener('change', handleAutoRecordingChange);
       closeNoticeButtonEl?.removeEventListener('click', handleCloseNotice);
       openNoticeButtonEl?.removeEventListener('click', handleOpenNotice);
-
-      // window.socketService 대신 직접 socketService 사용
       socketService.disconnect();
-
-      delete window.roullete; // Clean up window object
-      // delete window.socketService; // 이미 전역에서 제거됨
+      delete window.roullete; 
       delete window.options;
-      // delete window.updateMapSelector; // 이미 GamePage 내부 로직으로 대체됨
       delete window.translateElement;
-      // gtag and dataLayer are often fine to leave, but clear if strictly necessary
-      // delete window.gtag;
-      // delete window.dataLayer;
-
       document.documentElement.lang = originalDocumentLang;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, user]); // gameDetails is not added here to avoid re-subscribing on every gameDetails change. gameDetailsRef handles staleness.
+  }, [roomId, user]); 
 
-  // BuyMeACoffee 스크립트 로딩
   useEffect(() => {
     const scriptId = 'bmc-script';
-    const donateContainer = document.getElementById('donate'); // ID 변경
-
+    const donateContainer = document.getElementById('donate'); 
     if (!donateContainer || document.getElementById(scriptId)) return;
-
     const script = document.createElement('script');
     script.id = scriptId;
     script.src = 'https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js';
@@ -692,9 +611,7 @@ const GamePage: React.FC = () => {
     script.setAttribute('data-font-color', '#000000');
     script.setAttribute('data-coffee-color', '#ffffff');
     script.async = true;
-
     donateContainer.appendChild(script);
-
     return () => {
       const existingScript = document.getElementById(scriptId);
       if (donateContainer && existingScript) {
@@ -712,17 +629,8 @@ const GamePage: React.FC = () => {
             👑
           </span>
         )}
-        <span className="user-nickname">{user?.nickname || '익명 유저'}</span> {/* 로그인 안했으면 '익명 유저' 표시 */}
+        <span className="user-nickname">{user?.nickname || '익명 유저'}</span>
       </div>
-      {/*
-        <head> 내부의 link 태그 및 meta 태그들은 public/index.html에 유지하는 것이 일반적입니다.
-        React 컴포넌트는 주로 <body> 내부의 내용을 렌더링합니다.
-        <base href="/" /> 또한 public/index.html에 있어야 합니다.
-        Google Analytics 스크립트는 public/index.html에 직접 추가하거나,
-        React Helmet 같은 라이브러리를 사용하여 동적으로 head를 관리할 수 있습니다.
-        여기서는 gtag 초기화는 useEffect에서 처리했습니다.
-      */}
-
       <div
         id="settings"
         className="settings"
@@ -805,15 +713,13 @@ const GamePage: React.FC = () => {
         </div>
       </div>
 
-      <div id="donate">{/* BuyMeACoffee 버튼 스크립트가 여기에 동적으로 삽입됩니다. */}</div>
+      <div id="donate"></div>
       <div id="inGame" className="settings hide">
         <button id="btnShake" data-trans>
           Shake!
         </button>
       </div>
       <div id="notice" style={{ display: 'none' }}>
-        {' '}
-        {/* 초기 상태는 none으로 */}
         <h1>Notice</h1>
         <div className="notice-body">
           <p>이 프로그램은 무료이며 사용에 아무런 제한이 없습니다.</p>
@@ -846,9 +752,6 @@ const GamePage: React.FC = () => {
           This program is freeware and may be used freely anywhere, including in broadcasts and videos.
         </span>
       </div>
-      {/* 
-        Roulette 게임 캔버스는 이제 아래 div#roulette-canvas-container 내부에 생성됩니다.
-      */}
       <div
         id="roulette-canvas-container"
         ref={rouletteCanvasContainerRef}
@@ -856,10 +759,53 @@ const GamePage: React.FC = () => {
       />
       {showRankingModal && finalRanking && (
         <RankingDisplay
-          ranking={finalRanking} // 타입은 RankingEntry[] | null
+          ranking={finalRanking} 
           roomName={roomName}
           onClose={() => setShowRankingModal(false)}
         />
+      )}
+      {showPasswordModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 2000, 
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              padding: '20px',
+              borderRadius: '8px',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            }}
+          >
+            <h3>Enter Room Password</h3>
+            <input
+              type="password"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') handlePasswordJoin();
+              }}
+              style={{ marginRight: '10px', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+            />
+            <button
+              onClick={handlePasswordJoin}
+              style={{ padding: '8px 12px', borderRadius: '4px', border: 'none', backgroundColor: '#007bff', color: 'white', cursor: 'pointer' }}
+            >
+              Join
+            </button>
+            {joinError && <p style={{ color: 'red', marginTop: '10px' }}>{joinError}</p>}
+          </div>
+        </div>
       )}
     </>
   );

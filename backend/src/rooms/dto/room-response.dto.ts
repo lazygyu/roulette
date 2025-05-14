@@ -1,4 +1,4 @@
-import { Expose, Type } from 'class-transformer';
+import { Expose, Type, Exclude, Transform, TransformationType } from 'class-transformer';
 import { UserPublicInfoDto } from 'src/users/dto/user-public-info.dto';
 
 export class GetRoomResponseDto {
@@ -8,7 +8,8 @@ export class GetRoomResponseDto {
   @Expose()
   id: number;
 
-  @Expose()
+  @Expose({ name: 'isPasswordRequired' })
+  @Transform(({ obj }) => !!obj.password, { toClassOnly: true })
   password: string | null;
 
   @Expose()
