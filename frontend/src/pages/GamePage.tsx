@@ -166,7 +166,6 @@ const GamePage: React.FC = () => {
   useEffect(() => {
     let rouletteInstance: Roulette | null = null; 
     let originalDocumentLang = document.documentElement.lang;
-    let donateButtonCheckTimeoutId: NodeJS.Timeout | undefined;
     let unsubscribeMaps: (() => void) | undefined;
     let unsubscribeGameState: (() => void) | undefined;
 
@@ -177,12 +176,13 @@ const GamePage: React.FC = () => {
     let inWinningRankElFromQuery: HTMLInputElement | null = null;
     let btnLastWinnerEl: HTMLButtonElement | null = null;
     let btnFirstWinnerEl: HTMLButtonElement | null = null;
-    let btnShakeEl: HTMLButtonElement | null = null;
+    // btnShakeEl is related to #inGame, removing
     let sltMapEl: HTMLSelectElement | null = null;
     let chkAutoRecordingElFromRef: HTMLInputElement | null = null; 
-    let closeNoticeButtonEl: HTMLButtonElement | null = null;
-    let openNoticeButtonEl: HTMLButtonElement | null = null;
-    let noticeElFromQuery: HTMLElement | null = null;
+    // notice related elements are removed
+    // let closeNoticeButtonEl: HTMLButtonElement | null = null;
+    // let openNoticeButtonEl: HTMLButtonElement | null = null;
+    // let noticeElFromQuery: HTMLElement | null = null;
 
     const getNames = (): string[] => {
       if (!inNamesEl) return [];
@@ -282,7 +282,7 @@ const GamePage: React.FC = () => {
       window.gtag?.('event', 'start', { event_category: 'roulette', event_label: 'start', value: 1 });
       socketService.startGame();
       document.querySelector('#settings')?.classList.add('hide');
-      document.querySelector('#donate')?.classList.add('hide');
+      // document.querySelector('#donate')?.classList.add('hide'); // #donate is removed
     };
     const handleChkSkillChange = (e: Event) => {
       if (window.options) window.options.useSkills = (e.target as HTMLInputElement).checked;
@@ -305,10 +305,10 @@ const GamePage: React.FC = () => {
       setWinnerSelectionType('first');
       setWinnerRank(1);
     };
-    const handleBtnShakeClick = () => {
-      window.roullete?.shake();
-      window.gtag?.('event', 'shake', { event_category: 'roulette', event_label: 'shake', value: 1 });
-    };
+    // const handleBtnShakeClick = () => { // Related to #inGame, removing
+    //   window.roullete?.shake();
+    //   window.gtag?.('event', 'shake', { event_category: 'roulette', event_label: 'shake', value: 1 });
+    // };
     const handleMapChange = (e: Event) => {
       const index = parseInt((e.target as HTMLSelectElement).value, 10);
       if (!isNaN(index)) socketService.setMap(index);
@@ -316,13 +316,13 @@ const GamePage: React.FC = () => {
     const handleAutoRecordingChange = (e: Event) => {
       if (window.roullete) window.roullete.setAutoRecording((e.target as HTMLInputElement).checked);
     };
-    const handleCloseNotice = () => {
-      if (noticeElFromQuery) noticeElFromQuery.style.display = 'none';
-      localStorage.setItem('lastViewedNotification', '1');
-    };
-    const handleOpenNotice = () => {
-      if (noticeElFromQuery) noticeElFromQuery.style.display = 'flex';
-    };
+    // const handleCloseNotice = () => { // Related to #notice, removing
+    //   if (noticeElFromQuery) noticeElFromQuery.style.display = 'none';
+    //   localStorage.setItem('lastViewedNotification', '1');
+    // };
+    // const handleOpenNotice = () => { // Related to #notice, removing
+    //   if (noticeElFromQuery) noticeElFromQuery.style.display = 'flex';
+    // };
 
     window.options = options;
     window.dataLayer = window.dataLayer || [];
@@ -368,10 +368,10 @@ const GamePage: React.FC = () => {
       inWinningRankElFromQuery = document.querySelector<HTMLInputElement>('#in_winningRank');
       btnLastWinnerEl = document.querySelector<HTMLButtonElement>('.btn-last-winner');
       btnFirstWinnerEl = document.querySelector<HTMLButtonElement>('.btn-first-winner');
-      btnShakeEl = document.querySelector<HTMLButtonElement>('#btnShake');
-      closeNoticeButtonEl = document.querySelector<HTMLButtonElement>('#closeNotice');
-      openNoticeButtonEl = document.querySelector<HTMLButtonElement>('#btnNotice');
-      noticeElFromQuery = document.querySelector<HTMLElement>('#notice');
+      // btnShakeEl = document.querySelector<HTMLButtonElement>('#btnShake'); // Related to #inGame, removing
+      // closeNoticeButtonEl = document.querySelector<HTMLButtonElement>('#closeNotice'); // Related to #notice, removing
+      // openNoticeButtonEl = document.querySelector<HTMLButtonElement>('#btnNotice'); // Related to #notice, removing
+      // noticeElFromQuery = document.querySelector<HTMLElement>('#notice'); // Related to #notice, removing
 
       if (roomId) {
         const numericRoomId = parseInt(roomId, 10);
@@ -429,7 +429,7 @@ const GamePage: React.FC = () => {
       inWinningRankElFromQuery?.addEventListener('change', handleInWinningRankChange);
       btnLastWinnerEl?.addEventListener('click', handleBtnLastWinnerClick);
       btnFirstWinnerEl?.addEventListener('click', handleBtnFirstWinnerClick);
-      btnShakeEl?.addEventListener('click', handleBtnShakeClick);
+      // btnShakeEl?.addEventListener('click', handleBtnShakeClick); // Related to #inGame, removing
 
       if (sltMapEl) {
         sltMapEl.innerHTML = '<option value="">Loading maps...</option>';
@@ -479,10 +479,10 @@ const GamePage: React.FC = () => {
                 updatedAt: new Date().toISOString(),
               };
             });
-            const inGameDiv = document.querySelector('#inGame');
-            if (inGameDiv) {
-              inGameDiv.classList.toggle('hide', !gameState.shakeAvailable);
-            }
+            // const inGameDiv = document.querySelector('#inGame'); // Related to #inGame, removing
+            // if (inGameDiv) { // Related to #inGame, removing
+            //   inGameDiv.classList.toggle('hide', !gameState.shakeAvailable); // Related to #inGame, removing
+            // } // Related to #inGame, removing
             const gamePotentiallyOverBySocket =
               !gameState.isRunning && gameState.winners && gameState.winners.length >= gameState.winnerRank;
             if (
@@ -530,28 +530,28 @@ const GamePage: React.FC = () => {
         }
       }
 
-      const checkDonateButtonLoaded = () => {
-        const btn = document.querySelector('span.bmc-btn-text');
-        if (!btn) {
-          donateButtonCheckTimeoutId = setTimeout(checkDonateButtonLoaded, 100);
-        } else {
-          btn.setAttribute('data-trans', '');
-          if (window.translateElement) window.translateElement(btn as HTMLElement);
-        }
-      };
-      donateButtonCheckTimeoutId = setTimeout(checkDonateButtonLoaded, 100);
+      // const checkDonateButtonLoaded = () => { // Related to #donate, removing
+      //   const btn = document.querySelector('span.bmc-btn-text');
+      //   if (!btn) {
+      //     donateButtonCheckTimeoutId = setTimeout(checkDonateButtonLoaded, 100);
+      //   } else {
+      //     btn.setAttribute('data-trans', '');
+      //     if (window.translateElement) window.translateElement(btn as HTMLElement);
+      //   }
+      // };
+      // donateButtonCheckTimeoutId = setTimeout(checkDonateButtonLoaded, 100); // Related to #donate, removing
 
-      const currentNotice = 1; 
-      const noticeKey = 'lastViewedNotification';
-      const checkNotice = () => {
-        const lastViewed = localStorage.getItem(noticeKey);
-        if (lastViewed === null || Number(lastViewed) < currentNotice) {
-          handleOpenNotice(); 
-        }
-      };
-      closeNoticeButtonEl?.addEventListener('click', handleCloseNotice);
-      openNoticeButtonEl?.addEventListener('click', handleOpenNotice);
-      checkNotice();
+      // const currentNotice = 1;  // Related to #notice, removing
+      // const noticeKey = 'lastViewedNotification'; // Related to #notice, removing
+      // const checkNotice = () => { // Related to #notice, removing
+      //   const lastViewed = localStorage.getItem(noticeKey);
+      //   if (lastViewed === null || Number(lastViewed) < currentNotice) {
+      //     handleOpenNotice(); 
+      //   }
+      // };
+      // closeNoticeButtonEl?.addEventListener('click', handleCloseNotice); // Related to #notice, removing
+      // openNoticeButtonEl?.addEventListener('click', handleOpenNotice); // Related to #notice, removing
+      // checkNotice(); // Related to #notice, removing
     };
 
     const initializeRouletteAndGame = async () => {
@@ -574,7 +574,7 @@ const GamePage: React.FC = () => {
     initializeRouletteAndGame(); 
 
     return () => {
-      if (donateButtonCheckTimeoutId) clearTimeout(donateButtonCheckTimeoutId);
+      // if (donateButtonCheckTimeoutId) clearTimeout(donateButtonCheckTimeoutId); // Related to #donate, removing
       if (unsubscribeMaps) unsubscribeMaps();
       if (unsubscribeGameState) unsubscribeGameState();
       if (inNamesEl) {
@@ -587,11 +587,11 @@ const GamePage: React.FC = () => {
       inWinningRankElFromQuery?.removeEventListener('change', handleInWinningRankChange);
       btnLastWinnerEl?.removeEventListener('click', handleBtnLastWinnerClick);
       btnFirstWinnerEl?.removeEventListener('click', handleBtnFirstWinnerClick);
-      btnShakeEl?.removeEventListener('click', handleBtnShakeClick);
+      // btnShakeEl?.removeEventListener('click', handleBtnShakeClick); // Related to #inGame, removing
       sltMapEl?.removeEventListener('change', handleMapChange); 
       chkAutoRecordingElFromRef?.removeEventListener('change', handleAutoRecordingChange);
-      closeNoticeButtonEl?.removeEventListener('click', handleCloseNotice);
-      openNoticeButtonEl?.removeEventListener('click', handleOpenNotice);
+      // closeNoticeButtonEl?.removeEventListener('click', handleCloseNotice); // Related to #notice, removing
+      // openNoticeButtonEl?.removeEventListener('click', handleOpenNotice); // Related to #notice, removing
       socketService.disconnect();
       delete window.roullete; 
       delete window.options;
@@ -601,31 +601,31 @@ const GamePage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, user]); 
 
-  useEffect(() => {
-    const scriptId = 'bmc-script';
-    const donateContainer = document.getElementById('donate'); 
-    if (!donateContainer || document.getElementById(scriptId)) return;
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = 'https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js';
-    script.setAttribute('data-name', 'bmc-button');
-    script.setAttribute('data-slug', 'lazygyu');
-    script.setAttribute('data-color', '#FFDD00');
-    script.setAttribute('data-emoji', '');
-    script.setAttribute('data-font', 'Comic');
-    script.setAttribute('data-text', 'Buy me a coffee');
-    script.setAttribute('data-outline-color', '#000000');
-    script.setAttribute('data-font-color', '#000000');
-    script.setAttribute('data-coffee-color', '#ffffff');
-    script.async = true;
-    donateContainer.appendChild(script);
-    return () => {
-      const existingScript = document.getElementById(scriptId);
-      if (donateContainer && existingScript) {
-        donateContainer.removeChild(existingScript);
-      }
-    };
-  }, []);
+  // useEffect(() => { // Related to #donate, removing
+  //   const scriptId = 'bmc-script';
+  //   const donateContainer = document.getElementById('donate'); 
+  //   if (!donateContainer || document.getElementById(scriptId)) return;
+  //   const script = document.createElement('script');
+  //   script.id = scriptId;
+  //   script.src = 'https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js';
+  //   script.setAttribute('data-name', 'bmc-button');
+  //   script.setAttribute('data-slug', 'lazygyu');
+  //   script.setAttribute('data-color', '#FFDD00');
+  //   script.setAttribute('data-emoji', '');
+  //   script.setAttribute('data-font', 'Comic');
+  //   script.setAttribute('data-text', 'Buy me a coffee');
+  //   script.setAttribute('data-outline-color', '#000000');
+  //   script.setAttribute('data-font-color', '#000000');
+  //   script.setAttribute('data-coffee-color', '#ffffff');
+  //   script.async = true;
+  //   donateContainer.appendChild(script);
+  //   return () => {
+  //     const existingScript = document.getElementById(scriptId);
+  //     if (donateContainer && existingScript) {
+  //       donateContainer.removeChild(existingScript);
+  //     }
+  //   };
+  // }, []);
 
   return (
     <>
@@ -704,10 +704,10 @@ const GamePage: React.FC = () => {
             ref={inNamesRef}
           ></textarea>
           <div className="actions">
-            <button id="btnNotice">
+            {/* <button id="btnNotice"> // Related to #notice, removing
               <i className="icon megaphone"></i>
             </button>
-            <div className="sep"></div>
+            <div className="sep"></div> */}
             <button id="btnShuffle">
               <i className="icon shuffle"></i>
               <span data-trans>Shuffle</span>
@@ -720,13 +720,13 @@ const GamePage: React.FC = () => {
         </div>
       </div>
 
-      <div id="donate"></div>
-      <div id="inGame" className="settings hide">
+      {/* <div id="donate"></div> */} {/* Removed #donate */}
+      {/* <div id="inGame" className="settings hide"> // Removed #inGame
         <button id="btnShake" data-trans>
           Shake!
         </button>
-      </div>
-      <div id="notice" style={{ display: 'none' }}>
+      </div> */}
+      {/* <div id="notice" style={{ display: 'none' }}> // Removed #notice
         <h1>Notice</h1>
         <div className="notice-body">
           <p>이 프로그램은 무료이며 사용에 아무런 제한이 없습니다.</p>
@@ -749,7 +749,7 @@ const GamePage: React.FC = () => {
             Close
           </button>
         </div>
-      </div>
+      </div> */}
       <div className="copyright">
         &copy; 2025.
         <a href="https://lazygyu.net" target="_blank" rel="noopener noreferrer">
