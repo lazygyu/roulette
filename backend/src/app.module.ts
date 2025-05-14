@@ -16,7 +16,6 @@ import { APP_INTERCEPTOR, APP_PIPE, Reflector } from '@nestjs/core';
       useFactory: (reflector: Reflector) => {
         return new ClassSerializerInterceptor(reflector, {
           strategy: 'excludeAll',
-          exposeDefaultValues: true,
         });
       },
       inject: [Reflector],
