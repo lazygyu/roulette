@@ -106,8 +106,8 @@ export class Minimap implements UIObject {
     this.ctx.save();
     entities.forEach((entity) => {
       this.ctx.save();
-      this.ctx.fillStyle = DefaultEntityColor[entity.shape.type];
-      this.ctx.strokeStyle = DefaultEntityColor[entity.shape.type];
+      this.ctx.fillStyle = entity.shape.color ?? DefaultEntityColor[entity.shape.type];
+      this.ctx.strokeStyle = entity.shape.color ?? DefaultEntityColor[entity.shape.type];
       this.ctx.translate(entity.x, entity.y);
       this.ctx.rotate(entity.angle);
 
