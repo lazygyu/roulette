@@ -118,10 +118,10 @@ export class RouletteRenderer {
       this.ctx.save();
       this.ctx.translate(entity.x, entity.y);
       this.ctx.rotate(entity.angle);
-      this.ctx.fillStyle = DefaultEntityColor[entity.shape.type];
-      this.ctx.strokeStyle = DefaultEntityColor[entity.shape.type];
+      this.ctx.fillStyle = entity.shape.color ?? DefaultEntityColor[entity.shape.type];
+      this.ctx.strokeStyle = entity.shape.color ?? DefaultEntityColor[entity.shape.type];
       this.ctx.shadowBlur = 15;
-      this.ctx.shadowColor = DefaultBloomColor[entity.shape.type];
+      this.ctx.shadowColor = entity.shape.bloomColor ?? entity.shape.color ?? DefaultBloomColor[entity.shape.type];
       const shape = entity.shape;
       switch (shape.type) {
         case 'polyline':
