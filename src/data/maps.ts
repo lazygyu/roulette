@@ -1071,6 +1071,8 @@ export const stages: StageDef[] = [
           width: 1,
           height: 800,
           rotation: 0,
+          color: '#222',
+          bloomColor: '#777',
         },
         type: 'static',
         props: { density: 500, angularVelocity: 0, restitution: 0 },
@@ -1084,6 +1086,8 @@ export const stages: StageDef[] = [
           rotation: 0,
           width: 1,
           height: 800,
+          color: '#222',
+          bloomColor: '#777',
         },
       },
       {
