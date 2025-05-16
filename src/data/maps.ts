@@ -1061,8 +1061,8 @@ export const stages: StageDef[] = [
   },
   {
     title: 'Yoru ni Kakeru',
-    goalY: 256,
-    zoomY: 222.2,
+    goalY: 248,
+    zoomY: 234.5,
     entities: [
       {
         position: { x: 2, y: 0 },
