@@ -13,6 +13,6 @@
     // "strict": false, // Example: If frontend needs less strict checks
   },
   "include": [
-    "src" // Include src directory for compilation
+    "src"
   ]
 }

@@ -1,0 +1,520 @@
+// import '../index1'
+import React, { useEffect, useRef, useState } from 'react';
+import '../styles.css'; // 전역 스타일 import
+import { Roulette } from '../roulette';
+import socketService from '../socketService'; // 실제 인스턴스 사용
+import options from '../options'; // 실제 인스턴스 사용
+import { TranslatedLanguages, TranslationKeys, Translations } from '../data/languages'; // localization.ts에서 가져옴
+
+// GamePage에 필요한 window 속성들을 전역 Window 인터페이스에 선택적으로 추가
+declare global {
+  interface Window {
+    roullete?: Roulette;
+    socketService?: typeof socketService;
+    options?: typeof options;
+    updateMapSelector?: (maps: { index: number; title: string }[]) => void;
+    dataLayer?: any[];
+    gtag?: (...args: any[]) => void;
+    translateElement?: (element: HTMLElement) => void;
+  }
+}
+
+const GamePage: React.FC = () => {
+  const inNamesRef = useRef<HTMLTextAreaElement>(null);
+  const inWinningRankRef = useRef<HTMLInputElement>(null);
+  const chkSkillRef = useRef<HTMLInputElement>(null);
+  const sltMapRef = useRef<HTMLSelectElement>(null);
+  const chkAutoRecordingRef = useRef<HTMLInputElement>(null);
+
+  // 'ready'와 'winnerType'은 상태로 관리하는 것이 더 React 방식에 맞지만,
+  // 기존 코드의 직접적인 포팅을 위해 일단 변수로 유지하고, 필요시 상태로 전환할 수 있습니다.
+  // let ready = false; // 이 값은 getReady 함수 내부에서 설정되고 사용됩니다.
+  // let winnerType = 'first'; // 이 값은 setWinnerRank 및 버튼 클릭 핸들러에서 사용됩니다.
+  // React에서는 이런 변수들을 useState로 관리하는 것이 일반적입니다.
+  // 예를 들어:
+  const [isGameReady, setIsGameReady] = useState(false);
+  const [winnerSelectionType, setWinnerSelectionType] = useState('first');
+
+  // For localization
+  const [currentLocale, setCurrentLocale] = useState<TranslatedLanguages>('en');
+
+  useEffect(() => {
+    let rouletteInstance: Roulette | null = null;
+    let originalDocumentLang = document.documentElement.lang;
+    let donateButtonCheckTimeoutId: NodeJS.Timeout | undefined;
+    let readyCheckTimeoutId: NodeJS.Timeout | undefined;
+
+    // DOM Elements (queried within initializeGamePage, references stored here for cleanup)
+    // These will be assigned when setupGameInteractions is called.
+    let inNamesEl: HTMLTextAreaElement | null = null; 
+    let btnShuffleEl: HTMLButtonElement | null = null;
+    let btnStartEl: HTMLButtonElement | null = null;
+    let chkSkillElFromQuery: HTMLInputElement | null = null;
+    let inWinningRankElFromQuery: HTMLInputElement | null = null;
+    let btnLastWinnerEl: HTMLButtonElement | null = null;
+    let btnFirstWinnerEl: HTMLButtonElement | null = null;
+    let btnShakeEl: HTMLButtonElement | null = null;
+    let sltMapEl: HTMLSelectElement | null = null;
+    let chkAutoRecordingElFromRef: HTMLInputElement | null = null; // from ref
+    let closeNoticeButtonEl: HTMLButtonElement | null = null;
+    let openNoticeButtonEl: HTMLButtonElement | null = null;
+    let noticeElFromQuery: HTMLElement | null = null;
+
+
+    // Event Handlers
+    const getNames = (): string[] => {
+      if (!inNamesEl) return [];
+      const value = inNamesEl.value.trim();
+      return value.split(/[,\r\n]/g).map((v) => v.trim()).filter((v) => !!v);
+    };
+
+    const parseName = (nameStr: string) => {
+      const weightRegex = /(\/\d+)/;
+      const countRegex = /(\*\d+)/;
+      const hasWeight = weightRegex.test(nameStr);
+      const hasCount = countRegex.test(nameStr);
+      const nameMatch = /^\s*([^\/*]+)?/.exec(nameStr);
+      const name = nameMatch ? nameMatch[1] : '';
+      const weight = hasWeight ? parseInt(weightRegex.exec(nameStr)![1].replace('/', '')) : 1;
+      const count = hasCount ? parseInt(countRegex.exec(nameStr)![1].replace('*', '')) : 1;
+      return { name, weight, count };
+    };
+    
+    let localWinnerType = 'first'; // Keep this to mirror original logic closely
+
+    const setWinnerRank = (rank: number) => {
+      if (inWinningRankRef.current) inWinningRankRef.current.value = rank.toString();
+      if (window.options) window.options.winningRank = rank;
+      if (window.socketService) window.socketService.setWinningRank(rank - 1);
+      else console.error('socketService not available for setWinnerRank');
+
+      const btnFirstWinner = document.querySelector('.btn-first-winner');
+      const btnLastWinner = document.querySelector('.btn-last-winner');
+      const inWinningRankInput = document.querySelector('#in_winningRank');
+      if (btnFirstWinner && btnLastWinner && inWinningRankInput) {
+        btnFirstWinner.classList.toggle('active', localWinnerType === 'first');
+        btnLastWinner.classList.toggle('active', localWinnerType === 'last');
+        inWinningRankInput.classList.toggle('active', localWinnerType === 'custom');
+      }
+    };
+
+    const getReady = () => {
+      const names = getNames();
+      if (window.socketService) window.socketService.setMarbles(names);
+      else console.error('socketService not available for getReady');
+      
+      const currentLocalReady = names.length > 0;
+      setIsGameReady(currentLocalReady); // Update React state
+      localStorage.setItem('mbr_names', names.join(','));
+      
+      switch (localWinnerType) {
+        case 'first': setWinnerRank(1); break;
+        case 'last':
+          const total = window.roullete?.getCount() ?? 0;
+          setWinnerRank(total > 0 ? total : 1);
+          break;
+      }
+    };
+    
+    const handleInNamesInput = getReady;
+    const handleInNamesBlur = () => {
+        if (!inNamesEl) return;
+        const nameSource = getNames();
+        const nameSet = new Set<string>();
+        const nameCounts: { [key: string]: number } = {};
+        nameSource.forEach((nameSrc) => {
+          const item = parseName(nameSrc);
+          const key = item.weight > 1 ? `${item.name}/${item.weight}` : (item.name || '');
+          if (!nameSet.has(key)) {
+            nameSet.add(key);
+            nameCounts[key] = 0;
+          }
+          nameCounts[key] += item.count;
+        });
+        const result: string[] = [];
+        Object.keys(nameCounts).forEach((key) => {
+          result.push(nameCounts[key] > 1 ? `${key}*${nameCounts[key]}` : key);
+        });
+        const oldValue = inNamesEl.value;
+        const newValue = result.join(',');
+        if (oldValue !== newValue) {
+          inNamesEl.value = newValue;
+          getReady();
+        }
+    };
+    const handleBtnShuffleClick = getReady;
+    const handleBtnStartClick = () => {
+        if (!isGameReady) return; // Use React state for readiness check
+        window.gtag?.('event', 'start', { event_category: 'roulette', event_label: 'start', value: 1 });
+        if (window.socketService) window.socketService.startGame();
+        else console.error('socketService not available for startGame');
+        document.querySelector('#settings')?.classList.add('hide');
+        document.querySelector('#donate')?.classList.add('hide');
+    };
+    const handleChkSkillChange = (e: Event) => {
+        if (window.options) window.options.useSkills = (e.target as HTMLInputElement).checked;
+    };
+    const handleInWinningRankChange = (e: Event) => {
+        const v = parseInt((e.target as HTMLInputElement).value, 10);
+        const newRank = isNaN(v) || v < 1 ? 1 : v;
+        localWinnerType = 'custom';
+        setWinnerSelectionType('custom');
+        setWinnerRank(newRank);
+    };
+    const handleBtnLastWinnerClick = () => {
+        const currentTotal = window.roullete?.getCount() ?? 1;
+        localWinnerType = 'last';
+        setWinnerSelectionType('last');
+        setWinnerRank(currentTotal > 0 ? currentTotal : 1);
+    };
+    const handleBtnFirstWinnerClick = () => {
+        localWinnerType = 'first';
+        setWinnerSelectionType('first');
+        setWinnerRank(1);
+    };
+    const handleBtnShakeClick = () => {
+        window.roullete?.shake();
+        window.gtag?.('event', 'shake', { event_category: 'roulette', event_label: 'shake', value: 1 });
+    };
+    const handleMapChange = (e: Event) => {
+        const index = parseInt((e.target as HTMLSelectElement).value, 10);
+        if (window.socketService && !isNaN(index)) window.socketService.setMap(index);
+        else console.error('socketService not available or invalid map index for setMap');
+    };
+    const handleAutoRecordingChange = (e: Event) => {
+        if (window.roullete) window.roullete.setAutoRecording((e.target as HTMLInputElement).checked);
+    };
+    const handleCloseNotice = () => {
+        if (noticeElFromQuery) noticeElFromQuery.style.display = 'none';
+        localStorage.setItem('lastViewedNotification', '1'); // Assuming currentNotice is 1
+    };
+    const handleOpenNotice = () => {
+        if (noticeElFromQuery) noticeElFromQuery.style.display = 'flex';
+    };
+
+    // --- Initialization Function (now split into parts) ---
+    
+    // Part 1: One-time setup of window objects and non-DOM related initializations
+    rouletteInstance = new Roulette(); // Create instance once
+    window.roullete = rouletteInstance;
+    window.socketService = socketService;
+    window.options = options;
+
+    window.dataLayer = window.dataLayer || [];
+    function gtagForPage(...args: any[]) { (window.dataLayer!).push(args); } // Renamed to avoid conflict if gtag is already on window
+    window.gtag = gtagForPage;
+    gtagForPage('js', new Date());
+    gtagForPage('config', 'G-5899C1DJM0');
+
+    const defaultLoc: TranslatedLanguages = 'en';
+    let pageLocale: TranslatedLanguages | undefined;
+    originalDocumentLang = document.documentElement.lang; 
+    const getBrowserLoc = () => navigator.language.split('-')[0] as TranslatedLanguages;
+    const translateElForPage = (element: Element) => {
+      if (!(element instanceof HTMLElement) || !pageLocale || !Translations[pageLocale]) return;
+      const prop = element.getAttribute('data-trans');
+      const targetKey = prop ? (element.getAttribute(prop) || '').trim() : element.innerText.trim();
+      if (targetKey && Translations[pageLocale] && targetKey in Translations[pageLocale]) {
+        const translation = Translations[pageLocale][targetKey as TranslationKeys];
+        if (prop) element.setAttribute(prop, translation);
+        else element.innerText = translation;
+      }
+    };
+    window.translateElement = translateElForPage;
+    const translateP = () => document.querySelectorAll('[data-trans]').forEach(translateElForPage);
+    const setPageLoc = (newLoc: string) => {
+      const newLocTyped = newLoc as TranslatedLanguages;
+      if (newLocTyped === pageLocale) return;
+      document.documentElement.lang = newLocTyped;
+      pageLocale = newLocTyped in Translations ? newLocTyped : defaultLoc;
+      translateP();
+    };
+    setPageLoc(getBrowserLoc());
+
+    // Part 2: Function to set up DOM interactions and listeners (called after roulette is ready)
+    const setupGameInteractions = () => {
+      console.log('Roulette is ready, proceeding with GamePage DOM & event setup.');
+      // Assign elements from refs and querySelector
+      inNamesEl = inNamesRef.current;
+      sltMapEl = sltMapRef.current;
+      chkAutoRecordingElFromRef = chkAutoRecordingRef.current;
+      btnShuffleEl = document.querySelector<HTMLButtonElement>('#btnShuffle');
+      btnStartEl = document.querySelector<HTMLButtonElement>('#btnStart');
+      chkSkillElFromQuery = document.querySelector<HTMLInputElement>('#chkSkill');
+      inWinningRankElFromQuery = document.querySelector<HTMLInputElement>('#in_winningRank');
+      btnLastWinnerEl = document.querySelector<HTMLButtonElement>('.btn-last-winner');
+      btnFirstWinnerEl = document.querySelector<HTMLButtonElement>('.btn-first-winner');
+      btnShakeEl = document.querySelector<HTMLButtonElement>('#btnShake');
+      closeNoticeButtonEl = document.querySelector<HTMLButtonElement>('#closeNotice');
+      openNoticeButtonEl = document.querySelector<HTMLButtonElement>('#btnNotice');
+      noticeElFromQuery = document.querySelector<HTMLElement>('#notice');
+
+      if (window.socketService) window.socketService.connect();
+      else console.error('socketService not available during GamePage initialization');
+
+      const savedNames = localStorage.getItem('mbr_names');
+      if (savedNames && inNamesEl) inNamesEl.value = savedNames;
+
+      // Add Event Listeners
+      if (inNamesEl) {
+        inNamesEl.addEventListener('input', handleInNamesInput);
+        inNamesEl.addEventListener('blur', handleInNamesBlur);
+      }
+      btnShuffleEl?.addEventListener('click', handleBtnShuffleClick);
+      btnStartEl?.addEventListener('click', handleBtnStartClick);
+      chkSkillElFromQuery?.addEventListener('change', handleChkSkillChange);
+      inWinningRankElFromQuery?.addEventListener('change', handleInWinningRankChange);
+      btnLastWinnerEl?.addEventListener('click', handleBtnLastWinnerClick);
+      btnFirstWinnerEl?.addEventListener('click', handleBtnFirstWinnerClick);
+      btnShakeEl?.addEventListener('click', handleBtnShakeClick);
+      
+      if (sltMapEl) { // sltMapEl null 체크
+        sltMapEl.innerHTML = '<option value="">Loading maps...</option>';
+        sltMapEl.disabled = true;
+        window.updateMapSelector = (maps) => {
+          if (!sltMapEl) return; // 내부에서도 null 체크
+          sltMapEl.innerHTML = '';
+          maps.forEach((map) => {
+            const option = document.createElement('option');
+            option.value = map.index.toString();
+            option.innerHTML = map.title;
+            option.setAttribute('data-trans', '');
+            if (window.translateElement) window.translateElement(option);
+            sltMapEl!.append(option);
+          });
+          sltMapEl.disabled = false;
+        };
+        sltMapEl.addEventListener('change', handleMapChange);
+      }
+      
+      if (chkAutoRecordingElFromRef) { // chkAutoRecordingElFromRef null 체크
+         chkAutoRecordingElFromRef.addEventListener('change', handleAutoRecordingChange);
+         if (window.options && window.roullete) {
+            chkAutoRecordingElFromRef.checked = window.options.autoRecording;
+            window.roullete.setAutoRecording(window.options.autoRecording);
+        }
+      }
+
+      const checkDonateButtonLoaded = () => {
+        const btn = document.querySelector('span.bmc-btn-text');
+        if (!btn) {
+          donateButtonCheckTimeoutId = setTimeout(checkDonateButtonLoaded, 100);
+        } else {
+          btn.setAttribute('data-trans', '');
+          if (window.translateElement) window.translateElement(btn as HTMLElement);
+        }
+      };
+      donateButtonCheckTimeoutId = setTimeout(checkDonateButtonLoaded, 100);
+      
+      const currentNotice = 1; // Assuming this is constant
+      const noticeKey = 'lastViewedNotification';
+      const checkNotice = () => {
+        const lastViewed = localStorage.getItem(noticeKey);
+        if (lastViewed === null || Number(lastViewed) < currentNotice) {
+          handleOpenNotice(); // Use the hoisted handler
+        }
+      };
+      closeNoticeButtonEl?.addEventListener('click', handleCloseNotice);
+      openNoticeButtonEl?.addEventListener('click', handleOpenNotice);
+      checkNotice();
+
+      btnShuffleEl?.dispatchEvent(new Event('click')); // Initial shuffle
+    };
+
+    // Part 3: Polling function to check if roulette is ready
+    const checkRouletteReadyAndInitialize = () => {
+      if (window.roullete && window.roullete.isReady) {
+        setupGameInteractions();
+      } else {
+        console.log('roulette still not loaded (GamePage), retrying...');
+        readyCheckTimeoutId = setTimeout(checkRouletteReadyAndInitialize, 100);
+      }
+    };
+
+    checkRouletteReadyAndInitialize(); // Start the check
+
+    return () => {
+      console.log("Cleaning up GamePage effects");
+      if (readyCheckTimeoutId) clearTimeout(readyCheckTimeoutId);
+      if (donateButtonCheckTimeoutId) clearTimeout(donateButtonCheckTimeoutId);
+
+      // Remove Event Listeners (ensure elements were assigned before trying to remove)
+      if (inNamesEl) {
+        inNamesEl.removeEventListener('input', handleInNamesInput);
+        inNamesEl.removeEventListener('blur', handleInNamesBlur);
+      }
+      btnShuffleEl?.removeEventListener('click', handleBtnShuffleClick);
+      btnStartEl?.removeEventListener('click', handleBtnStartClick);
+      chkSkillElFromQuery?.removeEventListener('change', handleChkSkillChange);
+      inWinningRankElFromQuery?.removeEventListener('change', handleInWinningRankChange);
+      btnLastWinnerEl?.removeEventListener('click', handleBtnLastWinnerClick);
+      btnFirstWinnerEl?.removeEventListener('click', handleBtnFirstWinnerClick);
+      btnShakeEl?.removeEventListener('click', handleBtnShakeClick);
+      sltMapEl?.removeEventListener('change', handleMapChange); // Optional chaining
+      chkAutoRecordingElFromRef?.removeEventListener('change', handleAutoRecordingChange);
+      closeNoticeButtonEl?.removeEventListener('click', handleCloseNotice);
+      openNoticeButtonEl?.removeEventListener('click', handleOpenNotice);
+      
+      if (window.socketService) window.socketService.disconnect();
+      
+      delete window.roullete; // Clean up window object
+      delete window.socketService;
+      delete window.options;
+      delete window.updateMapSelector;
+      delete window.translateElement;
+      // gtag and dataLayer are often fine to leave, but clear if strictly necessary
+      // delete window.gtag;
+      // delete window.dataLayer;
+
+      document.documentElement.lang = originalDocumentLang;
+    };
+  }, []);
+
+  // BuyMeACoffee 스크립트 로딩
+  useEffect(() => {
+    const scriptId = 'bmc-script';
+    const donateContainer = document.getElementById('donate'); // ID 변경
+
+    if (!donateContainer || document.getElementById(scriptId)) return;
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = "https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js";
+    script.setAttribute('data-name', 'bmc-button');
+    script.setAttribute('data-slug', 'lazygyu');
+    script.setAttribute('data-color', '#FFDD00');
+    script.setAttribute('data-emoji', '');
+    script.setAttribute('data-font', 'Comic');
+    script.setAttribute('data-text', 'Buy me a coffee');
+    script.setAttribute('data-outline-color', '#000000');
+    script.setAttribute('data-font-color', '#000000');
+    script.setAttribute('data-coffee-color', '#ffffff');
+    script.async = true;
+    
+    donateContainer.appendChild(script);
+
+    return () => {
+      const existingScript = document.getElementById(scriptId);
+      if (donateContainer && existingScript) {
+        donateContainer.removeChild(existingScript);
+      }
+    };
+  }, []);
+
+
+  return (
+    <>
+      {/*
+        <head> 내부의 link 태그 및 meta 태그들은 public/index.html에 유지하는 것이 일반적입니다.
+        React 컴포넌트는 주로 <body> 내부의 내용을 렌더링합니다.
+        <base href="/" /> 또한 public/index.html에 있어야 합니다.
+        Google Analytics 스크립트는 public/index.html에 직접 추가하거나,
+        React Helmet 같은 라이브러리를 사용하여 동적으로 head를 관리할 수 있습니다.
+        여기서는 gtag 초기화는 useEffect에서 처리했습니다.
+      */}
+
+      <div id="settings" className="settings">
+        <div className="right">
+          <div className="row">
+            <label>
+              <i className="icon map"></i>
+              <span data-trans>Map</span>
+            </label>
+            <select id="sltMap" ref={sltMapRef}></select>
+          </div>
+          <div className="row">
+            <label>
+              <i className="icon record"></i>
+              <span data-trans>Recording</span>
+            </label>
+            <input type="checkbox" id="chkAutoRecording" ref={chkAutoRecordingRef} />
+          </div>
+          <div className="row">
+            <label>
+              <i className="icon trophy"></i>
+              <span data-trans>The winner is</span>
+            </label>
+            <div className="btn-group">
+              <button className={`btn-winner btn-first-winner ${winnerSelectionType === 'first' ? 'active' : ''}`} data-trans>First</button>
+              <button className={`btn-winner btn-last-winner ${winnerSelectionType === 'last' ? 'active' : ''}`} data-trans>Last</button>
+              <input type="number" id="in_winningRank" defaultValue="1" min="1" ref={inWinningRankRef} className={winnerSelectionType === 'custom' ? 'active' : ''} />
+            </div>
+          </div>
+          <div className="row">
+            <label>
+              <i className="icon bomb"></i>
+              <span data-trans>Using skills</span>
+            </label>
+            <input type="checkbox" id="chkSkill" defaultChecked ref={chkSkillRef} />
+          </div>
+        </div>
+        <div className="left">
+          <h3 data-trans>Enter names below</h3>
+          <textarea
+            id="in_names"
+            placeholder="Input names separated by commas or line feed here"
+            data-trans="placeholder"
+            defaultValue="짱구*5, 짱아*10, 봉미선*3"
+            ref={inNamesRef}
+          ></textarea>
+          <div className="actions">
+            <button id="btnNotice">
+              <i className="icon megaphone"></i>
+            </button>
+            <div className="sep"></div>
+            <button id="btnShuffle">
+              <i className="icon shuffle"></i>
+              <span data-trans>Shuffle</span>
+            </button>
+            <button id="btnStart">
+              <i className="icon play"></i>
+              <span data-trans>Start</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="donate">
+        {/* BuyMeACoffee 버튼 스크립트가 여기에 동적으로 삽입됩니다. */}
+      </div>
+
+      <div id="inGame" className="settings hide">
+        <button id="btnShake" data-trans>Shake!</button>
+      </div>
+
+      <div id="notice" style={{display: 'none'}}> {/* 초기 상태는 none으로 */}
+        <h1>Notice</h1>
+        <div className="notice-body">
+          <p>이 프로그램은 무료이며 사용에 아무런 제한이 없습니다.</p>
+          <p>
+            이 프로그램의 사용이나 프로그램을 이용한 영상 제작, 방송 등에 원작자는 아무런 제재를 가하거나 이의를 제기하지
+            않습니다. 자유롭게 사용하셔도 됩니다.
+          </p>
+          <p>다만 저작권자를 사칭하는 것은 저작권법을 위반하는 범죄입니다.</p>
+          <p>
+            저작권자를 사칭하여 권리 침해를 주장하는 경우를 보거나 겪으시는 분은
+            <a href="mailto:lazygyu+legal@gmail.com" target="_blank" rel="noopener noreferrer">lazygyu+legal@gmail.com</a> 으로 제보 부탁드립니다.
+          </p>
+          <p>감사합니다.</p>
+        </div>
+        <div className="notice-action">
+          <button id="closeNotice" data-trans>Close</button>
+        </div>
+      </div>
+
+      <div className="copyright">
+        &copy; 2025.<a href="https://lazygyu.net" target="_blank" rel="noopener noreferrer">lazygyu</a>
+        <span data-trans>
+          This program is freeware and may be used freely anywhere, including in broadcasts and videos.
+        </span>
+      </div>
+      {/* 
+        Roulette 게임 캔버스는 rouletteRenderer.ts에서 document.body에 직접 추가됩니다.
+        이 부분은 React 컴포넌트 외부에서 관리되므로, GamePage.tsx에서 직접 렌더링하지 않습니다.
+        만약 캔버스를 React 컴포넌트 내에서 관리하려면, RouletteRenderer의 초기화 로직 수정이 필요합니다.
+      */}
+    </>
+  );
+};
+
+export default GamePage;

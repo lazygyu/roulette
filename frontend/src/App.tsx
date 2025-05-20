@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import HomePage from './pages/HomePage'; // HomePage import
 import LoginPage from './pages/LoginPage';
 import CreateRoomPage from './pages/CreateRoomPage';
+import GamePage from './pages/GamePage'; // GamePage import
 import './App.css';
 
 function App() {
@@ -28,7 +29,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/create-room" element={<CreateRoomPage />} />
-          <Route path="/game/:roomId" element={<HomePage />} /> {/* 이 부분을 확인 */}
+          <Route path="/game/:roomId" element={<GamePage />} /> {/* HomePage를 GamePage로 변경 */}
           <Route path="/" element={<div>Navigate to /create-room or /game/:roomId</div>} />{' '}
           {/* 기본 페이지 안내 변경 */}
         </Routes>
