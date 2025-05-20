@@ -43,11 +43,11 @@
     "typescript": "^5.8.3"
   },
   "scripts": {
-    "dev": "concurrently \"yarn workspace frontend parcel index.html --port 1235\" \"yarn workspace backend start:dev\"",
+    "dev": "concurrently \"yarn frontend:dev\" \"yarn backend:dev\"",
     "build": "yarn workspace frontend build && yarn workspace backend build",
     "lint": "yarn workspace frontend lint && yarn workspace backend lint",
     "frontend:lint": "yarn workspace frontend lint",
-    "frontend:dev": "yarn workspace frontend parcel index.html --port 1235",
+    "frontend:dev": "yarn workspace frontend start",
     "frontend:build": "yarn workspace frontend build",
     "backend:dev": "yarn workspace backend start:dev",
     "backend:build": "yarn workspace backend build",

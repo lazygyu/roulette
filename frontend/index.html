@@ -5,428 +5,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <link rel="apple-touch-icon" sizes="57x57" href="assets/apple-icon-57x57.png">
-  <link rel="apple-touch-icon" sizes="60x60" href="assets/apple-icon-60x60.png">
-  <link rel="apple-touch-icon" sizes="72x72" href="assets/apple-icon-72x72.png">
-  <link rel="apple-touch-icon" sizes="76x76" href="assets/apple-icon-76x76.png">
-  <link rel="apple-touch-icon" sizes="114x114" href="assets/apple-icon-114x114.png">
-  <link rel="apple-touch-icon" sizes="120x120" href="assets/apple-icon-120x120.png">
-  <link rel="apple-touch-icon" sizes="144x144" href="assets/apple-icon-144x144.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="assets/apple-icon-152x152.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-icon-180x180.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="assets/android-icon-192x192.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="96x96" href="assets/favicon-96x96.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+  <base href="/">
+  <link rel="apple-touch-icon" sizes="57x57" href="/frontend/assets/apple-icon-57x57.png">
+  <link rel="apple-touch-icon" sizes="60x60" href="/frontend/assets/apple-icon-60x60.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="/frontend/assets/apple-icon-72x72.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="/frontend/assets/apple-icon-76x76.png">
+  <link rel="apple-touch-icon" sizes="114x114" href="/frontend/assets/apple-icon-114x114.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="/frontend/assets/apple-icon-120x120.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="/frontend/assets/apple-icon-144x144.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/frontend/assets/apple-icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/frontend/assets/apple-icon-180x180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/frontend/assets/android-icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/frontend/assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="/frontend/assets/favicon-96x96.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/frontend/assets/favicon-16x16.png">
   <link rel="manifest" href="assets/manifest.json">
   <meta name="msapplication-TileColor" content="#ffffff">
-  <meta name="msapplication-TileImage" content="assets/ms-icon-144x144.png">
+  <meta name="msapplication-TileImage" content="/frontend/assets/ms-icon-144x144.png">
   <meta name="theme-color" content="#ffffff">
   <title>Marble Roulette</title>
-  <style lang="scss">
-    * {
-      box-sizing: border-box;
-    }
-
-    canvas {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    div.copyright {
-      position: fixed;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      color: white;
-      font-size: 12px;
-      z-index: 999;
-      width: 90%;
-      text-align: center;
-    }
-
-    div.copyright a {
-      color: white;
-    }
-
-    #settings {
-      position: fixed;
-      bottom: 1rem;
-      left: 1rem;
-      background: #666;
-      border-radius: 10px;
-      padding: 10px;
-      z-index: 999;
-      min-width: 50%;
-
-      display: flex;
-      visibility: visible;
-      opacity: 1;
-      transition: visibility 0s, opacity 1s linear;
-
-      &.hide {
-        opacity: 0;
-        visibility: hidden;
-      }
-
-      h3 {
-        padding: 0;
-        margin: 0;
-        font-size: 12pt;
-        color: #fefefe;
-      }
-
-      textarea {
-        width: 100%;
-        min-height: 5rem;
-        border: none;
-        background: #999;
-        font-size: 14pt;
-      }
-
-      button {
-        color: #fefefe;
-        background: #222;
-        border: none;
-        border-radius: 5px;
-        padding: 5px 10px;
-        position: relative;
-        overflow: hidden;
-
-        &:active:after {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-        }
-      }
-
-      .icon {
-        background: currentColor;
-        mask-repeat: no-repeat;
-        mask-position: center center;
-        mask-size: contain;
-        display: inline-block;
-        width: 25px;
-        height: 25px;
-        vertical-align: middle;
-
-        &.play {
-          mask-image: url('assets/images/play.svg');
-        }
-
-        &.shuffle {
-          mask-image: url('assets/images/shuffle.svg');
-        }
-        &.megaphone {
-          mask-image: url('assets/images/megaphone.svg');
-        }
-
-        &.record {
-          mask-image: url('assets/images/record.svg');
-        }
-
-        &.map {
-          mask-image: url('assets/images/map.svg');
-        }
-
-        &.trophy {
-          mask-image: url('assets/images/trophy.svg');
-        }
-
-        &.bomb {
-          mask-image: url('assets/images/bomb.svg');
-        }
-      }
-
-      div.left {
-        flex-grow: 1;
-        flex-shrink: 1;
-        order: 1;
-
-        .actions {
-          display: flex;
-          align-items: center;
-          justify-content: stretch;
-          gap: 2px;
-          div.sep {
-            flex-grow: 1;
-          }
-        }
-      }
-
-      div.right {
-        order: 2;
-        flex-grow: 0;
-        flex-shrink: 0;
-
-        div.row {
-          display: flex;
-          align-items: center;
-          height: 35px;
-
-          label {
-            width: 150px;
-            flex-grow: 0;
-            flex-shrink: 0;
-            padding-left: 1rem;
-            color: white;
-          }
-        }
-      }
-
-      select {
-        height: 25px;
-        width: 100%;
-        border-radius: 5px;
-        background: #999;
-      }
-
-      input[type=checkbox] {
-        width: 0;
-        height: 25px;
-        position: relative;
-        vertical-align: middle;
-
-        &:before {
-          position: absolute;
-          content: '';
-          display: inline-block;
-          width: 50px;
-          height: 25px;
-          border-radius: 25px;
-          background: #999;
-          top: 0;
-          left: 0;
-        }
-
-        &:after {
-          position: absolute;
-          top: 0;
-          left: 0;
-          content: '';
-          border-radius: 25px;
-          width: 25px;
-          height: 25px;
-          background: #ccc;
-          transition: transform .2s;
-        }
-
-        &:checked:after {
-          transform: translateX(100%);
-          background: white;
-        }
-
-        &:checked:before {
-          content: '';
-          background: #00baff;
-        }
-      }
-
-      .btn-group {
-        display: flex;
-        justify-content: stretch;
-
-        & > * {
-          box-sizing: border-box;
-          flex-grow: 0;
-          flex-shrink: 0;
-          overflow: hidden;
-          height: 25px;
-          width: 33%;
-          border-radius: 0;
-          background: #999;
-          border: none;
-          padding: 0;
-          color: #fefefe;
-
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          &:first-child {
-            border-radius: 10px 0 0 10px;
-          }
-
-          &:last-child {
-            border-radius: 0 10px 10px 0;
-          }
-
-          &.active:before {
-            content: '';
-            width: 15px;
-            height: 15px;
-            display: inline-block;
-            vertical-align: middle;
-            mask-image: url('assets/images/check.svg');
-            mask-repeat: no-repeat;
-            background: white;
-          }
-
-          &.active {
-            background: #333;
-          }
-        }
-
-        input[type=number] {
-          box-sizing: border-box;
-          text-align: center;
-        }
-      }
-    }
-
-    #notice {
-      display: none;
-      position: fixed;
-      overflow: hidden;
-      top: 50%;
-      left: 50%;
-      width: 500px;
-      max-width: 90%;
-      transform: translate(-50%, -50%);
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 30px;
-      z-index: 1001;
-      padding: 10px 10px;
-      color: #333;
-      flex-direction: column;
-
-      h1 {
-        background-color: #ffdd00;
-        margin: -10px -10px 0 -10px;
-        padding: 10px 5px 10px .5em;
-        border-bottom: 1px solid #333;
-        display: flex;
-        align-items: center;
-        &:before {
-          content: '';
-          display: inline-block;
-          width: 1em;
-          height: 1em;
-          background-image: url('assets/images/megaphone.svg');
-          background-size: contain;
-          margin-right: 0.2em;
-        }
-      }
-
-      div.notice-body {
-        padding: 0 .5em;
-      }
-
-      div.notice-action {
-        display: flex;
-        justify-content: end;
-
-        button {
-          color: #fefefe;
-          background: #222;
-          border: none;
-          border-radius: 20px;
-          padding: 5px 10px;
-          position: relative;
-          overflow: hidden;
-          width: 50%;
-          height: 50px;
-
-          &:active:after {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-          }
-        }
-      }
-    }
-
-    #donate {
-      position: fixed;
-      bottom: calc(160px + 1.5rem);
-      left: 1rem;
-      z-index: 999;
-      visibility: visible;
-      opacity: 1;
-      transition: visibility 0s, opacity 1s linear;
-
-      &.hide {
-        opacity: 0;
-        visibility: hidden;
-      }
-    }
-
-    @media screen and (max-width: 750px) {
-      #donate {
-        bottom: 2rem;
-      }
-
-      #settings {
-        bottom: calc(2.5rem + 60px);
-        display: block;
-        min-width: 0;
-        max-width: 100%;
-        width: calc(100% - 2rem);
-        overflow: hidden;
-        opacity: 1;
-        visibility: visible;
-        transition: visibility 0s, opacity 1s linear;
-
-        &.hide {
-          opacity: 0;
-          visibility: hidden;
-        }
-
-        div.right div.row {
-          height: auto;
-          display: block;
-          border-bottom: 1px solid #555;
-          padding: .5rem 0;
-
-          label {
-            width: 100%;
-            margin-bottom: .5rem;
-            padding-left: 0;
-            display: block;
-          }
-
-          .icon {
-            width: 15px;
-            height: 15px;
-          }
-        }
-      }
-
-
-      #notice {
-        position: fixed;
-        box-sizing: border-box;
-        top: 0;
-        left: 0;
-        width: 100%;
-        max-width: 100%;
-        height: 100%;
-        transform: none;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 4px;
-        z-index: 1001;
-        padding: 5px 10px;
-        color: #333;
-        display: none;
-        flex-direction: column;
-
-        div.notice-body {
-          flex-grow: 1;
-        }
-
-      }
-    }
-  </style>
 </head>
 <body>
 <script type="module" src="./src/index.ts"></script>
@@ -490,10 +87,10 @@
 
   function setWinnerRank(rank) {
     document.querySelector('#in_winningRank').value = rank;
-    window.options.winningRank = rank - 1; // Keep local option state for now
+    window.options.winningRank = rank; // Store 1-based rank
     // window.roullete.setWinningRank(window.options.winningRank); // Replaced with socket emit
     if (window.socketService) {
-      window.socketService.setWinningRank(window.options.winningRank); // Send rank (0-based index)
+      window.socketService.setWinningRank(rank - 1); // Send 0-based rank to server
     } else {
       console.error('socketService not available');
     }
@@ -619,10 +216,9 @@
 
     document.querySelector('#in_winningRank').addEventListener('change', (e) => {
       const v = parseInt(e.target.value, 10);
+      const newRank = isNaN(v) || v < 1 ? 1 : v; // Ensure rank is at least 1
       winnerType = 'custom';
-      // setWinnerRank will handle the socket emit
-      setWinnerRank(isNaN(v) ? 1 : v); // Send 1-based rank, backend expects 0-based? Check gateway. Gateway uses rank directly. Let's send 1-based for now. No, send 0-based.
-      setWinnerRank(isNaN(v) ? 0 : v - 1);
+      setWinnerRank(newRank); // Call with 1-based rank
     });
 
     document.querySelector('.btn-last-winner').addEventListener('click', () => {
@@ -634,8 +230,8 @@
       // TODO: Get total count from server state via socketService
       console.warn("Setting winner to 'last' requires total count from server state.");
       const currentTotal = window.roullete?.getCount() ?? 1; // Temporary fallback
-      winnerType = 'last';
-      setWinnerRank(currentTotal > 0 ? currentTotal - 1 : 0); // Send 0-based rank
+      winnerType = 'last'; // Set type before calling setWinnerRank
+      setWinnerRank(currentTotal > 0 ? currentTotal : 1); // Call with 1-based rank (total count)
     });
     document.querySelector('.btn-first-winner').addEventListener('click', () => {
       winnerType = 'first';
