@@ -44,8 +44,24 @@ export const register = async (username: string, password_hash: string, nickname
 // 필요한 다른 API 호출 함수들을 여기에 추가할 수 있습니다.
 // 예: 방 생성, 게임 시작 등
 
+// 백엔드의 GetRoomResponseDto 와 유사한 프론트엔드용 타입
+interface RoomDetails {
+  id: number;
+  name: string;
+  managerId: number;
+  createdAt: string; // Date 타입은 string으로 받을 수 있음
+  updatedAt: string;
+  // 필요에 따라 다른 필드 추가
+}
+
+export const getRoomDetails = async (roomId: number): Promise<RoomDetails> => {
+  const response = await apiClient.get<RoomDetails>(`/rooms/${roomId}`);
+  return response.data;
+};
+
+
 interface Room {
-  id: string;
+  id: number; // id 타입을 number로 변경 (백엔드와 일치)
   name: string;
   // 백엔드에서 반환하는 방 객체의 다른 속성들을 여기에 추가할 수 있습니다.
 }

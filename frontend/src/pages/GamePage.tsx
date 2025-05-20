@@ -4,6 +4,8 @@ import '../styles.css'; // 전역 스타일 import
 import { Roulette } from '../roulette';
 import socketService from '../services/socketService'; // 경로 변경
 import options from '../options'; // 실제 인스턴스 사용
+import { getRoomDetails } from '../services/api'; // getRoomDetails 임포트 추가
+import { useAuth } from '../contexts/AuthContext'; // useAuth 임포트 추가
 // GameState 등의 타입은 roulette.ts나 socketService에서 가져오므로 여기서 직접 임포트 불필요할 수 있음
 // 필요하다면 import { GameState, MapInfo } from '../types/gameTypes'; 추가
 import { TranslatedLanguages, TranslationKeys, Translations } from '../data/languages'; // localization.ts에서 가져옴
@@ -38,9 +40,12 @@ const GamePage: React.FC = () => {
   // React에서는 이런 변수들을 useState로 관리하는 것이 일반적입니다.
   // 예를 들어:
   const [winnerSelectionType, setWinnerSelectionType] = useState('first');
+  const [isManager, setIsManager] = useState(false); // 매니저 상태 추가
+  const [roomName, setRoomName] = useState<string | null>(null); // 방 이름 상태 추가
 
   // For localization
   const [currentLocale, setCurrentLocale] = useState<TranslatedLanguages>('en');
+  const { user } = useAuth(); // AuthContext에서 사용자 정보 가져오기
 
   useEffect(() => {
     let rouletteInstance: Roulette | null = null; // Roulette 인스턴스를 저장할 변수
@@ -281,10 +286,40 @@ const GamePage: React.FC = () => {
           .connect(roomId)
           .then(() => {
             console.log(`GamePage: Successfully connected to socket for room ${roomId}`);
+
+            // roomId가 유효하면 방 정보 가져오기 (로그인 여부와 무관)
+            const numericRoomId = parseInt(roomId, 10);
+            if (!isNaN(numericRoomId)) {
+              getRoomDetails(numericRoomId)
+                .then((roomDetails) => {
+                  setRoomName(roomDetails.name); // 방 이름 설정
+
+                  // 매니저 상태 확인 (로그인한 경우에만)
+                  const currentUser = user; // useEffect 실행 시점의 user 값을 사용
+                  if (currentUser && roomDetails.managerId === currentUser.id) {
+                    setIsManager(true);
+                    console.log('GamePage: Current user is the manager.');
+                  } else {
+                    setIsManager(false);
+                    console.log('GamePage: Current user is not the manager or user not logged in.');
+                  }
+                })
+                .catch((apiError) => {
+                  console.error('GamePage: Failed to fetch room details:', apiError);
+                  // API 호출 실패 시 기본값 설정 또는 오류 처리
+                  setRoomName('Error loading room');
+                  setIsManager(false);
+                });
+            } else {
+              console.error('GamePage: Invalid Room ID format:', roomId);
+              setRoomName('Invalid Room ID');
+              setIsManager(false); // ID 형식이 잘못된 경우
+            }
+
             // 소켓 연결 및 방 참여 성공 후 초기 셔플 실행
             btnShuffleEl?.dispatchEvent(new Event('click')); // Initial shuffle
           })
-          .catch((error) => {
+          .catch((error: any) => {
             console.error(`GamePage: Failed to connect to socket for room ${roomId}`, error);
             alert(error.message || '방 입장에 실패했습니다. 이전 페이지로 돌아갑니다.');
             navigate(-1); // 이전 페이지로 이동, 또는 navigate('/') 등으로 특정 페이지 지정
@@ -338,9 +373,11 @@ const GamePage: React.FC = () => {
 
       // GameState 업데이트 처리
       // let unsubscribeGameState: (() => void) | undefined; // useEffect 스코프로 이동
-      if (socketService && rouletteInstance) { // window.roullete 대신 rouletteInstance 사용
+      if (socketService && rouletteInstance) {
+        // window.roullete 대신 rouletteInstance 사용
         unsubscribeGameState = socketService.onGameStateUpdate((gameState) => {
-          if (rouletteInstance) { // window.roullete 대신 rouletteInstance 사용
+          if (rouletteInstance) {
+            // window.roullete 대신 rouletteInstance 사용
             rouletteInstance.updateStateFromServer(gameState);
 
             const inGameDiv = document.querySelector('#inGame');
@@ -354,7 +391,8 @@ const GamePage: React.FC = () => {
       if (chkAutoRecordingElFromRef) {
         // chkAutoRecordingElFromRef null 체크
         chkAutoRecordingElFromRef.addEventListener('change', handleAutoRecordingChange);
-        if (window.options && rouletteInstance) { // window.roullete 대신 rouletteInstance 사용
+        if (window.options && rouletteInstance) {
+          // window.roullete 대신 rouletteInstance 사용
           chkAutoRecordingElFromRef.checked = window.options.autoRecording;
           rouletteInstance.setAutoRecording(window.options.autoRecording); // window.roullete 대신 rouletteInstance 사용
         }
@@ -457,7 +495,8 @@ const GamePage: React.FC = () => {
 
       document.documentElement.lang = originalDocumentLang;
     };
-  }, [roomId]); // roomId가 변경되면 useEffect를 다시 실행 (방 변경 시 소켓 재연결 등)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, user]); // roomId 또는 user가 변경되면 useEffect를 다시 실행
 
   // BuyMeACoffee 스크립트 로딩
   useEffect(() => {
@@ -492,6 +531,11 @@ const GamePage: React.FC = () => {
 
   return (
     <>
+      <div className="game-top-bar">
+        <span className="room-name">{roomName || 'Loading room...'}</span>
+        {isManager && <span className="manager-icon" title="Manager">👑</span>}
+        <span className="user-nickname">{user?.nickname || '익명 유저'}</span> {/* 로그인 안했으면 '익명 유저' 표시 */}
+      </div>
       {/*
         <head> 내부의 link 태그 및 meta 태그들은 public/index.html에 유지하는 것이 일반적입니다.
         React 컴포넌트는 주로 <body> 내부의 내용을 렌더링합니다.
@@ -501,7 +545,7 @@ const GamePage: React.FC = () => {
         여기서는 gtag 초기화는 useEffect에서 처리했습니다.
       */}
 
-      <div id="settings" className="settings">
+      <div id="settings" className="settings" style={{ display: isManager ? 'block' : 'none' }}>
         <div className="right">
           <div className="row">
             <label>
@@ -580,13 +624,11 @@ const GamePage: React.FC = () => {
       </div>
 
       <div id="donate">{/* BuyMeACoffee 버튼 스크립트가 여기에 동적으로 삽입됩니다. */}</div>
-
       <div id="inGame" className="settings hide">
         <button id="btnShake" data-trans>
           Shake!
         </button>
       </div>
-
       <div id="notice" style={{ display: 'none' }}>
         {' '}
         {/* 초기 상태는 none으로 */}
@@ -613,7 +655,6 @@ const GamePage: React.FC = () => {
           </button>
         </div>
       </div>
-
       <div className="copyright">
         &copy; 2025.
         <a href="https://lazygyu.net" target="_blank" rel="noopener noreferrer">
@@ -626,7 +667,11 @@ const GamePage: React.FC = () => {
       {/* 
         Roulette 게임 캔버스는 이제 아래 div#roulette-canvas-container 내부에 생성됩니다.
       */}
-      <div id="roulette-canvas-container" ref={rouletteCanvasContainerRef} style={{ width: '100%', height: '100%', position: 'fixed', top: 0, left: 0 }} />
+      <div
+        id="roulette-canvas-container"
+        ref={rouletteCanvasContainerRef}
+        style={{ width: '100%', height: '100%', position: 'fixed', top: 0, left: 0 }}
+      />
     </>
   );
 };

@@ -23,7 +23,7 @@ export class AuthService {
   }
 
   async login(user: User) {
-    const payload = { username: user.username, sub: user.id };
+    const payload = { username: user.username, sub: user.id, nickname: user.nickname }; // Add nickname to payload
     return {
       access_token: this.jwtService.sign(payload),
       nickname: user.nickname, // 사용자 닉네임을 응답에 추가
