@@ -43,3 +43,14 @@ export const register = async (username: string, password_hash: string, nickname
 
 // 필요한 다른 API 호출 함수들을 여기에 추가할 수 있습니다.
 // 예: 방 생성, 게임 시작 등
+
+interface Room {
+  id: string;
+  name: string;
+  // 백엔드에서 반환하는 방 객체의 다른 속성들을 여기에 추가할 수 있습니다.
+}
+
+export const createRoom = async (name: string, password?: string): Promise<Room> => {
+  const response = await apiClient.post<Room>('/rooms', { name, password });
+  return response.data;
+};
