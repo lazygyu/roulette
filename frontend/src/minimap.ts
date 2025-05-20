@@ -4,8 +4,7 @@ import { UIObject } from './UIObject';
 import { bound } from './utils/bound.decorator';
 import { Rect } from './types/rect.type';
 import { VectorLike } from './types/VectorLike';
-import { MapEntityState } from './types/MapEntityState.type'; // Corrected import path if needed
-import { MarbleState } from './types/MarbleState.type'; // Import MarbleState
+import { MapEntityState, MarbleState } from './types/gameTypes'; // Import types from gameTypes
 
 export class Minimap implements UIObject {
   private ctx!: CanvasRenderingContext2D;

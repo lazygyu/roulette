@@ -1,5 +1,5 @@
 // import { Marble } from './marble'; // No longer using Marble class instance
-import { MarbleState } from './types/MarbleState.type'; // Use MarbleState type instead
+import { MarbleState } from './types/gameTypes'; // Use MarbleState type from gameTypes
 import { StageDef } from './data/maps';
 import { initialZoom, zoomThreshold } from './data/constants';
 import { VectorLike } from './types/VectorLike';

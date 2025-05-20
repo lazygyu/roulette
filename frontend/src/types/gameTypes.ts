@@ -49,7 +49,7 @@ export interface MapEntityState {
   y: number;
   angle: number; // 물리 엔진에서 계산된 엔티티 몸체의 현재 각도
   shape: EntityShape;
-  // life: number; // 백엔드에서 life 속성을 보낸다면 추가
+  life: number; // 백엔드에서 life 속성을 보낸다면 추가
 }
 
 export interface GameState {
