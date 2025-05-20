@@ -43,7 +43,11 @@ export class RouletteRenderer {
     return this._canvas;
   }
 
-  async init() {
+  async init(container: HTMLElement) {
+    if (!container) {
+      console.error('RouletteRenderer init: container is null or undefined.');
+      throw new Error('Container element is required for RouletteRenderer initialization.');
+    }
     await this._load();
 
     this._canvas = document.createElement('canvas');
@@ -53,7 +57,7 @@ export class RouletteRenderer {
       alpha: false,
     }) as CanvasRenderingContext2D;
 
-    document.body.appendChild(this._canvas);
+    container.appendChild(this._canvas); // Use the provided container
 
     const resizing = (entries?: ResizeObserverEntry[]) => {
       const realSize = entries ? entries[0].contentRect : this._canvas.getBoundingClientRect();

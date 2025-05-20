@@ -93,14 +93,18 @@ export class Roulette extends EventTarget {
 
   constructor() {
     super();
-    // Initialize renderer first
-    this._renderer.init().then(() => {
-      this._init().then(() => {
-        // _init no longer initializes physics
-        this._isReady = true; // Indicates renderer is ready
-        this._update(); // Start the render loop
-      });
-    });
+    // Renderer initialization will be handled by a separate public method
+  }
+
+  public async initialize(container: HTMLElement): Promise<void> {
+    if (!container) {
+      console.error('Roulette initialize: container is null or undefined.');
+      throw new Error('Container element is required for Roulette initialization.');
+    }
+    await this._renderer.init(container);
+    await this._init(); // _init no longer initializes physics
+    this._isReady = true; // Indicates renderer and roulette logic are ready
+    this._update(); // Start the render loop
   }
 
   public getZoom() {

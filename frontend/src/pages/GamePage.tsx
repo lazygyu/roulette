@@ -29,6 +29,7 @@ const GamePage: React.FC = () => {
   const chkSkillRef = useRef<HTMLInputElement>(null);
   const sltMapRef = useRef<HTMLSelectElement>(null);
   const chkAutoRecordingRef = useRef<HTMLInputElement>(null);
+  const rouletteCanvasContainerRef = useRef<HTMLDivElement>(null); // 캔버스 컨테이너 Ref 추가
 
   // 'ready'와 'winnerType'은 상태로 관리하는 것이 더 React 방식에 맞지만,
   // 기존 코드의 직접적인 포팅을 위해 일단 변수로 유지하고, 필요시 상태로 전환할 수 있습니다.
@@ -42,10 +43,10 @@ const GamePage: React.FC = () => {
   const [currentLocale, setCurrentLocale] = useState<TranslatedLanguages>('en');
 
   useEffect(() => {
-    let rouletteInstance: Roulette | null = null;
+    let rouletteInstance: Roulette | null = null; // Roulette 인스턴스를 저장할 변수
     let originalDocumentLang = document.documentElement.lang;
     let donateButtonCheckTimeoutId: NodeJS.Timeout | undefined;
-    let readyCheckTimeoutId: NodeJS.Timeout | undefined;
+    // let readyCheckTimeoutId: NodeJS.Timeout | undefined; // polling 방식 제거
 
     // 구독 해제 함수들을 저장할 변수들
     let unsubscribeMaps: (() => void) | undefined;
@@ -218,10 +219,10 @@ const GamePage: React.FC = () => {
     // --- Initialization Function (now split into parts) ---
 
     // Part 1: One-time setup of window objects and non-DOM related initializations
-    rouletteInstance = new Roulette(); // Create instance once
-    window.roullete = rouletteInstance;
+    // rouletteInstance = new Roulette(); // 인스턴스 생성은 아래 initializeRouletteAndGame 내에서 수행
+    // window.roullete = rouletteInstance; // window.roullete 할당도 initializeRouletteAndGame 내에서 수행
     // window.socketService = socketService; // 더 이상 전역에 할당하지 않음
-    window.options = options;
+    window.options = options; // options는 유지
 
     window.dataLayer = window.dataLayer || [];
     function gtagForPage(...args: any[]) {
@@ -278,7 +279,11 @@ const GamePage: React.FC = () => {
       if (roomId && socketService) {
         socketService
           .connect(roomId)
-          .then(() => console.log(`GamePage: Successfully connected to socket for room ${roomId}`))
+          .then(() => {
+            console.log(`GamePage: Successfully connected to socket for room ${roomId}`);
+            // 소켓 연결 및 방 참여 성공 후 초기 셔플 실행
+            btnShuffleEl?.dispatchEvent(new Event('click')); // Initial shuffle
+          })
           .catch((error) => {
             console.error(`GamePage: Failed to connect to socket for room ${roomId}`, error);
             alert(error.message || '방 입장에 실패했습니다. 이전 페이지로 돌아갑니다.');
@@ -333,10 +338,10 @@ const GamePage: React.FC = () => {
 
       // GameState 업데이트 처리
       // let unsubscribeGameState: (() => void) | undefined; // useEffect 스코프로 이동
-      if (socketService && window.roullete) {
+      if (socketService && rouletteInstance) { // window.roullete 대신 rouletteInstance 사용
         unsubscribeGameState = socketService.onGameStateUpdate((gameState) => {
-          if (window.roullete) {
-            window.roullete.updateStateFromServer(gameState);
+          if (rouletteInstance) { // window.roullete 대신 rouletteInstance 사용
+            rouletteInstance.updateStateFromServer(gameState);
 
             const inGameDiv = document.querySelector('#inGame');
             if (inGameDiv) {
@@ -349,9 +354,9 @@ const GamePage: React.FC = () => {
       if (chkAutoRecordingElFromRef) {
         // chkAutoRecordingElFromRef null 체크
         chkAutoRecordingElFromRef.addEventListener('change', handleAutoRecordingChange);
-        if (window.options && window.roullete) {
+        if (window.options && rouletteInstance) { // window.roullete 대신 rouletteInstance 사용
           chkAutoRecordingElFromRef.checked = window.options.autoRecording;
-          window.roullete.setAutoRecording(window.options.autoRecording);
+          rouletteInstance.setAutoRecording(window.options.autoRecording); // window.roullete 대신 rouletteInstance 사용
         }
       }
 
@@ -378,24 +383,39 @@ const GamePage: React.FC = () => {
       openNoticeButtonEl?.addEventListener('click', handleOpenNotice);
       checkNotice();
 
-      btnShuffleEl?.dispatchEvent(new Event('click')); // Initial shuffle
+      // btnShuffleEl?.dispatchEvent(new Event('click')); // Initial shuffle - 위쪽 .then() 블록으로 이동
     };
 
-    // Part 3: Polling function to check if roulette is ready
-    const checkRouletteReadyAndInitialize = () => {
-      if (window.roullete && window.roullete.isReady) {
-        setupGameInteractions();
+    // Part 3: Initialize Roulette and then setup game interactions
+    const initializeRouletteAndGame = async () => {
+      if (rouletteCanvasContainerRef.current) {
+        console.log('[GamePage] rouletteCanvasContainerRef.current is available. Initializing Roulette...');
+        rouletteInstance = new Roulette();
+        window.roullete = rouletteInstance; // window.roullete에 할당
+
+        try {
+          await rouletteInstance.initialize(rouletteCanvasContainerRef.current);
+          console.log('[GamePage] Roulette initialized successfully.');
+          setupGameInteractions(); // Roulette 초기화 성공 후 게임 상호작용 설정
+        } catch (error) {
+          console.error('[GamePage] Roulette initialization failed:', error);
+          // 사용자에게 오류 알림 또는 다른 오류 처리 로직
+          alert('게임 엔진 초기화에 실패했습니다. 페이지를 새로고침 해주세요.');
+        }
       } else {
-        console.log('roulette still not loaded (GamePage), retrying...');
-        readyCheckTimeoutId = setTimeout(checkRouletteReadyAndInitialize, 100);
+        console.error('[GamePage] rouletteCanvasContainerRef.current is null. Cannot initialize Roulette.');
+        // 이 경우, DOM이 아직 준비되지 않았을 수 있으므로, 재시도 로직 또는 오류 처리가 필요할 수 있습니다.
+        // 간단한 재시도를 위해 setTimeout을 사용할 수 있지만, React 생명주기를 고려한 더 나은 방법이 권장됩니다.
+        // 여기서는 일단 오류를 기록하고, 실제 프로덕션에서는 더 견고한 처리가 필요합니다.
+        setTimeout(initializeRouletteAndGame, 100); // 간단한 재시도
       }
     };
 
-    checkRouletteReadyAndInitialize(); // Start the check
+    initializeRouletteAndGame(); // Start the initialization process
 
     return () => {
-      console.log('Cleaning up GamePage effects');
-      if (readyCheckTimeoutId) clearTimeout(readyCheckTimeoutId);
+      console.log('[GamePage] useEffect cleanup function called.');
+      // if (readyCheckTimeoutId) clearTimeout(readyCheckTimeoutId); // polling 방식 제거
       if (donateButtonCheckTimeoutId) clearTimeout(donateButtonCheckTimeoutId);
 
       // 구독 해제 함수 호출
@@ -604,10 +624,9 @@ const GamePage: React.FC = () => {
         </span>
       </div>
       {/* 
-        Roulette 게임 캔버스는 rouletteRenderer.ts에서 document.body에 직접 추가됩니다.
-        이 부분은 React 컴포넌트 외부에서 관리되므로, GamePage.tsx에서 직접 렌더링하지 않습니다.
-        만약 캔버스를 React 컴포넌트 내에서 관리하려면, RouletteRenderer의 초기화 로직 수정이 필요합니다.
+        Roulette 게임 캔버스는 이제 아래 div#roulette-canvas-container 내부에 생성됩니다.
       */}
+      <div id="roulette-canvas-container" ref={rouletteCanvasContainerRef} style={{ width: '100%', height: '100%', position: 'fixed', top: 0, left: 0 }} />
     </>
   );
 };
