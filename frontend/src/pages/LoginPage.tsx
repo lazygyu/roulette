@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom'; // Link 임포트 추가
-import { login } from '../services/api'; // 수정된 API 서비스 import
+import { login as loginApi } from '../services/api'; // loginApi로 이름 변경하여 충돌 방지
+import { useAuth } from '../contexts/AuthContext'; // useAuth import
 
 function LoginPage() {
+  const { login: authLogin } = useAuth(); // AuthContext의 login 함수 사용
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -15,16 +17,11 @@ function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await login(username, password);
-      if (response.data && response.data.access_token && response.data.nickname) {
-        localStorage.setItem('access_token', response.data.access_token);
-        localStorage.setItem('user_nickname', response.data.nickname); // 닉네임 저장 추가
-        // 로그인 성공 후 사용자를 홈페이지 또는 다른 적절한 페이지로 리디렉션합니다.
-        // 예: navigate('/'); 또는 navigate('/create-room');
-        navigate('/'); // 홈페이지로 리디렉션 (예시)
-      } else {
-        setError('로그인에 실패했습니다. 응답 형식을 확인해주세요. (닉네임 정보 누락 가능성)');
-      }
+      // API 호출 시 loginApi 사용
+      const userData = await loginApi(username, password);
+      // AuthContext의 login 함수 호출하여 상태 업데이트 및 로컬 스토리지 저장
+      authLogin(userData);
+      navigate('/'); // 홈페이지로 리디렉션 (예시)
     } catch (err: any) {
       if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);

@@ -24,14 +24,21 @@ apiClient.interceptors.request.use(
 
 export default apiClient;
 
-export const login = async (username: string, password_hash: string) => {
+interface LoginResponse {
+  access_token: string;
+  nickname: string;
+}
+
+export const login = async (username: string, password_hash: string): Promise<LoginResponse> => {
   // 백엔드에서는 password를 직접 받지만, 여기서는 명확성을 위해 password_hash로 명명
   // 실제 전송 시에는 { username, password: password_hash } 형태로 전송
-  return apiClient.post('/auth/login', { username, password: password_hash });
+  const response = await apiClient.post<LoginResponse>('/auth/login', { username, password: password_hash });
+  return response.data; // 응답 데이터에서 access_token과 nickname을 직접 반환
 };
 
-export const register = async (username: string, password_hash: string, nickname: string) => { // nickname 인자 추가
-  return apiClient.post('/auth/register', { username, password: password_hash, nickname }); // nickname 전달
+export const register = async (username: string, password_hash: string, nickname: string): Promise<LoginResponse> => { // nickname 인자 추가
+  const response = await apiClient.post<LoginResponse>('/auth/register', { username, password: password_hash, nickname }); // nickname 전달
+  return response.data;
 };
 
 // 필요한 다른 API 호출 함수들을 여기에 추가할 수 있습니다.
