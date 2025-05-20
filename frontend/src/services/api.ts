@@ -44,29 +44,36 @@ export const register = async (username: string, password_hash: string, nickname
 // 필요한 다른 API 호출 함수들을 여기에 추가할 수 있습니다.
 // 예: 방 생성, 게임 시작 등
 
-// 백엔드의 GetRoomResponseDto 와 유사한 프론트엔드용 타입
-interface RoomDetails {
-  id: number;
-  name: string;
-  managerId: number;
-  createdAt: string; // Date 타입은 string으로 받을 수 있음
-  updatedAt: string;
-  // 필요에 따라 다른 필드 추가
-}
+import { RoomInfo, GameInfo, RankingEntry } from '../types/gameTypes'; // RoomInfo, GameInfo, RankingEntry 임포트
 
-export const getRoomDetails = async (roomId: number): Promise<RoomDetails> => {
-  const response = await apiClient.get<RoomDetails>(`/rooms/${roomId}`);
+// 기존 getRoomDetails는 방의 기본 정보만 가져오도록 유지하거나,
+// 또는 getRoomBaseInfo 등으로 명칭 변경 고려
+export const getRoomDetails = async (roomId: number): Promise<RoomInfo> => {
+  const response = await apiClient.get<RoomInfo>(`/rooms/${roomId}`);
+  return response.data;
+};
+
+// 새로운 함수: 방의 게임 상세 정보 가져오기
+export const getRoomGameDetails = async (roomId: number): Promise<GameInfo> => {
+  const response = await apiClient.get<GameInfo>(`/rooms/${roomId}/game`);
+  return response.data;
+};
+
+// 새로운 함수: 게임 랭킹 정보 가져오기
+export const getGameRanking = async (roomId: number): Promise<{ rankings: RankingEntry[] }> => {
+  const response = await apiClient.get<{ rankings: RankingEntry[] }>(`/rooms/${roomId}/ranking`);
   return response.data;
 };
 
 
-interface Room {
-  id: number; // id 타입을 number로 변경 (백엔드와 일치)
-  name: string;
-  // 백엔드에서 반환하는 방 객체의 다른 속성들을 여기에 추가할 수 있습니다.
+interface CreateRoomResponse extends Omit<RoomInfo, 'game' | 'manager'> {
+  // createRoom 응답은 manager 객체를 포함하지만, game은 포함하지 않음
+  // 필요시 manager 타입도 명시적으로 정의
+  managerId: number; // manager 객체 대신 managerId만 받을 경우
 }
 
-export const createRoom = async (name: string, password?: string): Promise<Room> => {
-  const response = await apiClient.post<Room>('/rooms', { name, password });
+
+export const createRoom = async (name: string, password?: string): Promise<CreateRoomResponse> => {
+  const response = await apiClient.post<CreateRoomResponse>('/rooms', { name, password });
   return response.data;
 };

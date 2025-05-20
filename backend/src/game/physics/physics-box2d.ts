@@ -11,6 +11,7 @@ export class Box2dPhysics implements IPhysics {
   private Box2D!: any; // typeof Box2D & EmscriptenModule;
   private gravity!: any; // Box2D.b2Vec2;
   private world!: any; // Box2D.b2World;
+  private initialized: boolean = false;
 
   private marbleMap: { [id: number]: any } = {}; // Box2D.b2Body
   private entities: ({ body: any } & MapEntityState)[] = []; // Box2D.b2Body
@@ -25,6 +26,7 @@ export class Box2dPhysics implements IPhysics {
       
       this.gravity = new this.Box2D.b2Vec2(0, 10);
       this.world = new this.Box2D.b2World(this.gravity);
+      this.initialized = true; // 초기화 완료 플래그 설정
       console.log('box2d ready');
     } catch (error) {
       console.error('Box2D 초기화 실패:', error);
@@ -230,6 +232,10 @@ export class Box2dPhysics implements IPhysics {
     });
     this.deleteCandidates = [];
 
+    if (!this.initialized || !this.world) {
+      // console.warn('Box2D world not initialized, skipping step.');
+      return;
+    }
     this.world.Step(deltaSeconds, 6, 2);
 
     for (let i = this.entities.length - 1; i >= 0; i--) {

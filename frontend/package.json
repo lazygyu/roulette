@@ -22,7 +22,7 @@
     "web-vitals": "^2.1.0"
   },
   "scripts": {
-    "start": "DISABLE_ESLINT_PLUGIN=true ESLINT_NO_DEV_ERRORS=true react-scripts start",
+    "start": "BROWSER=none DISABLE_ESLINT_PLUGIN=true ESLINT_NO_DEV_ERRORS=true react-scripts start",
     "build": "DISABLE_ESLINT_PLUGIN=true ESLINT_NO_DEV_ERRORS=true react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
