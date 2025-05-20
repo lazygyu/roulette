@@ -28,7 +28,6 @@ export class Roulette extends EventTarget {
   private _totalMarbleCount = 0;
   private _shakeAvailable: boolean = false;
 
-
   // Keep rendering related state and objects
   private _lastTime: number = 0; // Still needed for animation frame timing? Maybe not if rendering is purely state-driven. Keep for now.
   private _elapsed: number = 0; // Keep for timing particle/effect updates
@@ -80,23 +79,24 @@ export class Roulette extends EventTarget {
     // The renderer will pick up these state changes in the next frame.
 
     // Handle game over state change specifically if needed (e.g., showing settings)
-    if (!this._isRunning && this._winner) { // Check if game just ended
-        // Use timeout to allow final render/animation?
-        setTimeout(() => {
-            const settingsDiv = document.querySelector('#settings');
-            const donateDiv = document.querySelector('#donate');
-            if (settingsDiv) settingsDiv.classList.remove('hide');
-            if (donateDiv) donateDiv.classList.remove('hide');
-        }, 1500); // Delay showing settings after game over
+    if (!this._isRunning && this._winner) {
+      // Check if game just ended
+      // Use timeout to allow final render/animation?
+      setTimeout(() => {
+        const settingsDiv = document.querySelector('#settings');
+        const donateDiv = document.querySelector('#donate');
+        if (settingsDiv) settingsDiv.classList.remove('hide');
+        if (donateDiv) donateDiv.classList.remove('hide');
+      }, 1500); // Delay showing settings after game over
     }
   }
-
 
   constructor() {
     super();
     // Initialize renderer first
     this._renderer.init().then(() => {
-      this._init().then(() => { // _init no longer initializes physics
+      this._init().then(() => {
+        // _init no longer initializes physics
         this._isReady = true; // Indicates renderer is ready
         this._update(); // Start the render loop
       });
@@ -129,12 +129,12 @@ export class Roulette extends EventTarget {
 
     // Remove local physics step and state update loop
     // while (this._elapsed >= this._updateInterval) {
-      // this.physics.step(interval); // REMOVED
-      // this._updateMarbles(this._updateInterval); // REMOVED - State comes from server
-      // Keep particle/effect updates if they are purely visual and driven by time
-      this._particleManager.update(currentTime - this._lastTime); // Update based on actual elapsed time
-      this._updateEffects(currentTime - this._lastTime); // Update based on actual elapsed time
-      // this._elapsed -= this._updateInterval; // No longer needed
+    // this.physics.step(interval); // REMOVED
+    // this._updateMarbles(this._updateInterval); // REMOVED - State comes from server
+    // Keep particle/effect updates if they are purely visual and driven by time
+    this._particleManager.update(currentTime - this._lastTime); // Update based on actual elapsed time
+    this._updateEffects(currentTime - this._lastTime); // Update based on actual elapsed time
+    // this._elapsed -= this._updateInterval; // No longer needed
     // }
     this._uiObjects.forEach((obj) => obj.update(currentTime - this._lastTime)); // Update UI objects
 
@@ -159,7 +159,7 @@ export class Roulette extends EventTarget {
         marbles: this._marbles, // Pass MarbleState[]
         stage: this._stage,
         needToZoom: false, // Set explicitly to false
-        targetIndex: this._winnerRank - this._winners.length // Use server state for target index
+        targetIndex: this._winnerRank - this._winners.length, // Use server state for target index
       });
 
       // Shake available logic is driven by server state (_shakeAvailable property)
@@ -206,15 +206,17 @@ export class Roulette extends EventTarget {
     };
     // Log the parameters being sent to the renderer for debugging
     // console.log('Render Params:', JSON.stringify(renderParams)); // Use stringify for deep logging, might be too verbose
-    if (this._marbles.length > 0 || this._mapEntitiesState.length > 0) { // Log only when there's something to render
-        console.log(`Rendering state: ${this._marbles.length} marbles, ${this._mapEntitiesState.length} entities`); // Uncommented log
+    if (this._marbles.length > 0 || this._mapEntitiesState.length > 0) {
+      // Log only when there's something to render
+      // console.log(`Rendering state: ${this._marbles.length} marbles, ${this._mapEntitiesState.length} entities`); // Uncommented log
     }
 
     // Assuming RouletteRenderer is updated to handle MarbleState[] and MapEntityState[]
     this._renderer.render(renderParams, this._uiObjects);
   }
 
-  private async _init() { // Make _init synchronous as physics init is removed
+  private async _init() {
+    // Make _init synchronous as physics init is removed
     this._recorder = new VideoRecorder(this._renderer.canvas);
 
     // Remove physics initialization
@@ -326,8 +328,8 @@ export class Roulette extends EventTarget {
   }
 
   // private _clearMap() {
-    // this.physics.clear(); // REMOVED
-    // this._marbles = []; // State managed by server
+  // this.physics.clear(); // REMOVED
+  // this._marbles = []; // State managed by server
   // }
 
   public reset() {
@@ -372,15 +374,15 @@ export class Roulette extends EventTarget {
     console.log(`Set map requested: ${index} (handled by socketService)`);
     // Update local stage definition for renderer immediately? Yes.
     if (index >= 0 && index < stages.length) {
-        this._stage = stages[index];
-        this._loadMap(); // Reload local stage visuals
-        // Clear local state representation? Wait for server update.
-        this._marbles = [];
-        this._winners = [];
-        this._winner = null;
-        this._mapEntitiesState = [];
+      this._stage = stages[index];
+      this._loadMap(); // Reload local stage visuals
+      // Clear local state representation? Wait for server update.
+      this._marbles = [];
+      this._winners = [];
+      this._winner = null;
+      this._mapEntitiesState = [];
     } else {
-        console.error('Invalid map index for local stage update:', index);
+      console.error('Invalid map index for local stage update:', index);
     }
   }
 }
