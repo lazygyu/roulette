@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // Link 임포트 추가
 import { login } from '../services/api'; // 수정된 API 서비스 import
 
 function LoginPage() {
@@ -67,7 +67,7 @@ function LoginPage() {
         </button>
       </form>
       {/* (선택 사항) 회원가입 페이지로 이동하는 링크 */}
-      {/* <p>계정이 없으신가요? <Link to="/register">회원가입</Link></p> */}
+      <p>계정이 없으신가요? <Link to="/register">회원가입</Link></p>
     </div>
   );
 }
