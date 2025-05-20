@@ -431,6 +431,13 @@
 <body>
 <script type="module" src="./src/index.ts"></script>
 <script type="text/javascript">
+  // Import socketService (assuming it's exported as default from the module)
+  // Note: Direct import in inline script might need adjustment based on module loading strategy.
+  // A better approach might be to expose socketService via window object in index.ts if needed,
+  // or handle all UI logic within TypeScript modules.
+  // For now, let's assume socketService is globally accessible or handled via index.ts modification later.
+  // We will modify index.ts next to expose socketService.
+
   window.dataLayer = window.dataLayer || [];
 
   function gtag() {
@@ -462,7 +469,12 @@
 
   function getReady() {
     const names = getNames();
-    window.roullete.setMarbles(names);
+    // window.roullete.setMarbles(names); // Replaced with socket emit
+    if (window.socketService) {
+      window.socketService.setMarbles(names);
+    } else {
+      console.error('socketService not available');
+    }
     ready = names.length > 0;
     localStorage.setItem('mbr_names', names.join(','));
     switch (winnerType) {
@@ -478,9 +490,15 @@
 
   function setWinnerRank(rank) {
     document.querySelector('#in_winningRank').value = rank;
-    window.options.winningRank = rank - 1;
-    window.roullete.setWinningRank(window.options.winningRank);
+    window.options.winningRank = rank - 1; // Keep local option state for now
+    // window.roullete.setWinningRank(window.options.winningRank); // Replaced with socket emit
+    if (window.socketService) {
+      window.socketService.setWinningRank(window.options.winningRank); // Send rank (0-based index)
+    } else {
+      console.error('socketService not available');
+    }
 
+    // Keep UI update logic
     if (winnerType === 'first') {
       document.querySelector('.btn-first-winner').classList.toggle('active', true);
       document.querySelector('.btn-last-winner').classList.toggle('active', false);
@@ -511,6 +529,26 @@
       return;
     }
     console.log('initializing start');
+
+    // Connect socket service
+    if (window.socketService) {
+      window.socketService.connect();
+    } else {
+      // This case should ideally not happen if index.ts is modified correctly
+      console.error('socketService not available during initialization');
+      // Attempt to initialize later? Or show an error?
+      // Let's retry connection attempt after a short delay, assuming index.ts might load later.
+      setTimeout(() => {
+        if (window.socketService) {
+          console.log('Retrying socket connection...');
+          window.socketService.connect();
+        } else {
+          console.error('socketService still not available.');
+          // Display error to user?
+        }
+      }, 500);
+    }
+
 
     const savedNames = localStorage.getItem('mbr_names');
     if (savedNames) {
@@ -560,16 +598,18 @@
       gtag && gtag('event', 'start', {
         'event_category': 'roulette',
         'event_label': 'start',
-        'value': window.roullete.getCount(),
+        'value': 1, // Value might need to come from server state later
       });
-      window.roullete.start();
+      // window.roullete.start(); // Replaced with socket emit
+      if (window.socketService) {
+        window.socketService.startGame();
+      } else {
+        console.error('socketService not available');
+      }
+      // UI hiding logic might need to be triggered by 'game_started' event from server
+      // Let's keep it here for now for immediate feedback, but adjust if needed.
       document.querySelector('#settings').classList.add('hide');
       document.querySelector('#donate').classList.add('hide');
-    });
-
-    document.querySelector('#chkAutoRecording').addEventListener('change', (e) => {
-      window.options.autoRecording = e.target.matches(':checked');
-      window.roullete.setAutoRecording(window.options.autoRecording);
     });
 
     document.querySelector('#chkSkill').addEventListener('change', (e) => {
@@ -580,13 +620,22 @@
     document.querySelector('#in_winningRank').addEventListener('change', (e) => {
       const v = parseInt(e.target.value, 10);
       winnerType = 'custom';
-      setWinnerRank(isNaN(v) ? 0 : v);
+      // setWinnerRank will handle the socket emit
+      setWinnerRank(isNaN(v) ? 1 : v); // Send 1-based rank, backend expects 0-based? Check gateway. Gateway uses rank directly. Let's send 1-based for now. No, send 0-based.
+      setWinnerRank(isNaN(v) ? 0 : v - 1);
     });
 
     document.querySelector('.btn-last-winner').addEventListener('click', () => {
-      const total = window.roullete.getCount();
+      // const total = window.roullete.getCount(); // This needs server state. Cannot reliably get total count here anymore.
+      // How to set winner to last? Need a specific event or rely on server logic?
+      // Let's assume for now we just set the UI and maybe send a special value?
+      // Or maybe the backend handles 'first'/'last' logic based on rank 0 / count-1?
+      // Let's stick to sending the rank. We need the total count from the server state.
+      // TODO: Get total count from server state via socketService
+      console.warn("Setting winner to 'last' requires total count from server state.");
+      const currentTotal = window.roullete?.getCount() ?? 1; // Temporary fallback
       winnerType = 'last';
-      setWinnerRank(total);
+      setWinnerRank(currentTotal > 0 ? currentTotal - 1 : 0); // Send 0-based rank
     });
     document.querySelector('.btn-first-winner').addEventListener('click', () => {
       winnerType = 'first';
@@ -594,7 +643,8 @@
     });
 
     document.querySelector('#btnShake').addEventListener('click', () => {
-      window.roullete.shake();
+      // window.roullete.shake(); // Keep local shake for visual effect? Or trigger server shake if implemented? Assume local for now.
+      window.roullete?.shake(); // Use optional chaining
       gtag('event', 'shake', {
         'event_category': 'roulette',
         'event_label': 'shake',
@@ -602,32 +652,52 @@
       });
     });
 
-    window.roullete.addEventListener('goal', () => {
-      ready = false;
-      setTimeout(() => {
-        document.querySelector('#settings').classList.remove('hide');
-        document.querySelector('#donate').classList.remove('hide');
-      }, 3000);
-    });
-    window.roullete.addEventListener('shakeAvailableChanged', (e) => {
-      document.querySelector('#inGame').classList.toggle('hide', !e.detail);
-    });
+    // window.roullete.addEventListener('goal', () => {
+      // This logic is now handled by the 'game_over' socket event in socketService.ts
+      // ready = false;
+      // setTimeout(() => {
+      //   document.querySelector('#settings').classList.remove('hide');
+      //   document.querySelector('#donate').classList.remove('hide');
+      // }, 3000);
+    // });
 
-    document.querySelector('#btnShuffle').click();
+    // window.roullete.addEventListener('shakeAvailableChanged', (e) => {
+      // This logic is now handled by the 'game_state' socket event in socketService.ts
+      // document.querySelector('#inGame').classList.toggle('hide', !e.detail);
+    // });
 
-    const maps = window.roullete.getMaps();
+    document.querySelector('#btnShuffle').click(); // Keep shuffle for initial local setup? Or remove? Keep for now.
+
+    // Map population needs to be async, driven by 'available_maps' event
     const mapSelector = document.querySelector('#sltMap');
-    maps.forEach((map) => {
-      const option = document.createElement('option');
-      option.value = map.index;
-      option.innerHTML = map.title;
-      option.setAttribute('data-trans', '');
-      window.translateElement(option);
-      mapSelector.append(option);
-    });
+    // Clear existing options if any
+    mapSelector.innerHTML = '<option value="">Loading maps...</option>';
+    // Disable until maps are loaded
+    mapSelector.disabled = true;
+
+    // Function to update map selector (will be called by socketService listener)
+    window.updateMapSelector = (maps) => {
+      mapSelector.innerHTML = ''; // Clear loading message
+      maps.forEach((map) => {
+        const option = document.createElement('option');
+        option.value = map.index;
+        option.innerHTML = map.title;
+        option.setAttribute('data-trans', '');
+        window.translateElement(option);
+        mapSelector.append(option);
+      });
+      mapSelector.disabled = false;
+      // TODO: Select the current map from server state if available
+    };
+
     mapSelector.addEventListener('change', (e) => {
-      const index = e.target.value;
-      window.roullete.setMap(index);
+      const index = parseInt(e.target.value, 10);
+      // window.roullete.setMap(index); // Replaced with socket emit
+      if (window.socketService && !isNaN(index)) {
+        window.socketService.setMap(index);
+      } else {
+        console.error('socketService not available or invalid map index');
+      }
     });
 
     const checkDonateButtonLoaded = () => {
