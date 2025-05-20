@@ -11,14 +11,14 @@ import {
 import { Server, Socket } from 'socket.io';
 import { GameSessionService } from './game-session.service';
 import { GameEngineService } from './game-engine.service';
-import { Logger, UsePipes, ValidationPipe, UseGuards } from '@nestjs/common'; // UseGuards 임포트 추가
-import { PrismaService } from '../prisma/prisma.service';
+import { Logger, UsePipes, ValidationPipe, UseGuards } from '@nestjs/common';
 import { generateAnonymousNickname } from './utils/nickname.util';
 import { prefixRoomId, unprefixRoomId } from './utils/roomId.util';
-import { WsJwtAuthGuard } from '../auth/guards/ws-jwt-auth.guard'; // WsJwtAuthGuard 임포트
-import { SocketCurrentUser } from '../decorators/socket-user.decorator'; // SocketCurrentUser 임포트
-import { User } from '@prisma/client'; // User 임포트
-import { RoomsService } from '../rooms/rooms.service'; // RoomsService 임포트
+import { WsUserAttachedGuard } from '../auth/guards/ws-user-attached.guard';
+import { SocketCurrentUser } from '../decorators/socket-user.decorator';
+import { User } from '@prisma/client';
+import { RoomsService } from '../rooms/rooms.service';
+import { AuthService } from '../auth/auth.service'; // AuthService 임포트
 
 // DTO 임포트
 import { JoinRoomDto } from './dto/join-room.dto';
@@ -38,7 +38,9 @@ import { GetMapsDto } from './dto/get-maps.dto';
   },
   namespace: 'game',
 })
-@UsePipes(new ValidationPipe({ transform: true, whitelist: true, exceptionFactory: (errors) => new WsException(errors) })) // 게이트웨이 레벨에서 ValidationPipe 적용
+@UsePipes(
+  new ValidationPipe({ transform: true, whitelist: true, exceptionFactory: (errors) => new WsException(errors) }),
+) // 게이트웨이 레벨에서 ValidationPipe 적용
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(GameGateway.name);
 
@@ -48,19 +50,47 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly gameSessionService: GameSessionService,
     private readonly gameEngineService: GameEngineService,
-    private readonly prisma: PrismaService,
-    private readonly roomsService: RoomsService, // RoomsService 주입
+    private readonly roomsService: RoomsService,
+    private readonly authService: AuthService,
   ) {}
 
   afterInit() {
     this.logger.log('Game WebSocket Gateway 초기화 완료');
   }
 
-  handleConnection(client: Socket) {
-    this.logger.log(`새로운 클라이언트 연결: ${client.id} (${new Date().toLocaleString()})`);
+  async handleConnection(client: Socket) {
+    // client 타입을 Socket으로 변경
+    const token = client.handshake.auth.token || client.handshake.headers.authorization?.split(' ')[1];
+    this.logger.log(`새로운 클라이언트 연결 시도: ${client.id} (토큰 존재 여부: ${!!token})`);
+
+    if (token) {
+      try {
+        const user = await this.authService.getUserFromToken(token);
+        if (user) {
+          client.user = user; // 소켓에 사용자 정보 저장
+          this.logger.log(`클라이언트 ${user.nickname}(${client.id}) 인증 성공`);
+        } else {
+          this.logger.warn(`클라이언트 ${client.id} 인증 실패: 유효하지 않은 토큰 또는 사용자 없음`);
+          client.emit('auth_error', { message: '인증에 실패했습니다. 유효하지 않은 토큰입니다.' });
+          client.disconnect();
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(`클라이언트 ${client.id} 인증 중 오류 발생: ${message}`);
+        client.emit('auth_error', { message: `인증 중 오류 발생: ${message}` });
+        client.disconnect();
+      }
+    } else {
+      this.logger.log(`클라이언트 ${client.id} 익명으로 연결 (토큰 없음)`);
+      // 토큰 없이 연결하는 경우, 익명 사용자로 처리하거나 또는 연결을 거부할 수 있습니다.
+      // 현재 요구사항은 인증된 사용자만 특정 기능을 사용하도록 하는 것이므로,
+      // handleConnection에서는 토큰이 있는 경우에만 user를 할당합니다.
+      // 토큰이 없는 경우, WsUserAttachedGuard가 필요한 핸들러 접근을 막을 것입니다.
+    }
   }
 
   handleDisconnect(client: Socket) {
+    // client 타입을 Socket으로 변경
     this.logger.log(`클라이언트 연결 종료: ${client.id} (${new Date().toLocaleString()})`);
     const joinedPrefixedRoomIds = Array.from(client.rooms.values()).filter((room) => room !== client.id);
 
@@ -69,17 +99,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       try {
         roomId = unprefixRoomId(prefixedRoomId);
         const players = this.gameSessionService.getPlayers(roomId);
-        const player = players.find(p => p.id === client.id);
+        const player = players.find((p) => p.id === client.id);
         this.gameSessionService.removePlayer(roomId, client.id);
 
         client.to(prefixedRoomId).emit('player_left', {
           playerId: client.id,
           nickname: player?.userInfo.nickname || generateAnonymousNickname(client.id),
         });
-        this.logger.log(`방 ${prefixedRoomId}(${roomId})에서 플레이어 ${player?.userInfo.nickname || '익명'} (${client.id}) 퇴장`);
+        this.logger.log(
+          `방 ${prefixedRoomId}(${roomId})에서 플레이어 ${player?.userInfo.nickname || '익명'} (${client.id}) 퇴장`,
+        );
 
         if (this.gameEngineService.isLoopRunning(roomId)) {
-           this.logger.log(`Player left room ${prefixedRoomId}(${roomId}) while game loop was running.`);
+          this.logger.log(`Player left room ${prefixedRoomId}(${roomId}) while game loop was running.`);
         }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
@@ -92,9 +124,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: JoinRoomDto, // DTO 사용 (password 필드 포함)
+    @SocketCurrentUser() user: User, // 인증된 사용자 정보
   ) {
-    const { roomId, password, userInfo } = data; // password 추출
-    const finalUserInfo = userInfo || { nickname: generateAnonymousNickname(client.id) };
+    const { roomId, password } = data; // password 추출
+    const finalUserInfo = user || { nickname: generateAnonymousNickname(client.id) };
 
     let roomDetailsFromDb;
     try {
@@ -115,8 +148,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     // 비밀번호 검증
-    if (roomDetailsFromDb.password) { // 방에 비밀번호가 설정되어 있는 경우
-      if (!password) { // 클라이언트가 비밀번호를 보내지 않은 경우
+    if (roomDetailsFromDb.password) {
+      // 방에 비밀번호가 설정되어 있는 경우
+      if (!password) {
+        // 클라이언트가 비밀번호를 보내지 않은 경우
         this.logger.warn(`비밀번호가 필요한 방(ID: ${roomId})에 비밀번호 없이 접근 시도: ${client.id}`);
         throw new WsException('비밀번호가 필요합니다.');
       }
@@ -179,12 +214,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('leave_room')
-  handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() data: LeaveRoomDto) { // DTO 사용
+  handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() data: LeaveRoomDto) {
+    // DTO 사용
     const { roomId } = data;
     const prefixedRoomId = prefixRoomId(roomId);
     try {
       const players = this.gameSessionService.getPlayers(roomId);
-      const player = players.find(p => p.id === client.id);
+      const player = players.find((p) => p.id === client.id);
       const nickname = player?.userInfo.nickname || generateAnonymousNickname(client.id);
 
       client.leave(prefixedRoomId);
@@ -208,12 +244,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @UseGuards(WsJwtAuthGuard) // 가드 적용
+  @UseGuards(WsUserAttachedGuard) // 가드 변경
   @SubscribeMessage('set_marbles')
-  async handleSetMarbles( // async 추가
-    @ConnectedSocket() client: Socket,
+  async handleSetMarbles(
+    @ConnectedSocket() client: Socket, // client 타입은 SocketCurrentUser를 통해 user가 주입되므로 그대로 둬도 무방
     @MessageBody() data: SetMarblesDto,
-    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
+    @SocketCurrentUser() user: User,
   ) {
     const { roomId, names } = data;
     const prefixedRoomId = prefixRoomId(roomId);
@@ -232,17 +268,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error setting marbles in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
+      this.logger.error(
+        `Error setting marbles in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`,
+      );
       throw new WsException(`마블 설정 중 오류 발생: ${message}`);
     }
   }
 
-  @UseGuards(WsJwtAuthGuard) // 가드 적용
+  @UseGuards(WsUserAttachedGuard) // 가드 변경
   @SubscribeMessage('set_winning_rank')
-  async handleSetWinningRank( // async 추가
-     @ConnectedSocket() client: Socket,
-     @MessageBody() data: SetWinningRankDto,
-     @SocketCurrentUser() user: User, // 사용자 정보 가져오기
+  async handleSetWinningRank(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: SetWinningRankDto,
+    @SocketCurrentUser() user: User,
   ) {
     const { roomId, rank } = data;
     const prefixedRoomId = prefixRoomId(roomId);
@@ -253,7 +291,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       throw new WsException('방의 매니저만 우승 순위를 설정할 수 있습니다.');
     }
 
-     try {
+    try {
       this.gameSessionService.setWinningRank(roomId, rank);
       const gameState = this.gameSessionService.getGameState(roomId);
       this.server.to(prefixedRoomId).emit('game_state', gameState);
@@ -261,17 +299,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error setting winning rank in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
+      this.logger.error(
+        `Error setting winning rank in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`,
+      );
       throw new WsException(`우승 순위 설정 중 오류 발생: ${message}`);
     }
   }
 
-  @UseGuards(WsJwtAuthGuard) // 가드 적용
+  @UseGuards(WsUserAttachedGuard) // 가드 변경
   @SubscribeMessage('set_map')
-  async handleSetMap( // async 추가
+  async handleSetMap(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: SetMapDto,
-    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
+    @SocketCurrentUser() user: User,
   ) {
     const { roomId, mapIndex } = data;
     const prefixedRoomId = prefixRoomId(roomId);
@@ -290,17 +330,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error setting map in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
+      this.logger.error(
+        `Error setting map in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`,
+      );
       throw new WsException(`맵 설정 중 오류 발생: ${message}`);
     }
   }
 
-  @UseGuards(WsJwtAuthGuard) // 가드 적용
+  @UseGuards(WsUserAttachedGuard) // 가드 변경
   @SubscribeMessage('set_speed')
-  async handleSetSpeed( // async 추가
+  async handleSetSpeed(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: SetSpeedDto,
-    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
+    @SocketCurrentUser() user: User,
   ) {
     const { roomId, speed } = data;
     const prefixedRoomId = prefixRoomId(roomId);
@@ -318,17 +360,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error setting speed in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
+      this.logger.error(
+        `Error setting speed in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`,
+      );
       throw new WsException(`속도 설정 중 오류 발생: ${message}`);
     }
   }
 
-  @UseGuards(WsJwtAuthGuard) // 가드 적용
+  @UseGuards(WsUserAttachedGuard) // 가드 변경
   @SubscribeMessage('start_game')
-  async handleStartGame( // async 추가
+  async handleStartGame(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: StartGameDto,
-    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
+    @SocketCurrentUser() user: User,
   ) {
     const { roomId } = data;
     const prefixedRoomId = prefixRoomId(roomId);
@@ -347,17 +391,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error starting game in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
+      this.logger.error(
+        `Error starting game in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`,
+      );
       throw new WsException(`게임 시작 중 오류 발생: ${message}`);
     }
   }
 
-  @UseGuards(WsJwtAuthGuard) // 가드 적용
+  @UseGuards(WsUserAttachedGuard) // 가드 변경
   @SubscribeMessage('reset_game')
-  async handleResetGame( // async 추가
+  async handleResetGame(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: ResetGameDto,
-    @SocketCurrentUser() user: User, // 사용자 정보 가져오기
+    @SocketCurrentUser() user: User,
   ) {
     const { roomId } = data;
     const prefixedRoomId = prefixRoomId(roomId);
@@ -380,13 +426,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error resetting game in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`);
+      this.logger.error(
+        `Error resetting game in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`,
+      );
       throw new WsException(`게임 리셋 중 오류 발생: ${message}`);
     }
   }
 
   @SubscribeMessage('get_game_state')
-  handleGetGameState(@ConnectedSocket() client: Socket, @MessageBody() data: GetGameStateDto) { // DTO 사용
+  handleGetGameState(@ConnectedSocket() client: Socket, @MessageBody() data: GetGameStateDto) {
+    // DTO 사용
     const { roomId } = data;
     try {
       const gameState = this.gameSessionService.getGameState(roomId);
@@ -399,9 +448,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('get_maps')
-  handleGetMaps(@ConnectedSocket() client: Socket, @MessageBody() data: GetMapsDto) { // DTO 사용
+  handleGetMaps(@ConnectedSocket() client: Socket, @MessageBody() data: GetMapsDto) {
+    // DTO 사용
     const { roomId } = data;
-     try {
+    try {
       const maps = this.gameSessionService.getMaps(roomId);
       return { success: true, maps };
     } catch (error: unknown) {
