@@ -1,25 +1,26 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRoomDto } from './dto/create-room.dto';
-import { Room } from '@prisma/client';
+import { Room, User } from '@prisma/client';
 
 @Injectable()
 export class RoomsService {
   constructor(private prisma: PrismaService) {}
 
-  async createRoom(createRoomDto: CreateRoomDto, managerId: number): Promise<Room> {
-    const room = await this.prisma.room.create({
+  async createRoom(createRoomDto: CreateRoomDto, managerId: number): Promise<Room & { manager: User }> {
+    return await this.prisma.room.create({
       data: {
         name: createRoomDto.name,
         password: createRoomDto.password,
         managerId,
       },
+      include: {
+        manager: true,
+      },
     });
-
-    return room;
   }
 
-  async deleteRoom(id: number): Promise<Room> {
+  async deleteRoom(id: number): Promise<Room & { manager: User }> {
     // 방이 존재하는지 확인
     const room = await this.prisma.room.findUnique({
       where: { id },
@@ -33,10 +34,11 @@ export class RoomsService {
     return this.prisma.room.update({
       where: { id },
       data: { deletedAt: new Date() },
+      include: { manager: true },
     });
   }
 
-  async getRoom(id: number): Promise<Room> {
+  async getRoom(id: number): Promise<Room & { manager: User }> {
     const room = await this.prisma.room.findUnique({
       where: {
         id,

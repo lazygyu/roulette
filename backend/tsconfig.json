@@ -11,6 +11,7 @@
     "incremental": true, // Enable incremental compilation for faster builds
 
     "strict": true,
+    "strictPropertyInitialization": false, // Allow uninitialized properties
   }
   // Include/exclude patterns are often implicit or defined in tsconfig.build.json for NestJS
 }
