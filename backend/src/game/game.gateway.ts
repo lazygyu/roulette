@@ -91,20 +91,43 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('join_room')
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: JoinRoomDto, // DTO 사용
+    @MessageBody() data: JoinRoomDto, // DTO 사용 (password 필드 포함)
   ) {
-    const { roomId, userInfo } = data; // roomId는 이제 number
+    const { roomId, password, userInfo } = data; // password 추출
     const finalUserInfo = userInfo || { nickname: generateAnonymousNickname(client.id) };
 
-    const roomEntity = await this.prisma.room.findUnique({ // roomExists -> roomEntity
-      where: { id: roomId }, // 숫자 roomId 직접 사용
-      select: { id: true, deletedAt: true }, // deletedAt도 선택하여 소프트 삭제된 방인지 확인
-    });
+    let roomDetailsFromDb;
+    try {
+      // RoomsService의 getRoom 메서드가 password를 포함한 Room 엔티티를 반환한다고 가정
+      // rooms.controller.ts의 findOne을 보면 roomsService.getRoom(id)가 password를 반환합니다.
+      roomDetailsFromDb = await this.roomsService.getRoom(roomId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`방(ID: ${roomId}) 정보 조회 실패: ${message}`);
+      // NotFoundException 등이 RoomsService에서 발생할 수 있음
+      if (error instanceof WsException) throw error;
+      throw new WsException(`방(ID: ${roomId}) 정보를 찾을 수 없거나 접근 중 오류가 발생했습니다.`);
+    }
 
-    if (!roomEntity || roomEntity.deletedAt) { // 방이 없거나 소프트 삭제된 경우
+    if (!roomDetailsFromDb || roomDetailsFromDb.deletedAt) {
       this.logger.warn(`존재하지 않거나 삭제된 방(ID: ${roomId}) 접근 시도: ${client.id}`);
       throw new WsException(`존재하지 않거나 접근할 수 없는 방입니다: ${roomId}`);
     }
+
+    // 비밀번호 검증
+    if (roomDetailsFromDb.password) { // 방에 비밀번호가 설정되어 있는 경우
+      if (!password) { // 클라이언트가 비밀번호를 보내지 않은 경우
+        this.logger.warn(`비밀번호가 필요한 방(ID: ${roomId})에 비밀번호 없이 접근 시도: ${client.id}`);
+        throw new WsException('비밀번호가 필요합니다.');
+      }
+      // RoomsService에 비밀번호 검증 메서드를 만들어 위임하는 것이 좋음
+      const isPasswordCorrect = await this.roomsService.verifyRoomPassword(roomId, password);
+      if (!isPasswordCorrect) {
+        this.logger.warn(`방(ID: ${roomId})에 잘못된 비밀번호로 접근 시도: ${client.id}`);
+        throw new WsException('잘못된 비밀번호입니다.');
+      }
+    }
+    // 비밀번호가 없거나, 비밀번호가 올바른 경우 아래 로직 계속 진행
 
     // 방이 메모리에 로드되어 있는지 확인하고, 없다면 DB에서 로드
     if (!this.gameSessionService.isRoomLoaded(roomId)) {

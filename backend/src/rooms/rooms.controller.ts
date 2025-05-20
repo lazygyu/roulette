@@ -43,7 +43,6 @@ export class RoomsController {
       managerId: room.managerId,
       deletedAt: room.deletedAt,
       manager: { id: room.manager.id, nickname: room.manager.nickname }, // username 제거
-      // game: null, // GetRoomResponseDto에서 game 필드 제거됨
     };
   }
 
@@ -72,18 +71,7 @@ export class RoomsController {
   @Get(':id')
   @SerializeOptions({ type: GetRoomResponseDto }) // 응답 타입은 방 기본 정보 DTO
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<GetRoomResponseDto> {
-    const room = await this.roomsService.getRoom(id);
-    return {
-      id: room.id,
-      name: room.name,
-      password: room.password,
-      createdAt: room.createdAt,
-      updatedAt: room.updatedAt,
-      managerId: room.managerId,
-      deletedAt: room.deletedAt,
-      manager: { id: room.manager.id, nickname: room.manager.nickname }, // username 제거
-      // game: null, // GetRoomResponseDto에서 game 필드 제거됨
-    };
+    return await this.roomsService.getRoom(id);
   }
 
   @Get(':id/game')

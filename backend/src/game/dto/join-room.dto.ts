@@ -17,4 +17,8 @@ export class JoinRoomDto {
   @ValidateNested()
   @Type(() => UserInfoDto)
   userInfo?: UserInfoDto;
+
+  @IsOptional()
+  @IsString()
+  password?: string;
 }

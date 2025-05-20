@@ -24,7 +24,7 @@ export class RoomsService {
     });
 
     // 프론트엔드 기본값 참조
-    const defaultMarbles = ["a", "b", "c"];
+    const defaultMarbles = ['a', 'b', 'c'];
     const defaultWinningRank = 1;
     const defaultMapIndex = 0; // roulette.ts에서 _stage = stages[0] 확인
     const defaultSpeed = 1.0; // options.ts에서 speed: number = 1 확인
@@ -38,7 +38,7 @@ export class RoomsService {
         winningRank: defaultWinningRank,
         mapIndex: defaultMapIndex,
         speed: defaultSpeed,
-      }
+      },
     });
 
     return newRoom;
@@ -92,25 +92,15 @@ export class RoomsService {
       // 여기서는 null을 반환하여 컨트롤러에서 처리하도록 함
       return null;
     }
-    // Game 엔티티를 GameDto로 변환 (필요시 class-transformer 사용)
-    const gameDto: GameDto = {
-      id: game.id,
-      status: game.status,
-      mapIndex: game.mapIndex,
-      marbles: game.marbles,
-      winningRank: game.winningRank,
-      speed: game.speed,
-      createdAt: game.createdAt,
-      updatedAt: game.updatedAt,
-    };
-    return gameDto;
+    return game;
   }
 
   async getGameRanking(roomId: number): Promise<GetGameRankingResponseDto> {
     const game = await this.prisma.game.findUnique({
       where: { roomId },
       include: {
-        rankings: { // GameRanking 모델을 포함하여 조회
+        rankings: {
+          // GameRanking 모델을 포함하여 조회
           orderBy: {
             rank: 'asc', // 순위 오름차순 정렬
           },
@@ -127,7 +117,7 @@ export class RoomsService {
       return { rankings: [] };
     }
 
-    const rankingEntries: GameRankingEntryDto[] = game.rankings.map(r => ({
+    const rankingEntries: GameRankingEntryDto[] = game.rankings.map((r) => ({
       marbleName: r.marbleName,
       rank: r.rank,
       isWinner: r.isWinner,
@@ -136,11 +126,10 @@ export class RoomsService {
     return { rankings: rankingEntries };
   }
 
-
   async isManager(roomId: number, userId: number): Promise<boolean> {
     // getRoom은 이제 game 정보를 포함하지 않으므로, managerId만 확인하면 됨
     const room = await this.prisma.room.findUnique({
-        where: { id: roomId, deletedAt: null },
+      where: { id: roomId, deletedAt: null },
     });
 
     if (!room) {
@@ -148,5 +137,33 @@ export class RoomsService {
     }
 
     return room.managerId === userId;
+  }
+
+  async verifyRoomPassword(roomId: number, plainPassword?: string): Promise<boolean> {
+    const room = await this.prisma.room.findUnique({
+      where: { id: roomId, deletedAt: null }, // 삭제되지 않은 방만 고려
+      select: { password: true },
+    });
+
+    if (!room) {
+      // GameGateway에서 이미 방 존재 여부를 확인할 수 있지만, 여기서도 방어적으로 처리
+      throw new NotFoundException(`Room with ID ${roomId} not found for password verification.`);
+    }
+
+    if (!room.password) {
+      // 방에 비밀번호가 설정되어 있지 않으면 항상 통과
+      return true;
+    }
+
+    if (!plainPassword) {
+      // 방에는 비밀번호가 있는데, 클라이언트가 비밀번호를 제공하지 않은 경우
+      return false;
+    }
+
+    // TODO: 실제 환경에서는 bcrypt.compare 사용 권장
+    // const isMatch = await bcrypt.compare(plainPassword, room.password);
+    // return isMatch;
+
+    return plainPassword === room.password; // 현재는 단순 문자열 비교로 가정
   }
 }
