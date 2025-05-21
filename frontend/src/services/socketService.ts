@@ -212,62 +212,59 @@ class SocketService {
       console.error('socketService: Socket not connected for joinRoom.');
       return { success: false, message: 'Socket not connected.' };
     }
-    return new Promise((resolve) => {
-      this.socket?.emit('join_room', { roomId, password }, (response: JoinRoomResponse) => {
-        if (response.success) {
-          this.currentRoomId = roomId;
-        }
-        resolve(response);
-      });
-    });
+    const response: JoinRoomResponse = await this.socket.emitWithAck('join_room', { roomId, password });
+    if (response.success) {
+      this.currentRoomId = roomId;
+    }
+    return response;
   }
 
-  public setMarbles(names: string[]): void {
+  public async setMarbles(names: string[]): Promise<{ success: boolean; message?: string }> {
     if (!this.socket || !this.currentRoomId) {
       console.warn('socketService: Cannot set marbles, socket not connected or not in a room.');
-      return;
+      return { success: false, message: 'Socket not connected or not in a room.' };
     }
-    this.socket.emit('set_marbles', { roomId: this.currentRoomId, names });
+    return await this.socket.emitWithAck('set_marbles', { roomId: this.currentRoomId, names });
   }
 
-  public setWinningRank(rank: number): void {
+  public async setWinningRank(rank: number): Promise<{ success: boolean; message?: string }> {
     if (!this.socket || !this.currentRoomId) {
       console.warn('socketService: Cannot set winning rank, socket not connected or not in a room.');
-      return;
+      return { success: false, message: 'Socket not connected or not in a room.' };
     }
-    this.socket.emit('set_winning_rank', { roomId: this.currentRoomId, rank });
+    return await this.socket.emitWithAck('set_winning_rank', { roomId: this.currentRoomId, rank });
   }
 
-  public setMap(mapIndex: number): void {
+  public async setMap(mapIndex: number): Promise<{ success: boolean; message?: string }> {
     if (!this.socket || !this.currentRoomId) {
       console.warn('socketService: Cannot set map, socket not connected or not in a room.');
-      return;
+      return { success: false, message: 'Socket not connected or not in a room.' };
     }
-    this.socket.emit('set_map', { roomId: this.currentRoomId, mapIndex });
+    return await this.socket.emitWithAck('set_map', { roomId: this.currentRoomId, mapIndex });
   }
 
-  public setSpeed(speed: number): void {
+  public async setSpeed(speed: number): Promise<{ success: boolean; message?: string }> {
     if (!this.socket || !this.currentRoomId) {
       console.warn('socketService: Cannot set speed, socket not connected or not in a room.');
-      return;
+      return { success: false, message: 'Socket not connected or not in a room.' };
     }
-    this.socket.emit('set_speed', { roomId: this.currentRoomId, speed });
+    return await this.socket.emitWithAck('set_speed', { roomId: this.currentRoomId, speed });
   }
 
-  public startGame(): void {
+  public async startGame(): Promise<{ success: boolean; message?: string }> {
     if (!this.socket || !this.currentRoomId) {
       console.warn('socketService: Cannot start game, socket not connected or not in a room.');
-      return;
+      return { success: false, message: 'Socket not connected or not in a room.' };
     }
-    this.socket.emit('start_game', { roomId: this.currentRoomId });
+    return await this.socket.emitWithAck('start_game', { roomId: this.currentRoomId });
   }
 
-  public resetGame(): void {
+  public async resetGame(): Promise<{ success: boolean; message?: string }> {
     if (!this.socket || !this.currentRoomId) {
       console.warn('socketService: Cannot reset game, socket not connected or not in a room.');
-      return;
+      return { success: false, message: 'Socket not connected or not in a room.' };
     }
-    this.socket.emit('reset_game', { roomId: this.currentRoomId });
+    return await this.socket.emitWithAck('reset_game', { roomId: this.currentRoomId });
   }
 
   public disconnect(): void {
