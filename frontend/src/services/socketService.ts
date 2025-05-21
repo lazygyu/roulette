@@ -30,6 +30,7 @@ interface JoinRoomResponse {
 class SocketService {
   private socket: Socket | null = null;
   private currentRoomId: string | null = null;
+  private isConnecting: boolean = false; // 연결 시도 중인지 나타내는 상태 추가
 
   private gameStateListeners: Array<(gameState: GameState) => void> = [];
   private availableMapsListeners: Array<(maps: MapInfo[]) => void> = [];
@@ -43,6 +44,12 @@ class SocketService {
 
   public connect(roomId: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (this.isConnecting) {
+        console.log('Socket connection already in progress.');
+        resolve(); // 또는 reject('Connection in progress')
+        return;
+      }
+
       if (this.socket?.connected && this.currentRoomId === roomId) {
         console.log('Socket already connected to this room.');
         resolve();
@@ -52,6 +59,8 @@ class SocketService {
       if (this.socket?.connected) {
         this.disconnect();
       }
+
+      this.isConnecting = true; // 연결 시도 시작
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.hostname;
@@ -275,6 +284,10 @@ class SocketService {
 
   public isConnected(): boolean {
     return !!this.socket?.connected;
+  }
+
+  public getCurrentRoomId(): string | null {
+    return this.currentRoomId;
   }
 }
 

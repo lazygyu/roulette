@@ -168,6 +168,15 @@ const GamePage: React.FC = () => {
     }
   }, [showPasswordModal]);
 
+  // isManager 상태를 user와 roomDetails에 따라 업데이트하는 별도의 useEffect
+  useEffect(() => {
+    if (user && roomDetails) {
+      setIsManager(roomDetails.managerId === user.id);
+    } else {
+      setIsManager(false);
+    }
+  }, [user, roomDetails]);
+
   useEffect(() => {
     let rouletteInstance: Roulette | null = null;
     let originalDocumentLang = document.documentElement.lang;
@@ -362,10 +371,16 @@ const GamePage: React.FC = () => {
           const fetchedRoomBasicDetails = await getRoomDetails(numericRoomId);
           setRoomDetails(fetchedRoomBasicDetails);
           setRoomName(fetchedRoomBasicDetails.name);
-          const currentUser = user;
-          setIsManager(!!(currentUser && fetchedRoomBasicDetails.managerId === currentUser.id));
-          await socketService.connect(roomId);
-          console.log(`GamePage: Successfully connected to socket for room ${roomId}`);
+          // isManager 설정 로직은 별도의 useEffect로 분리되었으므로 여기서는 제거
+          // const currentUser = user;
+          // setIsManager(!!(currentUser && fetchedRoomBasicDetails.managerId === currentUser.id));
+          // 이미 연결되어 있고 현재 방 ID와 일치하면 다시 연결하지 않음
+          if (!socketService.isConnected() || socketService.getCurrentRoomId() !== roomId) {
+            await socketService.connect(roomId);
+            console.log(`GamePage: Successfully connected to socket for room ${roomId}`);
+          } else {
+            console.log(`GamePage: Socket already connected to room ${roomId}. Skipping reconnect.`);
+          }
 
           if (fetchedRoomBasicDetails.isPasswordRequired) {
             setShowPasswordModal(true);
@@ -540,7 +555,7 @@ const GamePage: React.FC = () => {
       document.documentElement.lang = originalDocumentLang;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, user]);
+  }, [roomId]); // user 의존성 제거
 
   return (
     <>
