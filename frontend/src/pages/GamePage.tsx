@@ -511,10 +511,10 @@ const GamePage: React.FC = () => {
 
         try {
           await rouletteInstance.initialize(rouletteCanvasContainerRef.current);
-          if (user && roomId) {
+          if (roomId) { // user 객체 유무와 관계없이 roomId만 있으면 상호작용 설정
             setupGameInteractions();
           } else {
-            console.log('GamePage: 사용자 데이터 또는 방 ID를 기다리는 중입니다.');
+            console.log('GamePage: 방 ID를 기다리는 중입니다.'); // 로그 메시지 변경
           }
         } catch (error) {
           console.error('[GamePage] 룰렛 초기화 실패:', error);
