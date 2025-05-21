@@ -18,9 +18,8 @@ declare global {
     options?: typeof options;
     // updateMapSelector 는 GamePage 내부에서 socketService.onAvailableMapsUpdate를 통해 처리
     dataLayer?: any[];
-    gtag?: (...args: any[]) => void;
     translateElement?: (element: HTMLElement) => void;
-  }
+      }
 }
 
 const GamePage: React.FC = () => {
@@ -280,7 +279,6 @@ const GamePage: React.FC = () => {
         alert('참여자가 없습니다. 참여자를 추가해주세요.');
         return;
       }
-      window.gtag?.('event', 'start', { event_category: 'roulette', event_label: 'start', value: 1 });
       socketService.startGame();
       document.querySelector('#settings')?.classList.add('hide');
     };
@@ -315,13 +313,6 @@ const GamePage: React.FC = () => {
     };
 
     window.options = options;
-    window.dataLayer = window.dataLayer || [];
-    function gtagForPage(...args: any[]) {
-      window.dataLayer!.push(args);
-    }
-    window.gtag = gtagForPage;
-    gtagForPage('js', new Date());
-    gtagForPage('config', 'G-5899C1DJM0');
 
     const defaultLoc: TranslatedLanguages = 'en';
     let pageLocale: TranslatedLanguages | undefined;

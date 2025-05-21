@@ -13,8 +13,6 @@ import { UIObject } from './UIObject';
 import { RankRenderer } from './rankRenderer';
 import { Minimap } from './minimap';
 import { VideoRecorder } from './utils/videoRecorder';
-// import { IPhysics } from './IPhysics'; // No longer needed for local physics
-// import { Box2dPhysics } from './physics-box2d'; // No longer needed for local physics
 import { GameState, MarbleState, MapEntityState } from './types/gameTypes'; // Import types from gameTypes
 
 export class Roulette extends EventTarget {
@@ -56,7 +54,6 @@ export class Roulette extends EventTarget {
   private _autoRecording: boolean = false; // Keep local options for now
   private _recorder!: VideoRecorder; // Keep recorder
 
-  // private physics!: IPhysics; // Remove local physics engine instance
 
   private _isReady: boolean = false; // Keep ready flag, might indicate renderer readiness
   get isReady() {
@@ -133,7 +130,6 @@ export class Roulette extends EventTarget {
 
     // Remove local physics step and state update loop
     // while (this._elapsed >= this._updateInterval) {
-    // this.physics.step(interval); // REMOVED
     // this._updateMarbles(this._updateInterval); // REMOVED - State comes from server
     // Keep particle/effect updates if they are purely visual and driven by time
     this._particleManager.update(currentTime - this._lastTime); // Update based on actual elapsed time
@@ -223,9 +219,6 @@ export class Roulette extends EventTarget {
     // Make _init synchronous as physics init is removed
     this._recorder = new VideoRecorder(this._renderer.canvas);
 
-    // Remove physics initialization
-    // this.physics = new Box2dPhysics();
-    // await this.physics.init();
 
     // Keep UI object initialization
     this.addUiObject(new RankRenderer());
@@ -272,14 +265,11 @@ export class Roulette extends EventTarget {
     if (!this._stage) {
       throw new Error('No map has been selected');
     }
-    // Remove physics interaction from map loading
-    // this.physics.createStage(this._stage);
     // Maybe load map visual assets if needed by renderer? Assume renderer handles this based on stage def.
   }
 
   // This method is likely no longer needed as state is overwritten by server
   // public clearMarbles() {
-  //   // this.physics.clearMarbles(); // REMOVED
   //   this._winner = null;
   //   this._winners = [];
   //   this._marbles = [];
@@ -332,7 +322,6 @@ export class Roulette extends EventTarget {
   }
 
   // private _clearMap() {
-  // this.physics.clear(); // REMOVED
   // this._marbles = []; // State managed by server
   // }
 
