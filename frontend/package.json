@@ -2,6 +2,9 @@
   "name": "frontend",
   "version": "0.0.1",
   "private": true,
+  "engines": {
+    "node": ">=22.15.0"
+  },
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
