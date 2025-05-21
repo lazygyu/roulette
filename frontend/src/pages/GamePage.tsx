@@ -516,9 +516,13 @@ const GamePage: React.FC = () => {
 
         try {
           await rouletteInstance.initialize(rouletteCanvasContainerRef.current);
-          setupGameInteractions();
+          if (user && roomId) {
+            setupGameInteractions();
+          } else {
+            console.log('GamePage: 사용자 데이터 또는 방 ID를 기다리는 중입니다.');
+          }
         } catch (error) {
-          console.error('[GamePage] Roulette initialization failed:', error);
+          console.error('[GamePage] 룰렛 초기화 실패:', error);
           alert('게임 엔진 초기화에 실패했습니다. 페이지를 새로고침 해주세요.');
         }
       } else {
