@@ -373,12 +373,19 @@ const GamePage: React.FC = () => {
           setRoomName(fetchedRoomBasicDetails.name);
           const currentUser = user;
           setIsManager(!!(currentUser && fetchedRoomBasicDetails.managerId === currentUser.id));
-          await socketService.connect(roomId);
-          console.log(`GamePage: Successfully connected to socket for room ${roomId}`);
+
+          // 소켓이 이미 연결되어 있고, 현재 방 ID와 일치하면 다시 연결하지 않습니다.
+          if (!socketService.isConnected() || socketService.currentRoomId !== roomId) {
+            await socketService.connect(roomId);
+            console.log(`GamePage: Successfully connected to socket for room ${roomId}`);
+          } else {
+            console.log(`GamePage: Socket already connected to room ${roomId}. Skipping reconnect.`);
+          }
 
           if (fetchedRoomBasicDetails.isPasswordRequired) {
             setShowPasswordModal(true);
           } else {
+            // 비밀번호가 필요 없는 경우, 바로 joinRoom 호출
             const joinResponse = await socketService.joinRoom(roomId, undefined);
             if (joinResponse.success) {
               if (joinResponse.gameState && rouletteInstance) {
@@ -549,7 +556,7 @@ const GamePage: React.FC = () => {
       document.documentElement.lang = originalDocumentLang;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, user]);
+  }, [roomId]);
 
   return (
     <>

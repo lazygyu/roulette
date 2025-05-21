@@ -29,7 +29,7 @@ interface JoinRoomResponse {
 
 class SocketService {
   private socket: Socket | null = null;
-  private currentRoomId: string | null = null;
+  public currentRoomId: string | null = null;
 
   private gameStateListeners: Array<(gameState: GameState) => void> = [];
   private availableMapsListeners: Array<(maps: MapInfo[]) => void> = [];
