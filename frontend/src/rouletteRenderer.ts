@@ -75,12 +75,12 @@ export class RouletteRenderer {
   }
 
   private async _load(): Promise<void> {
-    return new Promise((rs) => {
-      const imageUrl = new URL('../assets/images/chamru.png', import.meta.url);
-      this._images['챔루'] = new Image();
-      this._images['챔루'].src = imageUrl.toString();
+    const imageUrl = new URL('../assets/images/chamru.png', import.meta.url);
+    this._images['챔루'] = new Image();
+    this._images['챔루'].src = imageUrl.toString();
+    await new Promise<void>((resolve) => {
       this._images['챔루'].addEventListener('load', () => {
-        rs();
+        resolve();
       });
     });
   }

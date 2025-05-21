@@ -207,18 +207,18 @@ class SocketService {
 
   // --- Room and Game Actions ---
   // joinRoom 메서드를 public으로 변경하고 password 인자 추가
-  public joinRoom(roomId: string, password?: string, callback?: (response: JoinRoomResponse) => void): void {
+  public async joinRoom(roomId: string, password?: string): Promise<JoinRoomResponse> {
     if (!this.socket) {
       console.error('socketService: Socket not connected for joinRoom.');
-      if (callback) callback({ success: false, message: 'Socket not connected.' });
-      return;
+      return { success: false, message: 'Socket not connected.' };
     }
-    // password를 emit 데이터에 포함
-    this.socket.emit('join_room', { roomId, password }, (response: JoinRoomResponse) => {
-      if (response.success) {
-        this.currentRoomId = roomId; // 방 참여 성공 시 currentRoomId 설정
-      }
-      if (callback) callback(response);
+    return new Promise((resolve) => {
+      this.socket?.emit('join_room', { roomId, password }, (response: JoinRoomResponse) => {
+        if (response.success) {
+          this.currentRoomId = roomId;
+        }
+        resolve(response);
+      });
     });
   }
 
