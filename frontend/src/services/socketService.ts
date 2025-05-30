@@ -295,6 +295,13 @@ class SocketService {
   public getCurrentRoomId(): string | null {
     return this.currentRoomId;
   }
+
+  // Method to check if the client has successfully joined a specific room
+  public getJoinedStatus(roomId: string): boolean {
+    // This is a simplified check. A more robust solution might involve
+    // the server confirming the join status or tracking it more explicitly.
+    return !!(this.socket?.connected && this.currentRoomId === roomId);
+  }
 }
 
 const socketService = new SocketService();
