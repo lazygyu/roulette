@@ -1,4 +1,4 @@
-# Mono Repository Structure informations
+# Mono Repository Structure information
 
 - This project is mono repository structure.
 - It has root(/package.json), backend(/backend/package.json) and frontend(/frontend/package.json).
