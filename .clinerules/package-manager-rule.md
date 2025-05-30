@@ -1,0 +1,3 @@
+# Node.js Package Manager Rule
+
+- Must use yarn. Using npm will break all projects.
