@@ -2,7 +2,7 @@
 
 ## Error Fixing Rule
 
-- When an error occurs, first look for the root cause rather than just fixing the symptom.
+- When an error occurs, first look for the root cause rather than merely fixing the symptom.
 - When fixing an error, follow these steps:
   1. Check all the information provided about the error.
      - For example, check the error message, log files, and related documentation.
@@ -13,10 +13,10 @@
   4. Review the feasibility of the plan and start working on the fix.
   5. After the fix is complete, follow the Build Check Rule.
 
-## Code Planning Rule(For Plan Mode)
+## Code Planning Rule (For Plan Mode)
 
-- For planning, you can read the code and understand the overall structure.
-- You must read all realated code by yourself.
+- For planning, you should read the code and understand its overall structure.
+- You must read all related code by yourself.
 - By reading the code, you can understand the following:
   - The overall structure of the codebase.
   - How different components interact with each other.
@@ -28,9 +28,9 @@
   - Any dependencies or prerequisites for the tasks.
 - The plan should be clear and concise, making it easy to follow.
 
-## Code Writing Rule(For Act Mode)
+## Code Writing Rule (For Act Mode)
 
-- Do code writing by following the plan you created.
+- Write code by following the plan you created.
 - Follow the coding standards and conventions of the project.
   - For example, use consistent naming conventions, indentation, and commenting styles.
   - To do this, refer to the project's documentation or existing codebase.
@@ -40,6 +40,6 @@
   - Use libraries and frameworks where appropriate to avoid reinventing the wheel.
 - Write code that is easy to understand and maintain.
 - Use meaningful variable and function names.
-- Reference the best practices of the programming language, library, or framework you are using.
+- Follow the best practices of the programming language, library, or framework you are using.
 - Ensure that your code is well-structured and easy to read.
-- After writing is complete, follow the Build Check Rule.
+- After completing the writing, follow the Build Check Rule.
