@@ -470,29 +470,31 @@ const GamePage: React.FC = () => {
 
             const gamePotentiallyOverBySocket =
               !gameState.isRunning && gameState.winners && gameState.winners.length >= gameState.winnerRank;
-            if (
-              gamePotentiallyOverBySocket &&
-              gameDetailsRef.current &&
-              gameDetailsRef.current.status !== GameStatus.FINISHED
-            ) {
-              if (roomId) {
-                const numericRoomId = parseInt(roomId, 10);
-                if (!isNaN(numericRoomId)) {
-                  try {
-                    const authoritativeGameDetails = await getRoomGameDetails(numericRoomId);
-                    setGameDetails(authoritativeGameDetails);
-                    if (authoritativeGameDetails.status === GameStatus.FINISHED) {
-                      const rankingData = await getGameRanking(numericRoomId);
-                      setFinalRanking(rankingData.rankings);
-                      if (rankingData.rankings && rankingData.rankings.length > 0) {
-                        setShowRankingModal(true);
+            if (gamePotentiallyOverBySocket && gameDetailsRef.current) {
+              const prevStatus = gameDetailsRef.current.status;
+              const newStatusBasedOnSocket = !gameState.isRunning && gameState.winner ? GameStatus.FINISHED : (gameState.isRunning ? GameStatus.IN_PROGRESS : GameStatus.WAITING);
+
+              // 게임 상태가 IN_PROGRESS에서 FINISHED로 전환될 때만 API 호출
+              if (prevStatus !== GameStatus.FINISHED && newStatusBasedOnSocket === GameStatus.FINISHED) {
+                if (roomId) {
+                  const numericRoomId = parseInt(roomId, 10);
+                  if (!isNaN(numericRoomId)) {
+                    try {
+                      const authoritativeGameDetails = await getRoomGameDetails(numericRoomId);
+                      setGameDetails(authoritativeGameDetails);
+                      if (authoritativeGameDetails.status === GameStatus.FINISHED) {
+                        const rankingData = await getGameRanking(numericRoomId);
+                        setFinalRanking(rankingData.rankings);
+                        if (rankingData.rankings && rankingData.rankings.length > 0) {
+                          setShowRankingModal(true);
+                        }
                       }
+                    } catch (error) {
+                      console.error(
+                        'GamePage: Error fetching authoritative game details or ranking on game end (socket event):',
+                        error,
+                      );
                     }
-                  } catch (error) {
-                    console.error(
-                      'GamePage: Error fetching authoritative game details or ranking on game end (socket event):',
-                      error,
-                    );
                   }
                 }
               }
