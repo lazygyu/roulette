@@ -31,6 +31,7 @@ class SocketService {
   private socket: Socket | null = null;
   private currentRoomId: string | null = null;
   private isConnecting: boolean = false; // 연결 시도 중인지 나타내는 상태 추가
+  private latestAvailableMaps: MapInfo[] | null = null; // Cache for available maps
 
   private gameStateListeners: Array<(gameState: GameState) => void> = [];
   private availableMapsListeners: Array<(maps: MapInfo[]) => void> = [];
@@ -123,6 +124,7 @@ class SocketService {
 
     this.socket.off('available_maps').on('available_maps', (maps: MapInfo[]) => {
       // console.debug('socketService: Received available_maps:', maps);
+      this.latestAvailableMaps = maps; // Cache the maps
       this.availableMapsListeners.forEach((listener) => listener(maps));
     });
 
@@ -167,6 +169,10 @@ class SocketService {
 
   public onAvailableMapsUpdate(listener: (maps: MapInfo[]) => void): () => void {
     this.availableMapsListeners.push(listener);
+    // If maps are already available, call the listener immediately
+    if (this.latestAvailableMaps) {
+      listener(this.latestAvailableMaps);
+    }
     return () => {
       this.availableMapsListeners = this.availableMapsListeners.filter((l) => l !== listener);
     };

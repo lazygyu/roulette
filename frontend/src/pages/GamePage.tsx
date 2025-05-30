@@ -19,7 +19,7 @@ declare global {
     // updateMapSelector 는 GamePage 내부에서 socketService.onAvailableMapsUpdate를 통해 처리
     dataLayer?: any[];
     translateElement?: (element: HTMLElement) => void;
-      }
+  }
 }
 
 const GamePage: React.FC = () => {
@@ -423,19 +423,26 @@ const GamePage: React.FC = () => {
         sltMapEl.innerHTML = '<option value="">Loading maps...</option>';
         sltMapEl.disabled = true;
         unsubscribeMaps = socketService.onAvailableMapsUpdate((maps) => {
-          if (!sltMapRef.current) return;
+          if (!sltMapRef.current) {
+            return;
+          }
           sltMapRef.current.innerHTML = '';
-          maps.forEach((map) => {
+
+          maps.forEach((map, idx) => {
             const option = document.createElement('option');
             option.value = map.index.toString();
             option.innerHTML = map.title;
             option.setAttribute('data-trans', '');
-            if (window.translateElement) window.translateElement(option);
+            // if (window.translateElement) window.translateElement(option); // 여전히 주석 처리
             sltMapRef.current!.append(option);
           });
           sltMapRef.current!.disabled = false;
         });
         sltMapRef.current!.addEventListener('change', handleMapChange);
+      } else {
+        console.error(
+          'GamePage: sltMapEl is null in setupGameInteractions. Cannot set up onAvailableMapsUpdate listener.',
+        ); // 추가된 로그
       }
 
       if (rouletteInstance) {
@@ -472,7 +479,12 @@ const GamePage: React.FC = () => {
               !gameState.isRunning && gameState.winners && gameState.winners.length >= gameState.winnerRank;
             if (gamePotentiallyOverBySocket && gameDetailsRef.current) {
               const prevStatus = gameDetailsRef.current.status;
-              const newStatusBasedOnSocket = !gameState.isRunning && gameState.winner ? GameStatus.FINISHED : (gameState.isRunning ? GameStatus.IN_PROGRESS : GameStatus.WAITING);
+              const newStatusBasedOnSocket =
+                !gameState.isRunning && gameState.winner
+                  ? GameStatus.FINISHED
+                  : gameState.isRunning
+                    ? GameStatus.IN_PROGRESS
+                    : GameStatus.WAITING;
 
               // 게임 상태가 IN_PROGRESS에서 FINISHED로 전환될 때만 API 호출
               if (prevStatus !== GameStatus.FINISHED && newStatusBasedOnSocket === GameStatus.FINISHED) {
