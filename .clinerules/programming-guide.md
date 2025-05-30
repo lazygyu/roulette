@@ -13,7 +13,7 @@
   4. Review the feasibility of the plan and start working on the fix.
   5. After the fix is complete, follow the Build Check Rule.
 
-## Code Planning Rule(For Plan Mode)
+## Code Planning Rule
 
 - For planning, you can read the code and understand the overall structure.
 - You must read all realated code by yourself.
@@ -28,7 +28,7 @@
   - Any dependencies or prerequisites for the tasks.
 - The plan should be clear and concise, making it easy to follow.
 
-## Code Writing Rule(For Act Mode)
+## Code Writing Rule
 
 - Do code writing by following the plan you created.
 - Follow the coding standards and conventions of the project.
