@@ -1,6 +1,6 @@
 # Mono Repository Structure information
 
-- This project is mono repository structure.
+- This project uses a monorepo structure.
 - It has root(/package.json), backend(/backend/package.json) and frontend(/frontend/package.json).
   - You should consider where to edit.
   - You should think about running environments.
