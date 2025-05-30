@@ -7,5 +7,3 @@
 - Root, backend and frontend all use yarn.
   - using npm will break total projects.
   - You should use yarn only.
-- You can modify both backend and frontend.
-  - You can run backend and frontend at the same time, by using `yarn dev` command at root directory.
