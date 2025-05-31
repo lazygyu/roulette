@@ -1,55 +1,42 @@
-import React from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { GameStatus, GameInfo } from '../types/gameTypes';
+import { useGame } from '../contexts/GameContext';
+import options from '../options'; // window.options 대신 직접 임포트
 
 interface SettingsPanelProps {
   isManager: boolean;
   gameDetails: GameInfo | null;
   winnerSelectionType: 'first' | 'last' | 'custom';
-  sltMapRef: React.RefObject<HTMLSelectElement | null>;
-  chkAutoRecordingRef: React.RefObject<HTMLInputElement | null>;
-  inWinningRankRef: React.RefObject<HTMLInputElement | null>;
-  chkSkillRef: React.RefObject<HTMLInputElement | null>;
-  inNamesRef: React.RefObject<HTMLTextAreaElement | null>;
-  btnShuffleRef: React.RefObject<HTMLButtonElement | null>;
-  btnStartRef: React.RefObject<HTMLButtonElement | null>;
-  btnFirstWinnerRef: React.RefObject<HTMLButtonElement | null>;
-  btnLastWinnerRef: React.RefObject<HTMLButtonElement | null>;
-  onMapChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
-  onAutoRecordingChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onFirstWinnerClick: () => void;
-  onLastWinnerClick: () => void;
-  onWinningRankChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onSkillChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onNamesInput: (event: React.FormEvent<HTMLTextAreaElement>) => void;
-  onNamesBlur: (event: React.FocusEvent<HTMLTextAreaElement>) => void;
-  onShuffleClick: () => void;
-  onStartClick: () => void;
 }
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({
   isManager,
   gameDetails,
   winnerSelectionType,
-  sltMapRef,
-  chkAutoRecordingRef,
-  inWinningRankRef,
-  chkSkillRef,
-  inNamesRef,
-  btnShuffleRef,
-  btnStartRef,
-  btnFirstWinnerRef,
-  btnLastWinnerRef,
-  onMapChange,
-  onAutoRecordingChange,
-  onFirstWinnerClick,
-  onLastWinnerClick,
-  onWinningRankChange,
-  onSkillChange,
-  onNamesInput,
-  onNamesBlur,
-  onShuffleClick,
-  onStartClick,
 }) => {
+  const {
+    rouletteInstance,
+    availableMaps,
+    setWinnerRank,
+    updateParticipants,
+    startGame,
+    setUseSkills,
+    setMap,
+    setAutoRecording,
+    setWinnerSelectionType, // GameContext에서 가져옴
+  } = useGame();
+
+  // Refs for DOM elements
+  const inNamesRef = useRef<HTMLTextAreaElement>(null);
+  const inWinningRankRef = useRef<HTMLInputElement>(null);
+  const chkSkillRef = useRef<HTMLInputElement>(null);
+  const sltMapRef = useRef<HTMLSelectElement>(null);
+  const chkAutoRecordingRef = useRef<HTMLInputElement>(null);
+  const btnShuffleRef = useRef<HTMLButtonElement>(null);
+  const btnStartRef = useRef<HTMLButtonElement>(null);
+  const btnLastWinnerRef = useRef<HTMLButtonElement>(null);
+  const btnFirstWinnerRef = useRef<HTMLButtonElement>(null);
+
   // Ensure boolean values for disabled attributes
   const settingsDisabled = !!(
     !isManager ||
@@ -60,6 +47,115 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
     (gameDetails && gameDetails.status === GameStatus.FINISHED) ||
     (gameDetails && gameDetails.status === GameStatus.IN_PROGRESS)
   );
+
+  // Update UI elements based on gameDetails from context
+  useEffect(() => {
+    if (gameDetails) {
+      if (gameDetails.status === GameStatus.WAITING || gameDetails.status === GameStatus.IN_PROGRESS) {
+        if (inNamesRef.current && gameDetails.marbles && gameDetails.marbles.length > 0) {
+          inNamesRef.current.value = gameDetails.marbles.join(',');
+        }
+        if (inWinningRankRef.current && gameDetails.winningRank !== null) {
+          inWinningRankRef.current.value = gameDetails.winningRank.toString();
+          setWinnerSelectionType(gameDetails.winningRank === 1 ? 'first' : 'custom');
+        }
+        if (sltMapRef.current && gameDetails.mapIndex !== null) {
+          sltMapRef.current.value = gameDetails.mapIndex.toString();
+        }
+      }
+    }
+  }, [gameDetails, setWinnerSelectionType]);
+
+  // Update map options when availableMaps changes
+  useEffect(() => {
+    if (sltMapRef.current) {
+      sltMapRef.current.innerHTML = '';
+      if (availableMaps.length === 0) {
+        sltMapRef.current.innerHTML = '<option value="">Loading maps...</option>';
+        sltMapRef.current.disabled = true;
+      } else {
+        availableMaps.forEach((map) => {
+          const option = document.createElement('option');
+          option.value = map.index.toString();
+          option.innerHTML = map.title;
+          sltMapRef.current!.append(option);
+        });
+        sltMapRef.current.disabled = false;
+        const currentMapIdx = gameDetails?.mapIndex;
+        if (currentMapIdx !== null && typeof currentMapIdx !== 'undefined') {
+          sltMapRef.current.value = currentMapIdx.toString();
+        }
+      }
+    }
+  }, [availableMaps, gameDetails?.mapIndex]);
+
+  // Set auto recording checkbox
+  useEffect(() => {
+    if (chkAutoRecordingRef.current && options && rouletteInstance) {
+      chkAutoRecordingRef.current.checked = options.autoRecording;
+      rouletteInstance.setAutoRecording(options.autoRecording);
+    }
+  }, [rouletteInstance]);
+
+  // Load saved names from localStorage (GameContext에서 처리하므로 여기서는 제거)
+  useEffect(() => {
+    const savedNames = localStorage.getItem('mbr_names');
+    if (savedNames && inNamesRef.current) {
+      inNamesRef.current.value = savedNames;
+    }
+  }, []);
+
+  const handleInNamesInput = useCallback(() => {
+    if (inNamesRef.current) {
+      updateParticipants(inNamesRef.current.value);
+    }
+  }, [updateParticipants]);
+
+  const handleInNamesBlur = useCallback(() => {
+    if (inNamesRef.current) {
+      updateParticipants(inNamesRef.current.value);
+    }
+  }, [updateParticipants]);
+
+  const handleBtnShuffleClick = useCallback(() => {
+    if (inNamesRef.current) {
+      updateParticipants(inNamesRef.current.value);
+    }
+  }, [updateParticipants]);
+
+  const handleBtnStartClick = useCallback(() => {
+    startGame();
+  }, [startGame]);
+
+  const handleChkSkillChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setUseSkills(e.target.checked);
+  }, [setUseSkills]);
+
+  const handleInWinningRankChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const v = parseInt(e.target.value, 10);
+      setWinnerRank(isNaN(v) || v < 1 ? 1 : v, 'custom');
+    },
+    [setWinnerRank],
+  );
+
+  const handleBtnLastWinnerClick = useCallback(() => {
+    const total = rouletteInstance?.getCount() ?? 1;
+    setWinnerRank(total > 0 ? total : 1, 'last');
+  }, [setWinnerRank, rouletteInstance]);
+
+  const handleBtnFirstWinnerClick = useCallback(() => {
+    setWinnerRank(1, 'first');
+  }, [setWinnerRank]);
+
+  const handleMapChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const index = parseInt(e.target.value, 10);
+    setMap(index);
+  }, [setMap]);
+
+  const handleAutoRecordingChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setAutoRecording(e.target.checked);
+  }, [setAutoRecording]);
 
   if (!isManager || (gameDetails && gameDetails.status !== GameStatus.WAITING)) {
     return null;
@@ -73,7 +169,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <i className="icon map"></i>
             <span data-trans>Map</span>
           </label>
-          <select id="sltMap" ref={sltMapRef} onChange={onMapChange} disabled={settingsDisabled}></select>
+          <select id="sltMap" ref={sltMapRef} onChange={handleMapChange} disabled={settingsDisabled}></select>
         </div>
         <div className="row">
           <label htmlFor="chkAutoRecording">
@@ -84,7 +180,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             type="checkbox"
             id="chkAutoRecording"
             ref={chkAutoRecordingRef}
-            onChange={onAutoRecordingChange}
+            onChange={handleAutoRecordingChange}
             disabled={settingsDisabled}
           />
         </div>
@@ -96,7 +192,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <div className="btn-group">
             <button
               ref={btnFirstWinnerRef}
-              onClick={onFirstWinnerClick}
+              onClick={handleBtnFirstWinnerClick}
               className={`btn-winner btn-first-winner ${winnerSelectionType === 'first' ? 'active' : ''}`}
               data-trans
               disabled={settingsDisabled}
@@ -105,7 +201,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </button>
             <button
               ref={btnLastWinnerRef}
-              onClick={onLastWinnerClick}
+              onClick={handleBtnLastWinnerClick}
               className={`btn-winner btn-last-winner ${winnerSelectionType === 'last' ? 'active' : ''}`}
               data-trans
               disabled={settingsDisabled}
@@ -118,7 +214,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
               defaultValue="1"
               min="1"
               ref={inWinningRankRef}
-              onChange={onWinningRankChange}
+              onChange={handleInWinningRankChange}
               className={winnerSelectionType === 'custom' ? 'active' : ''}
               disabled={settingsDisabled}
             />
@@ -134,7 +230,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             id="chkSkill"
             defaultChecked
             ref={chkSkillRef}
-            onChange={onSkillChange}
+            onChange={handleChkSkillChange}
             disabled={settingsDisabled}
           />
         </div>
@@ -147,16 +243,16 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           data-trans="placeholder"
           defaultValue="짱구*5, 짱아*10, 봉미선*3"
           ref={inNamesRef}
-          onInput={onNamesInput}
-          onBlur={onNamesBlur}
+          onInput={handleInNamesInput}
+          onBlur={handleInNamesBlur}
           disabled={gameFinishedOrInProgress}
         ></textarea>
         <div className="actions">
-          <button id="btnShuffle" ref={btnShuffleRef} onClick={onShuffleClick} disabled={gameFinishedOrInProgress}>
+          <button id="btnShuffle" ref={btnShuffleRef} onClick={handleBtnShuffleClick} disabled={gameFinishedOrInProgress}>
             <i className="icon shuffle"></i>
             <span data-trans>Shuffle</span>
           </button>
-          <button id="btnStart" ref={btnStartRef} onClick={onStartClick} disabled={gameFinishedOrInProgress}>
+          <button id="btnStart" ref={btnStartRef} onClick={handleBtnStartClick} disabled={gameFinishedOrInProgress}>
             <i className="icon play"></i>
             <span data-trans>
               {gameDetails && gameDetails.status === GameStatus.IN_PROGRESS
