@@ -54,8 +54,17 @@ const GamePageContent: FC = () => {
   } = useGame();
 
   // Refs for DOM elements
+  const inNamesRef = useRef<HTMLTextAreaElement>(null);
+  const inWinningRankRef = useRef<HTMLInputElement>(null);
+  const chkSkillRef = useRef<HTMLInputElement>(null);
+  const sltMapRef = useRef<HTMLSelectElement>(null);
+  const chkAutoRecordingRef = useRef<HTMLInputElement>(null);
   const rouletteCanvasContainerRef = useRef<HTMLDivElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
+  const btnShuffleRef = useRef<HTMLButtonElement>(null);
+  const btnStartRef = useRef<HTMLButtonElement>(null);
+  const btnLastWinnerRef = useRef<HTMLButtonElement>(null);
+  const btnFirstWinnerRef = useRef<HTMLButtonElement>(null);
 
   // Initial load and game setup
   useEffect(() => {
@@ -64,6 +73,117 @@ const GamePageContent: FC = () => {
     }
   }, [initializeGame]);
 
+  // Update UI elements based on gameDetails from context
+  useEffect(() => {
+    if (gameDetails) {
+      if (gameDetails.status === GameStatus.WAITING || gameDetails.status === GameStatus.IN_PROGRESS) {
+        if (inNamesRef.current && gameDetails.marbles && gameDetails.marbles.length > 0) {
+          // GameContext에서 localStorage 로드를 처리하므로, 여기서는 UI만 업데이트
+          inNamesRef.current.value = gameDetails.marbles.join(',');
+        }
+        if (inWinningRankRef.current && gameDetails.winningRank !== null) {
+          inWinningRankRef.current.value = gameDetails.winningRank.toString();
+          setWinnerSelectionType(gameDetails.winningRank === 1 ? 'first' : 'custom');
+        }
+        if (sltMapRef.current && gameDetails.mapIndex !== null) {
+          sltMapRef.current.value = gameDetails.mapIndex.toString();
+        }
+        // Speed is handled by window.options in GameContext
+      }
+    }
+  }, [gameDetails, setWinnerSelectionType]);
+
+  // Update map options when availableMaps changes
+  useEffect(() => {
+    if (sltMapRef.current) {
+      sltMapRef.current.innerHTML = '';
+      if (availableMaps.length === 0) {
+        sltMapRef.current.innerHTML = '<option value="">Loading maps...</option>';
+        sltMapRef.current.disabled = true;
+      } else {
+        availableMaps.forEach((map) => {
+          const option = document.createElement('option');
+          option.value = map.index.toString();
+          option.innerHTML = map.title;
+          sltMapRef.current!.append(option);
+        });
+        sltMapRef.current.disabled = false;
+        const currentMapIdx = gameDetails?.mapIndex;
+        if (currentMapIdx !== null && typeof currentMapIdx !== 'undefined') {
+          sltMapRef.current.value = currentMapIdx.toString();
+        }
+      }
+    }
+  }, [availableMaps, gameDetails?.mapIndex]);
+
+  // Load saved names from localStorage (GameContext에서 처리하므로 여기서는 제거)
+  useEffect(() => {
+    const savedNames = localStorage.getItem('mbr_names');
+    if (savedNames && inNamesRef.current) {
+      inNamesRef.current.value = savedNames;
+    }
+  }, []);
+
+  // Set auto recording checkbox
+  useEffect(() => {
+    if (chkAutoRecordingRef.current && window.options && rouletteInstance) {
+      chkAutoRecordingRef.current.checked = window.options.autoRecording;
+      rouletteInstance.setAutoRecording(window.options.autoRecording);
+    }
+  }, [rouletteInstance]);
+
+  const handleInNamesInput = useCallback(() => {
+    if (inNamesRef.current) {
+      updateParticipants(inNamesRef.current.value);
+    }
+  }, [updateParticipants]);
+
+  const handleInNamesBlur = useCallback(() => {
+    if (inNamesRef.current) {
+      updateParticipants(inNamesRef.current.value);
+    }
+  }, [updateParticipants]);
+
+  const handleBtnShuffleClick = useCallback(() => {
+    if (inNamesRef.current) {
+      updateParticipants(inNamesRef.current.value);
+    }
+  }, [updateParticipants]);
+
+  const handleBtnStartClick = useCallback(() => {
+    startGame();
+  }, [startGame]);
+
+  const handleChkSkillChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setUseSkills(e.target.checked);
+  }, [setUseSkills]);
+
+  const handleInWinningRankChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const v = parseInt(e.target.value, 10);
+      setWinnerRank(isNaN(v) || v < 1 ? 1 : v, 'custom');
+    },
+    [setWinnerRank],
+  );
+
+  const handleBtnLastWinnerClick = useCallback(() => {
+    const total = rouletteInstance?.getCount() ?? 1;
+    setWinnerRank(total > 0 ? total : 1, 'last');
+  }, [setWinnerRank, rouletteInstance]);
+
+  const handleBtnFirstWinnerClick = useCallback(() => {
+    setWinnerRank(1, 'first');
+  }, [setWinnerRank]);
+
+  const handleMapChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const index = parseInt(e.target.value, 10);
+    setMap(index);
+  }, [setMap]);
+
+  const handleAutoRecordingChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setAutoRecording(e.target.checked);
+  }, [setAutoRecording]);
+
   return (
     <>
       <GameBar roomName={roomName} isManager={isManager} />
@@ -71,6 +191,25 @@ const GamePageContent: FC = () => {
         isManager={isManager}
         gameDetails={gameDetails}
         winnerSelectionType={winnerSelectionType}
+        sltMapRef={sltMapRef}
+        chkAutoRecordingRef={chkAutoRecordingRef}
+        inWinningRankRef={inWinningRankRef}
+        chkSkillRef={chkSkillRef}
+        inNamesRef={inNamesRef}
+        btnShuffleRef={btnShuffleRef}
+        btnStartRef={btnStartRef}
+        btnFirstWinnerRef={btnFirstWinnerRef}
+        btnLastWinnerRef={btnLastWinnerRef}
+        onMapChange={handleMapChange}
+        onAutoRecordingChange={handleAutoRecordingChange}
+        onFirstWinnerClick={handleBtnFirstWinnerClick}
+        onLastWinnerClick={handleBtnLastWinnerClick}
+        onWinningRankChange={handleInWinningRankChange}
+        onSkillChange={handleChkSkillChange}
+        onNamesInput={handleInNamesInput}
+        onNamesBlur={handleInNamesBlur}
+        onShuffleClick={handleBtnShuffleClick}
+        onStartClick={handleBtnStartClick}
       />
       <div className="copyright">
         &copy; 2025.{' '}
@@ -110,3 +249,4 @@ const GamePage: FC = () => {
 };
 
 export default GamePage;
+  
