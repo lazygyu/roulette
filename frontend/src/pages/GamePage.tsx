@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, FC } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../styles.css';
-import { Roulette } from '../roulette';
-import socketService from '../services/socketService';
 import options from '../options';
 import { getRoomDetails, getRoomGameDetails, getGameRanking } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,16 +11,6 @@ import GameBar from '../components/GameBar';
 import SettingsPanel from '../components/SettingsPanel';
 import { TranslatedLanguages, TranslationKeys, Translations } from '../data/languages';
 import { GameProvider, useGame } from '../contexts/GameContext'; // GameContext 임포트
-// GamePage에 필요한 window 속성들을 전역 Window 인터페이스에 선택적으로 추가
-declare global {
-  interface Window {
-    roullete?: Roulette;
-    options?: typeof options;
-    dataLayer?: any[];
-    translateElement?: (element: HTMLElement) => void;
-  }
-}
-
 const GamePageContent: FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
@@ -86,7 +74,6 @@ const GamePageContent: FC = () => {
         if (sltMapRef.current && gameDetails.mapIndex !== null) {
           sltMapRef.current.value = gameDetails.mapIndex.toString();
         }
-        // Speed is handled by window.options in GameContext
       }
     }
   }, [gameDetails]); // setWinnerSelectionType 의존성 제거
@@ -124,9 +111,9 @@ const GamePageContent: FC = () => {
 
   // Set auto recording checkbox
   useEffect(() => {
-    if (chkAutoRecordingRef.current && window.options && rouletteInstance) {
-      chkAutoRecordingRef.current.checked = window.options.autoRecording;
-      rouletteInstance.setAutoRecording(window.options.autoRecording);
+    if (chkAutoRecordingRef.current && options && rouletteInstance) {
+      chkAutoRecordingRef.current.checked = options.autoRecording;
+      rouletteInstance.setAutoRecording(options.autoRecording);
     }
   }, [rouletteInstance]);
 

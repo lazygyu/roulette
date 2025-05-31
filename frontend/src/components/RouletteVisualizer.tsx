@@ -24,10 +24,10 @@ const RouletteVisualizer: React.FC<RouletteVisualizerProps> = ({ gameState }) =>
     };
 
     resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    addEventListener('resize', resizeCanvas);
 
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
+      removeEventListener('resize', resizeCanvas);
     };
   }, []);
 

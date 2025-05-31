@@ -63,9 +63,9 @@ class SocketService {
 
       this.isConnecting = true; // 연결 시도 시작
 
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.hostname;
-      const port = process.env.NODE_ENV === 'production' ? window.location.port : '3000';
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = location.hostname;
+      const port = process.env.NODE_ENV === 'production' ? location.port : '3000';
       const socketUrl = `${protocol}//${host}:${port}/game`;
 
       console.log(`Connecting to socket server at ${socketUrl} for room ${roomId}...`);

@@ -17,16 +17,6 @@ import { GameStatus, RoomInfo, RankingEntry, GameInfo } from '../types/gameTypes
 import { TranslatedLanguages, TranslationKeys, Translations } from '../data/languages';
 import { parseName } from '../utils/parseName'; // 분리된 parseName 임포트
 
-// GameContext에 필요한 window 속성들을 전역 Window 인터페이스에 선택적으로 추가
-declare global {
-  interface Window {
-    roullete?: Roulette;
-    options?: typeof options;
-    dataLayer?: any[];
-    translateElement?: (element: HTMLElement) => void;
-  }
-}
-
 interface GameContextType {
   roomId: string | undefined;
   roomName: string | null;
@@ -90,7 +80,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Language/Translation setup
   useEffect(() => {
-    window.options = options; // Ensure options are globally available for Roulette
     const originalDocumentLang = document.documentElement.lang;
     const defaultLoc: TranslatedLanguages = 'en';
 
@@ -105,7 +94,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         else element.innerText = translation;
       }
     };
-    window.translateElement = translateElForPage;
     const translateP = () => document.querySelectorAll('[data-trans]').forEach(translateElForPage);
     const setPageLoc = (newLoc: string) => {
       const newLocTyped = newLoc as TranslatedLanguages;
@@ -118,7 +106,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setPageLoc(getBrowserLoc());
 
     return () => {
-      delete window.translateElement;
       document.documentElement.lang = originalDocumentLang;
     };
   }, [currentLocale]); // Depend on currentLocale to re-translate if it changes
@@ -152,8 +139,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setWinnerSelectionType('first'); // Default to first if null
             setWinningRankDisplay(1);
           }
-          if (window.options && fetchedGameDetails.speed !== null) {
-            window.options.speed = fetchedGameDetails.speed;
+          if (options && fetchedGameDetails.speed !== null) {
+            options.speed = fetchedGameDetails.speed;
           }
         }
       }
@@ -202,7 +189,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [roomId, passwordInput, navigate, fetchGameDetailsAndInitializeUI, rouletteInstance]);
 
   const setWinnerRank = useCallback((rank: number, type: 'first' | 'last' | 'custom') => {
-    if (window.options) window.options.winningRank = rank;
+    if (options) options.winningRank = rank;
     socketService.setWinningRank(rank - 1); // 1-index to 0-index for backend
     setWinnerSelectionType(type);
     setWinningRankDisplay(rank); // Update display value
@@ -254,7 +241,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [rouletteInstance]);
 
   const setUseSkills = useCallback((use: boolean) => {
-    if (window.options) window.options.useSkills = use;
+    if (options) options.useSkills = use;
   }, []);
 
   const setMap = useCallback((index: number) => {
@@ -284,7 +271,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!currentRouletteInstance) {
       const newRouletteInstance = new Roulette();
       setRouletteInstance(newRouletteInstance);
-      window.roullete = newRouletteInstance; // Keep for external access if needed
       try {
         await newRouletteInstance.initialize(canvasContainer);
         currentRouletteInstance = newRouletteInstance; // Use the newly created instance
@@ -386,13 +372,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     // Set auto recording based on options
-    if (window.options && currentRouletteInstance) {
-      currentRouletteInstance.setAutoRecording(window.options.autoRecording);
+    if (options && currentRouletteInstance) {
+      currentRouletteInstance.setAutoRecording(options.autoRecording);
     }
 
     // Store unsubscribe functions in a ref or state if needed for cleanup outside this function
     // For now, we'll rely on the useEffect cleanup for socketService.disconnect()
-    // and window.roullete deletion. The individual socket subscriptions will be managed by socketService itself.
+    // The individual socket subscriptions will be managed by socketService itself.
     // The return value of initializeGame should be void as per GameContextType.
   }, [roomId, navigate, rouletteInstance, fetchGameDetailsAndInitializeUI]);
 
@@ -400,7 +386,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     return () => {
       socketService.disconnect();
-      delete window.roullete;
     };
   }, []);
 
