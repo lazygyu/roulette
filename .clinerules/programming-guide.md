@@ -16,7 +16,8 @@
 ## Code Planning Rule (For Plan Mode)
 
 - For planning, you should read the code and understand its overall structure.
-- You must read all related code by yourself.
+- You must read all related code by yourself. You should proactively read and understand the code.
+  - Use read_file freely to read the code.
 - By reading the code, you can understand the following:
   - The overall structure of the codebase.
   - How different components interact with each other.
