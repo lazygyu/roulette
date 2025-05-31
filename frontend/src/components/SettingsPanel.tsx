@@ -5,9 +5,9 @@ interface SettingsPanelProps {
   isManager: boolean;
   gameDetails: GameInfo | null;
   winnerSelectionType: 'first' | 'last' | 'custom';
+  winningRankDisplay: number | null; // UI에 표시될 1-index 값
   sltMapRef: React.RefObject<HTMLSelectElement | null>;
   chkAutoRecordingRef: React.RefObject<HTMLInputElement | null>;
-  inWinningRankRef: React.RefObject<HTMLInputElement | null>;
   chkSkillRef: React.RefObject<HTMLInputElement | null>;
   inNamesRef: React.RefObject<HTMLTextAreaElement | null>;
   btnShuffleRef: React.RefObject<HTMLButtonElement | null>;
@@ -30,9 +30,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   isManager,
   gameDetails,
   winnerSelectionType,
+  winningRankDisplay, // winningRankDisplay 추가
   sltMapRef,
   chkAutoRecordingRef,
-  inWinningRankRef,
   chkSkillRef,
   inNamesRef,
   btnShuffleRef,
@@ -115,9 +115,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <input
               type="number"
               id="in_winningRank"
-              defaultValue="1"
+              value={winningRankDisplay ?? ''} // defaultValue 대신 value 사용
               min="1"
-              ref={inWinningRankRef}
               onChange={onWinningRankChange}
               className={winnerSelectionType === 'custom' ? 'active' : ''}
               disabled={settingsDisabled}

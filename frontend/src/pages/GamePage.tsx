@@ -41,6 +41,7 @@ const GamePageContent: FC = () => {
     joinError,
     winnerSelectionType,
     setWinnerSelectionType,
+    winningRankDisplay, // winningRankDisplay 추가
     rouletteInstance,
     availableMaps,
     initializeGame,
@@ -55,7 +56,7 @@ const GamePageContent: FC = () => {
 
   // Refs for DOM elements
   const inNamesRef = useRef<HTMLTextAreaElement>(null);
-  const inWinningRankRef = useRef<HTMLInputElement>(null);
+  const inWinningRankRef = useRef<HTMLInputElement>(null); // SettingsPanel에서 직접 제어하므로 제거 예정
   const chkSkillRef = useRef<HTMLInputElement>(null);
   const sltMapRef = useRef<HTMLSelectElement>(null);
   const chkAutoRecordingRef = useRef<HTMLInputElement>(null);
@@ -81,17 +82,14 @@ const GamePageContent: FC = () => {
           // GameContext에서 localStorage 로드를 처리하므로, 여기서는 UI만 업데이트
           inNamesRef.current.value = gameDetails.marbles.join(',');
         }
-        if (inWinningRankRef.current && gameDetails.winningRank !== null) {
-          inWinningRankRef.current.value = gameDetails.winningRank.toString();
-          setWinnerSelectionType(gameDetails.winningRank === 1 ? 'first' : 'custom');
-        }
+        // inWinningRankRef.current.value 설정 로직 제거 (winningRankDisplay로 대체)
         if (sltMapRef.current && gameDetails.mapIndex !== null) {
           sltMapRef.current.value = gameDetails.mapIndex.toString();
         }
         // Speed is handled by window.options in GameContext
       }
     }
-  }, [gameDetails, setWinnerSelectionType]);
+  }, [gameDetails]); // setWinnerSelectionType 의존성 제거
 
   // Update map options when availableMaps changes
   useEffect(() => {
@@ -191,9 +189,9 @@ const GamePageContent: FC = () => {
         isManager={isManager}
         gameDetails={gameDetails}
         winnerSelectionType={winnerSelectionType}
+        winningRankDisplay={winningRankDisplay} // winningRankDisplay 추가
         sltMapRef={sltMapRef}
         chkAutoRecordingRef={chkAutoRecordingRef}
-        inWinningRankRef={inWinningRankRef}
         chkSkillRef={chkSkillRef}
         inNamesRef={inNamesRef}
         btnShuffleRef={btnShuffleRef}
@@ -249,4 +247,3 @@ const GamePage: FC = () => {
 };
 
 export default GamePage;
-  

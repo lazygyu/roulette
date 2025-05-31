@@ -42,12 +42,13 @@ interface GameContextType {
   joinError: string | null;
   winnerSelectionType: 'first' | 'last' | 'custom';
   setWinnerSelectionType: (type: 'first' | 'last' | 'custom') => void;
+  winningRankDisplay: number | null; // UI에 표시될 1-index 값
   currentLocale: TranslatedLanguages;
   rouletteInstance: Roulette | null;
   availableMaps: { index: number; title: string }[];
   initializeGame: (canvasContainer: HTMLDivElement) => Promise<void>;
   handlePasswordJoin: () => Promise<void>;
-  setWinnerRank: (rank: number, type: 'first' | 'last' | 'custom') => void; // 다시 추가
+  setWinnerRank: (rank: number, type: 'first' | 'last' | 'custom') => void;
   updateParticipants: (rawNamesInput: string) => void;
   startGame: () => void;
   setUseSkills: (use: boolean) => void;
@@ -77,6 +78,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [joinError, setJoinError] = useState<string | null>(null);
   const [currentLocale, setCurrentLocale] = useState<TranslatedLanguages>('en');
   const [availableMaps, setAvailableMaps] = useState<{ index: number; title: string }[]>([]);
+  const [winningRankDisplay, setWinningRankDisplay] = useState<number | null>(1); // UI에 표시될 1-index 값
 
   useEffect(() => {
     gameDetailsRef.current = gameDetails;
@@ -144,7 +146,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // This part will be handled by GamePage passing ref values
           }
           if (fetchedGameDetails.winningRank !== null) {
-            setWinnerSelectionType(fetchedGameDetails.winningRank === 1 ? 'first' : 'custom');
+            setWinnerSelectionType(fetchedGameDetails.winningRank === 0 ? 'first' : 'custom'); // 0-index to 'first'
+            setWinningRankDisplay(fetchedGameDetails.winningRank + 1); // 0-index to 1-index for display
+          } else {
+            setWinnerSelectionType('first'); // Default to first if null
+            setWinningRankDisplay(1);
           }
           if (window.options && fetchedGameDetails.speed !== null) {
             window.options.speed = fetchedGameDetails.speed;
@@ -197,8 +203,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const setWinnerRank = useCallback((rank: number, type: 'first' | 'last' | 'custom') => {
     if (window.options) window.options.winningRank = rank;
-    socketService.setWinningRank(rank - 1);
+    socketService.setWinningRank(rank - 1); // 1-index to 0-index for backend
     setWinnerSelectionType(type);
+    setWinningRankDisplay(rank); // Update display value
   }, []);
 
   const updateParticipants = useCallback((rawNamesInput: string) => {
@@ -412,18 +419,19 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     joinError,
     winnerSelectionType,
     setWinnerSelectionType,
+    winningRankDisplay, // 추가
     currentLocale,
     rouletteInstance,
     availableMaps,
     initializeGame,
     handlePasswordJoin,
     setWinnerRank,
-    updateParticipants, // submitParticipantNames 대신 추가
+    updateParticipants,
     startGame,
     setUseSkills,
     setMap,
     setAutoRecording,
-    parseName, // Exported from utils
+    parseName,
   };
 
   return <GameContext.Provider value={contextValue}>{children}</GameContext.Provider>;
