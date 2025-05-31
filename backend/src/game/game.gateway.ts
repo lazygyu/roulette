@@ -261,7 +261,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     try {
-      this.gameSessionService.setMarbles(roomId, names);
+      await this.gameSessionService.setMarbles(roomId, names);
       const gameState = this.gameSessionService.getGameState(roomId);
       this.server.to(prefixedRoomId).emit('game_state', gameState);
       this.logger.log(`방 ${prefixedRoomId}(${roomId}) 마블 설정 변경 by ${user.nickname} (${client.id})`);
@@ -323,7 +323,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     try {
-      this.gameSessionService.setMap(roomId, mapIndex);
+      await this.gameSessionService.setMap(roomId, mapIndex);
       const gameState = this.gameSessionService.getGameState(roomId);
       this.server.to(prefixedRoomId).emit('game_state', gameState);
       this.logger.log(`방 ${prefixedRoomId}(${roomId}) 맵 ${mapIndex}로 설정 by ${user.nickname} (${client.id})`);
