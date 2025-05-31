@@ -6,14 +6,11 @@ interface SettingsPanelProps {
   gameDetails: GameInfo | null;
   winnerSelectionType: 'first' | 'last' | 'custom';
   winningRankDisplay: number | null; // UI에 표시될 1-index 값
-  sltMapRef: React.RefObject<HTMLSelectElement | null>;
-  chkAutoRecordingRef: React.RefObject<HTMLInputElement | null>;
-  chkSkillRef: React.RefObject<HTMLInputElement | null>;
-  inNamesRef: React.RefObject<HTMLTextAreaElement | null>;
-  btnShuffleRef: React.RefObject<HTMLButtonElement | null>;
-  btnStartRef: React.RefObject<HTMLButtonElement | null>;
-  btnFirstWinnerRef: React.RefObject<HTMLButtonElement | null>;
-  btnLastWinnerRef: React.RefObject<HTMLButtonElement | null>;
+  mapIndex: number | null;
+  availableMaps: { index: number; title: string; }[];
+  autoRecording: boolean;
+  useSkills: boolean;
+  namesInput: string;
   onMapChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   onAutoRecordingChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onFirstWinnerClick: () => void;
@@ -31,14 +28,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   gameDetails,
   winnerSelectionType,
   winningRankDisplay, // winningRankDisplay 추가
-  sltMapRef,
-  chkAutoRecordingRef,
-  chkSkillRef,
-  inNamesRef,
-  btnShuffleRef,
-  btnStartRef,
-  btnFirstWinnerRef,
-  btnLastWinnerRef,
+  mapIndex,
+  availableMaps,
+  autoRecording,
+  useSkills,
+  namesInput,
   onMapChange,
   onAutoRecordingChange,
   onFirstWinnerClick,
@@ -73,7 +67,17 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <i className="icon map"></i>
             <span data-trans>Map</span>
           </label>
-          <select id="sltMap" ref={sltMapRef} onChange={onMapChange} disabled={settingsDisabled}></select>
+          <select id="sltMap" value={mapIndex ?? ''} onChange={onMapChange} disabled={settingsDisabled}>
+            {availableMaps.length === 0 ? (
+              <option value="">Loading maps...</option>
+            ) : (
+              availableMaps.map((map) => (
+                <option key={map.index} value={map.index.toString()}>
+                  {map.title}
+                </option>
+              ))
+            )}
+          </select>
         </div>
         <div className="row">
           <label htmlFor="chkAutoRecording">
@@ -83,7 +87,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <input
             type="checkbox"
             id="chkAutoRecording"
-            ref={chkAutoRecordingRef}
+            checked={autoRecording}
             onChange={onAutoRecordingChange}
             disabled={settingsDisabled}
           />
@@ -95,7 +99,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           </label>
           <div className="btn-group">
             <button
-              ref={btnFirstWinnerRef}
               onClick={onFirstWinnerClick}
               className={`btn-winner btn-first-winner ${winnerSelectionType === 'first' ? 'active' : ''}`}
               data-trans
@@ -104,7 +107,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
               First
             </button>
             <button
-              ref={btnLastWinnerRef}
               onClick={onLastWinnerClick}
               className={`btn-winner btn-last-winner ${winnerSelectionType === 'last' ? 'active' : ''}`}
               data-trans
@@ -131,8 +133,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <input
             type="checkbox"
             id="chkSkill"
-            defaultChecked
-            ref={chkSkillRef}
+            checked={useSkills}
             onChange={onSkillChange}
             disabled={settingsDisabled}
           />
@@ -144,18 +145,17 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           id="in_names"
           placeholder="Input names separated by commas or line feed here"
           data-trans="placeholder"
-          defaultValue="짱구*5, 짱아*10, 봉미선*3"
-          ref={inNamesRef}
+          value={namesInput}
           onInput={onNamesInput}
           onBlur={onNamesBlur}
           disabled={gameFinishedOrInProgress}
         ></textarea>
         <div className="actions">
-          <button id="btnShuffle" ref={btnShuffleRef} onClick={onShuffleClick} disabled={gameFinishedOrInProgress}>
+          <button id="btnShuffle" onClick={onShuffleClick} disabled={gameFinishedOrInProgress}>
             <i className="icon shuffle"></i>
             <span data-trans>Shuffle</span>
           </button>
-          <button id="btnStart" ref={btnStartRef} onClick={onStartClick} disabled={gameFinishedOrInProgress}>
+          <button id="btnStart" onClick={onStartClick} disabled={gameFinishedOrInProgress}>
             <i className="icon play"></i>
             <span data-trans>
               {gameDetails && gameDetails.status === GameStatus.IN_PROGRESS

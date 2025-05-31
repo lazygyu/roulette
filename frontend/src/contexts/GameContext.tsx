@@ -240,16 +240,19 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     socketService.startGame();
   }, [rouletteInstance]);
 
-  const setUseSkills = useCallback((use: boolean) => {
-    if (options) options.useSkills = use;
+    const setUseSkills = useCallback((use: boolean) => {
+    setGameDetails((prev) => (prev ? { ...prev, useSkills: use } : prev));
+    // options.useSkills = use; // options 직접 수정 제거
   }, []);
 
   const setMap = useCallback((index: number) => {
     if (!isNaN(index)) socketService.setMap(index);
+    setGameDetails((prev) => (prev ? { ...prev, mapIndex: index } : prev));
   }, []);
 
   const setAutoRecording = useCallback((auto: boolean) => {
     if (rouletteInstance) rouletteInstance.setAutoRecording(auto);
+    setGameDetails((prev) => (prev ? { ...prev, autoRecording: auto } : prev));
   }, [rouletteInstance]);
 
   // Main game initialization logic
@@ -338,7 +341,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             : gameState.isRunning
               ? GameStatus.IN_PROGRESS
               : GameStatus.WAITING;
-        const marbles = gameState.marbles ? gameState.marbles.map((m) => m.name) : prev?.marbles || [];
+          const marbles = gameState.marbles ? gameState.marbles.map((m) => m.name) : prev?.marbles || [];
         return {
           id: prev?.id || 0,
           status: newStatus,
@@ -346,6 +349,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           marbles,
           winningRank: gameState.winnerRank ?? prev?.winningRank ?? null,
           speed: prev?.speed ?? null,
+          useSkills: prev?.useSkills ?? true, // 기본값 설정
+          autoRecording: prev?.autoRecording ?? options.autoRecording, // 기본값 설정
           createdAt: prev?.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
