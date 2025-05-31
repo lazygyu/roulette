@@ -23,7 +23,7 @@ declare global {
   }
 }
 
-const GamePage: FC = () => { // React.FC -> FC
+const GamePage: FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const inNamesRef = useRef<HTMLTextAreaElement>(null);
@@ -120,8 +120,8 @@ const GamePage: FC = () => { // React.FC -> FC
       } else {
         setJoinError(response.message || 'Failed to join room. Incorrect password?');
         if (!response.requiresPassword) {
-           alert(response.message || '방 입장에 실패했습니다. 이전 페이지로 돌아갑니다.');
-           navigate(-1);
+          alert(response.message || '방 입장에 실패했습니다. 이전 페이지로 돌아갑니다.');
+          navigate(-1);
         }
       }
     } catch (error) {
@@ -141,7 +141,10 @@ const GamePage: FC = () => { // React.FC -> FC
   const getNames = useCallback((): string[] => {
     if (!inNamesRef.current) return [];
     const value = inNamesRef.current.value.trim();
-    return value.split(/[,\r\n]/g).map((v) => v.trim()).filter((v) => !!v);
+    return value
+      .split(/[,\r\n]/g)
+      .map((v) => v.trim())
+      .filter((v) => !!v);
   }, []);
 
   const parseName = useCallback((nameStr: string) => {
@@ -164,6 +167,7 @@ const GamePage: FC = () => { // React.FC -> FC
   const submitParticipantNamesToBackend = useCallback(() => {
     if (gameDetails?.status === GameStatus.FINISHED) return;
     const names = getNames();
+    console.log('names:', JSON.stringify(names));
     socketService.setMarbles(names);
     localStorage.setItem('mbr_names', names.join(','));
   }, [gameDetails?.status, getNames]);
@@ -183,7 +187,7 @@ const GamePage: FC = () => { // React.FC -> FC
       if (!nameSet.has(key)) nameSet.add(key);
       nameCounts[key] = (nameCounts[key] || 0) + item.count;
     });
-    const result = Object.keys(nameCounts).map(key => nameCounts[key] > 1 ? `${key}*${nameCounts[key]}` : key);
+    const result = Object.keys(nameCounts).map((key) => (nameCounts[key] > 1 ? `${key}*${nameCounts[key]}` : key));
     const newValue = result.join(',');
     if (inNamesRef.current.value !== newValue) {
       inNamesRef.current.value = newValue;
@@ -211,10 +215,13 @@ const GamePage: FC = () => { // React.FC -> FC
     if (window.options) window.options.useSkills = e.target.checked;
   }, []);
 
-  const handleInWinningRankChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = parseInt(e.target.value, 10);
-    setWinnerRank(isNaN(v) || v < 1 ? 1 : v, 'custom');
-  }, [setWinnerRank]);
+  const handleInWinningRankChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const v = parseInt(e.target.value, 10);
+      setWinnerRank(isNaN(v) || v < 1 ? 1 : v, 'custom');
+    },
+    [setWinnerRank],
+  );
 
   const handleBtnLastWinnerClick = useCallback(() => {
     const total = window.roullete?.getCount() ?? 1;
@@ -295,9 +302,11 @@ const GamePage: FC = () => { // React.FC -> FC
           await socketService.connect(roomId);
         }
 
-        if (room.isPasswordRequired && !socketService.getJoinedStatus(roomId)) { // Check if already joined
+        if (room.isPasswordRequired && !socketService.getJoinedStatus(roomId)) {
+          // Check if already joined
           setShowPasswordModal(true);
-        } else if (!socketService.getJoinedStatus(roomId)) { // Not password protected and not joined
+        } else if (!socketService.getJoinedStatus(roomId)) {
+          // Not password protected and not joined
           const joinResponse = await socketService.joinRoom(roomId, undefined);
           if (joinResponse.success) {
             if (joinResponse.gameState && rouletteInstance) {
@@ -309,8 +318,9 @@ const GamePage: FC = () => { // React.FC -> FC
             navigate(-1);
             return; // Stop further execution if join fails
           }
-        } else { // Already joined (either no password, or password was handled)
-             fetchGameDetailsAndInitializeUI(numericRoomId);
+        } else {
+          // Already joined (either no password, or password was handled)
+          fetchGameDetailsAndInitializeUI(numericRoomId);
         }
 
         const savedNames = localStorage.getItem('mbr_names');
@@ -338,30 +348,46 @@ const GamePage: FC = () => { // React.FC -> FC
 
         if (rouletteInstance) {
           unsubscribeGameState = socketService.onGameStateUpdate(async (gameState) => {
+            console.log('gameState:', JSON.stringify(gameState, null, 2));
             if (!gameState || !rouletteInstance) return;
             rouletteInstance.updateStateFromServer(gameState);
-            setGameDetails(prev => {
-              const newStatus = !gameState.isRunning && gameState.winner ? GameStatus.FINISHED : gameState.isRunning ? GameStatus.IN_PROGRESS : GameStatus.WAITING;
-              const marbles = gameState.marbles ? gameState.marbles.map(m => m.name) : prev?.marbles || [];
+            setGameDetails((prev) => {
+              const newStatus =
+                !gameState.isRunning && gameState.winner
+                  ? GameStatus.FINISHED
+                  : gameState.isRunning
+                    ? GameStatus.IN_PROGRESS
+                    : GameStatus.WAITING;
+              const marbles = gameState.marbles ? gameState.marbles.map((m) => m.name) : prev?.marbles || [];
               return {
-                id: prev?.id || 0, status: newStatus, mapIndex: prev?.mapIndex ?? null, marbles,
+                id: prev?.id || 0,
+                status: newStatus,
+                mapIndex: prev?.mapIndex ?? null,
+                marbles,
                 winningRank: gameState.winnerRank ?? prev?.winningRank ?? null,
-                speed: prev?.speed ?? null, createdAt: prev?.createdAt || new Date().toISOString(),
+                speed: prev?.speed ?? null,
+                createdAt: prev?.createdAt || new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
               };
             });
 
-            const gameEndedBySocket = !gameState.isRunning && gameState.winners && gameState.winners.length > 0 && gameState.winners.length >= gameState.winnerRank;
+            const gameEndedBySocket =
+              !gameState.isRunning &&
+              gameState.winners &&
+              gameState.winners.length > 0 &&
+              gameState.winners.length >= gameState.winnerRank;
             if (gameEndedBySocket && gameDetailsRef.current?.status !== GameStatus.FINISHED) {
-                try {
-                    const authGameDetails = await getRoomGameDetails(numericRoomId);
-                    setGameDetails(authGameDetails);
-                    if (authGameDetails.status === GameStatus.FINISHED) {
-                        const ranking = await getGameRanking(numericRoomId);
-                        setFinalRanking(ranking.rankings);
-                        if (ranking.rankings?.length > 0) setShowRankingModal(true);
-                    }
-                } catch (err) { console.error('Error fetching game details/ranking on game end:', err); }
+              try {
+                const authGameDetails = await getRoomGameDetails(numericRoomId);
+                setGameDetails(authGameDetails);
+                if (authGameDetails.status === GameStatus.FINISHED) {
+                  const ranking = await getGameRanking(numericRoomId);
+                  setFinalRanking(ranking.rankings);
+                  if (ranking.rankings?.length > 0) setShowRankingModal(true);
+                }
+              } catch (err) {
+                console.error('Error fetching game details/ranking on game end:', err);
+              }
             }
           });
         }
@@ -369,7 +395,6 @@ const GamePage: FC = () => { // React.FC -> FC
           chkAutoRecordingRef.current.checked = window.options.autoRecording;
           rouletteInstance.setAutoRecording(window.options.autoRecording);
         }
-
       } catch (error: any) {
         alert(error.message || '방 정보를 가져오거나 연결에 실패했습니다. 이전 페이지로 돌아갑니다.');
         navigate(-1);
@@ -402,8 +427,10 @@ const GamePage: FC = () => { // React.FC -> FC
     };
   }, [roomId, navigate, fetchGameDetailsAndInitializeUI]);
 
-  const settingsDisabled = !isManager || gameDetails?.status === GameStatus.FINISHED || gameDetails?.status === GameStatus.IN_PROGRESS;
-  const gameFinishedOrInProgress = gameDetails?.status === GameStatus.FINISHED || gameDetails?.status === GameStatus.IN_PROGRESS;
+  // const settingsDisabled =
+  //   !isManager || gameDetails?.status === GameStatus.FINISHED || gameDetails?.status === GameStatus.IN_PROGRESS;
+  // const gameFinishedOrInProgress =
+  //   gameDetails?.status === GameStatus.FINISHED || gameDetails?.status === GameStatus.IN_PROGRESS;
 
   return (
     <>
@@ -433,12 +460,30 @@ const GamePage: FC = () => { // React.FC -> FC
         onStartClick={handleBtnStartClick}
       />
       <div className="copyright">
-        &copy; 2025. <a href="https://lazygyu.net" target="_blank" rel="noopener noreferrer">lazygyu</a>
-        <span data-trans>This program is freeware and may be used freely anywhere, including in broadcasts and videos.</span>
+        &copy; 2025.{' '}
+        <a href="https://lazygyu.net" target="_blank" rel="noopener noreferrer">
+          lazygyu
+        </a>
+        <span data-trans>
+          This program is freeware and may be used freely anywhere, including in broadcasts and videos.
+        </span>
       </div>
-      <div id="roulette-canvas-container" ref={rouletteCanvasContainerRef} style={{ width: '100%', height: '100%', position: 'fixed', top: 0, left: 0 }} />
-      {showRankingModal && finalRanking && <RankingDisplay ranking={finalRanking} roomName={roomName} onClose={() => setShowRankingModal(false)} />}
-      <PasswordModal show={showPasswordModal} passwordInput={passwordInput} onPasswordInputChange={setPasswordInput} onJoin={handlePasswordJoin} joinError={joinError} passwordInputRef={passwordInputRef} />
+      <div
+        id="roulette-canvas-container"
+        ref={rouletteCanvasContainerRef}
+        style={{ width: '100%', height: '100%', position: 'fixed', top: 0, left: 0 }}
+      />
+      {showRankingModal && finalRanking && (
+        <RankingDisplay ranking={finalRanking} roomName={roomName} onClose={() => setShowRankingModal(false)} />
+      )}
+      <PasswordModal
+        show={showPasswordModal}
+        passwordInput={passwordInput}
+        onPasswordInputChange={setPasswordInput}
+        onJoin={handlePasswordJoin}
+        joinError={joinError}
+        passwordInputRef={passwordInputRef}
+      />
     </>
   );
 };
