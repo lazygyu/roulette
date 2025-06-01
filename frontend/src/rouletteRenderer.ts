@@ -196,13 +196,13 @@ export class RouletteRenderer {
     const elapsed = Date.now() - effectWrapper.startTime;
     const progress = Math.min(elapsed / effectWrapper.duration, 1);
 
-    // 월드 좌표를 화면 좌표로 변환
-    const screenPos = camera.worldToScreen(effectData.position);
+    // 월드 좌표를 화면 좌표로 변환 (이펙트가 월드 좌표계에서 직접 그려지므로, camera.worldToScreen 호출 제거)
+    // const screenPos = camera.worldToScreen(effectData.position); // 이 줄 제거
     console.log(
       '[Renderer] Impact effect:',
       JSON.stringify({
         worldPos: effectData.position,
-        screenPos,
+        // screenPos, // 제거
         progress,
         duration: effectWrapper.duration,
         startTime: effectWrapper.startTime,
@@ -211,7 +211,7 @@ export class RouletteRenderer {
       }),
     );
 
-    // 시간에 따른 투명도 및 크기 변화 (단순화된 버전으로 테스트)
+    // 시간에 따른 투명도 및 크기 변화
     const opacity = 1 - progress;
     // 월드 반경을 화면 반경으로 변환 (initialZoom은 renderScene에서 이미 적용되므로, camera.zoom만 곱함)
     const currentRadius = effectData.radius * camera.zoom * (0.5 + progress * 0.5);
@@ -226,7 +226,8 @@ export class RouletteRenderer {
     context.lineWidth = 2 / (camera.zoom * initialZoom); // 줌에 따라 선 굵기 조절
 
     context.beginPath();
-    context.arc(screenPos.x, screenPos.y, currentRadius, 0, Math.PI * 2, false);
+    // 월드 좌표를 직접 사용
+    context.arc(effectData.position.x, effectData.position.y, currentRadius, 0, Math.PI * 2, false);
     context.stroke();
     context.restore();
   }
