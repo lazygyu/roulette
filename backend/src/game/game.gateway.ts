@@ -83,11 +83,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         client.disconnect();
       }
     } else {
-      this.logger.log(`클라이언트 ${client.id} 익명으로 연결 (토큰 없음)`);
-      // 토큰 없이 연결하는 경우, 익명 사용자로 처리하거나 또는 연결을 거부할 수 있습니다.
-      // 현재 요구사항은 인증된 사용자만 특정 기능을 사용하도록 하는 것이므로,
-      // handleConnection에서는 토큰이 있는 경우에만 user를 할당합니다.
-      // 토큰이 없는 경우, WsUserAttachedGuard가 필요한 핸들러 접근을 막을 것입니다.
+      // 토큰이 없는 경우, 익명 사용자로 처리
+      const anonymousNickname = generateAnonymousNickname(client.id);
+      client.user = { id: client.id, nickname: anonymousNickname, isAnonymous: true };
+      this.logger.log(`클라이언트 ${client.id} 익명으로 연결 (토큰 없음). 닉네임: ${anonymousNickname}`);
     }
   }
 
@@ -106,10 +105,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         client.to(prefixedRoomId).emit('player_left', {
           playerId: client.id,
-          nickname: player?.userInfo.nickname || generateAnonymousNickname(client.id),
+          nickname: player?.userInfo.nickname, // player.userInfo는 항상 존재하므로 fallback 제거
         });
         this.logger.log(
-          `방 ${prefixedRoomId}(${roomId})에서 플레이어 ${player?.userInfo.nickname || '익명'} (${client.id}) 퇴장`,
+          `방 ${prefixedRoomId}(${roomId})에서 플레이어 ${player?.userInfo.nickname || '익명'} (${client.id}) 퇴장`, // 로그에는 익명 fallback 유지
         );
 
         if (this.gameEngineService.isLoopRunning(roomId)) {
@@ -126,10 +125,31 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: JoinRoomDto, // DTO 사용 (password 필드 포함)
-    @SocketCurrentUser() user: User, // 인증된 사용자 정보
+    // @SocketCurrentUser() user: User, // SocketCurrentUser 데코레이터는 이제 User | AnonymousUser | null 반환
   ) {
     const { roomId, password } = data; // password 추출
-    const finalUserInfo = user || { nickname: generateAnonymousNickname(client.id) };
+    // client.user는 handleConnection에서 이미 User 또는 AnonymousUser로 설정됨
+    const currentUser = client.user;
+
+    // finalUserInfo 구성: 인증된 사용자 또는 익명 사용자 정보
+    const finalUserInfo = currentUser
+      ? 'isAnonymous' in currentUser && currentUser.isAnonymous // currentUser가 AnonymousUser 타입인지 확인
+        ? {
+            id: currentUser.id, // AnonymousUser의 id는 string (소켓 ID)
+            nickname: currentUser.nickname,
+            isAnonymous: true,
+          }
+        : {
+            id: currentUser.id, // User의 id는 number (DB ID)
+            nickname: currentUser.nickname,
+            isAnonymous: false,
+          }
+      : {
+          // 이 경우는 handleConnection에서 이미 익명으로 설정되므로 발생하지 않아야 함
+          id: client.id,
+          nickname: generateAnonymousNickname(client.id),
+          isAnonymous: true,
+        };
 
     let roomDetailsFromDb;
     try {
@@ -199,8 +219,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     currentPlayers.forEach((p) => this.logger.log(`- ${p.userInfo.nickname} (${p.id})`));
 
     client.to(prefixedRoomId).emit('player_joined', {
-      playerId: client.id,
-      userInfo: finalUserInfo,
+      playerId: client.id, // 소켓 ID
+      userInfo: finalUserInfo, // 익명/인증 사용자 정보 포함
     });
 
     const gameState = this.gameSessionService.getGameState(roomId);
@@ -249,14 +269,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @UseGuards(WsUserAttachedGuard) // 가드 변경
   @SubscribeMessage('set_marbles')
   async handleSetMarbles(
-    @ConnectedSocket() client: Socket, // client 타입은 SocketCurrentUser를 통해 user가 주입되므로 그대로 둬도 무방
+    @ConnectedSocket() client: Socket,
     @MessageBody() data: SetMarblesDto,
-    @SocketCurrentUser() user: User,
+    @SocketCurrentUser() user: User, // WsUserAttachedGuard가 통과시킨 user는 User 타입임을 보장
   ) {
     const { roomId, names } = data;
     const prefixedRoomId = prefixGameRoomId(roomId);
 
-    // 권한 확인
+    // WsUserAttachedGuard가 통과시켰으므로 user는 User 타입임을 보장
+    // 익명 사용자는 이 가드를 통과할 수 없음
     const isManager = await this.roomsService.isManager(roomId, user.id);
     if (!isManager) {
       throw new WsException('방의 매니저만 마블을 설정할 수 있습니다.');
@@ -282,12 +303,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleSetWinningRank(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: SetWinningRankDto,
-    @SocketCurrentUser() user: User,
+    @SocketCurrentUser() user: User, // WsUserAttachedGuard가 통과시킨 user는 User 타입임을 보장
   ) {
     const { roomId, rank } = data;
     const prefixedRoomId = prefixGameRoomId(roomId);
 
-    // 권한 확인
+    // WsUserAttachedGuard가 통과시켰으므로 user는 User 타입임을 보장
     const isManager = await this.roomsService.isManager(roomId, user.id);
     if (!isManager) {
       throw new WsException('방의 매니저만 우승 순위를 설정할 수 있습니다.');
@@ -313,12 +334,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleSetMap(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: SetMapDto,
-    @SocketCurrentUser() user: User,
+    @SocketCurrentUser() user: User, // WsUserAttachedGuard가 통과시킨 user는 User 타입임을 보장
   ) {
     const { roomId, mapIndex } = data;
     const prefixedRoomId = prefixGameRoomId(roomId);
 
-    // 권한 확인
+    // WsUserAttachedGuard가 통과시켰으므로 user는 User 타입임을 보장
     const isManager = await this.roomsService.isManager(roomId, user.id);
     if (!isManager) {
       throw new WsException('방의 매니저만 맵을 설정할 수 있습니다.');
@@ -344,12 +365,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleSetSpeed(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: SetSpeedDto,
-    @SocketCurrentUser() user: User,
+    @SocketCurrentUser() user: User, // WsUserAttachedGuard가 통과시킨 user는 User 타입임을 보장
   ) {
     const { roomId, speed } = data;
     const prefixedRoomId = prefixGameRoomId(roomId);
 
-    // 권한 확인
+    // WsUserAttachedGuard가 통과시켰으므로 user는 User 타입임을 보장
     const isManager = await this.roomsService.isManager(roomId, user.id);
     if (!isManager) {
       throw new WsException('방의 매니저만 속도를 설정할 수 있습니다.');
@@ -374,12 +395,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleStartGame(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: StartGameDto,
-    @SocketCurrentUser() user: User,
+    @SocketCurrentUser() user: User, // WsUserAttachedGuard가 통과시킨 user는 User 타입임을 보장
   ) {
     const { roomId } = data;
     const prefixedRoomId = prefixGameRoomId(roomId);
 
-    // 권한 확인
+    // WsUserAttachedGuard가 통과시켰으므로 user는 User 타입임을 보장
     const isManager = await this.roomsService.isManager(roomId, user.id);
     if (!isManager) {
       throw new WsException('방의 매니저만 게임을 시작할 수 있습니다.');
@@ -405,12 +426,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleResetGame(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: ResetGameDto,
-    @SocketCurrentUser() user: User,
+    @SocketCurrentUser() user: User, // WsUserAttachedGuard가 통과시킨 user는 User 타입임을 보장
   ) {
     const { roomId } = data;
     const prefixedRoomId = prefixGameRoomId(roomId);
 
-    // 권한 확인
+    // WsUserAttachedGuard가 통과시켰으므로 user는 User 타입임을 보장
     const isManager = await this.roomsService.isManager(roomId, user.id);
     if (!isManager) {
       throw new WsException('방의 매니저만 게임을 리셋할 수 있습니다.');
@@ -468,7 +489,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleUseSkill(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: UseSkillDto<any>, // 제네릭 DTO 사용
-    @SocketCurrentUser() user: User,
+    @SocketCurrentUser() user: User, // WsUserAttachedGuard가 통과시킨 user는 User 타입임을 보장
   ) {
     const { roomId, skillType, skillPosition, extra } = data;
     this.logger.log('스킬 사용 요청 수신:', {
@@ -476,7 +497,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       skillType,
       skillPosition,
       extra,
-      user: user ? `${user.nickname} (${user.id})` : '익명 사용자',
+      user: user ? `${user.nickname} (${user.id})` : '인증된 사용자', // 익명 사용자는 이 가드를 통과할 수 없음
     });
     const prefixedRoomId = prefixGameRoomId(roomId);
 

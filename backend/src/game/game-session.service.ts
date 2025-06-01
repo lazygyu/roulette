@@ -4,11 +4,13 @@ import { PrismaService } from '../prisma/prisma.service'; // PrismaService 임�
 import { Game, GameStatus, Prisma } from '@prisma/client'; // GameStatus 및 Prisma 임포트
 import { stages } from './data/maps'; // stages 임포트 추가
 
-// Player 인터페이스는 동일하게 유지
+// Player 인터페이스 수정
 interface Player {
-  id: string;
+  id: string; // 소켓 ID
   userInfo: {
+    id: number | string; // 인증된 사용자의 DB ID (number) 또는 익명 사용자의 소켓 ID (string)
     nickname: string;
+    isAnonymous: boolean; // 익명 사용자 여부
   };
 }
 
@@ -138,7 +140,11 @@ export class GameSessionService {
   }
 
   // 방에 플레이어 추가: roomId 타입을 number로 변경, async 추가
-  async addPlayer(roomId: number, playerId: string, userInfo: { nickname: string }): Promise<void> {
+  async addPlayer(
+    roomId: number,
+    playerId: string,
+    userInfo: { id: number | string; nickname: string; isAnonymous: boolean },
+  ): Promise<void> {
     let room = this.getRoom(roomId);
     if (!room) {
       // 방이 없으면 새로 생성 (혹은 에러 처리 - 여기서는 생성)
@@ -146,7 +152,7 @@ export class GameSessionService {
     }
 
     room.players.set(playerId, {
-      id: playerId,
+      id: playerId, // 이 id는 소켓 ID
       userInfo: userInfo,
     });
   }
