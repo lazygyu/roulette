@@ -195,28 +195,35 @@ export class Box2dPhysics implements IPhysics {
     });
   }
 
-  impact(id: number): void {
-    const src = this.marbleMap[id];
-    if (!src) return;
+  applyRadialImpulse(position: { x: number; y: number }, radius: number, force: number): void {
+    const center = new this.Box2D.b2Vec2(position.x, position.y);
+    const radiusSq = radius * radius;
 
-    Object.values(this.marbleMap).forEach((body) => {
-      if (body === src) return;
-
-      const distVector = new this.Box2D.b2Vec2(
-        body.GetPosition().x,
-        body.GetPosition().y,
-      );
-      distVector.op_sub(src.GetPosition());
+    for (const id in this.marbleMap) {
+      const body = this.marbleMap[id];
+      const marblePos = body.GetPosition();
+      const distVector = new this.Box2D.b2Vec2(marblePos.x - center.x, marblePos.y - center.y);
       const distSq = distVector.LengthSquared();
 
-      if (distSq < 100) {
-        distVector.Normalize();
-        const power = 1 - distVector.Length() / 10;
-        distVector.op_mul(power * power * 5);
-        body.ApplyLinearImpulseToCenter(distVector, true);
+      if (distSq < radiusSq) {
+        const dist = Math.sqrt(distSq);
+        if (dist === 0) { // 중심에 있는 경우, 무작위 방향으로 힘 가하기
+          const randomAngle = Math.random() * 2 * Math.PI;
+          const impulse = new this.Box2D.b2Vec2(force * Math.cos(randomAngle), force * Math.sin(randomAngle));
+          body.ApplyLinearImpulseToCenter(impulse, true);
+        } else {
+          distVector.Normalize();
+          const power = 1 - (dist / radius); // 거리에 따라 힘 감소
+          const impulse = new this.Box2D.b2Vec2(
+            distVector.get_x() * force * power,
+            distVector.get_y() * force * power,
+          );
+          body.ApplyLinearImpulseToCenter(impulse, true);
+        }
       }
-    });
+    }
   }
+
 
   start(): void {
     for (const key in this.marbleMap) {

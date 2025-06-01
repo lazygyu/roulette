@@ -9,10 +9,10 @@ export class Marble {
   size: number = 0.5;
   color: string = 'red';
   hue: number = 0;
-  impact: number = 0;
   weight: number = 1;
   skill: Skills = Skills.None;
   isActive: boolean = false;
+  isDummy: boolean = false;
 
   private _skillRate = 0.0005;
   private _coolTime = 5000;
@@ -94,9 +94,6 @@ export class Marble {
     this.lastPosition = { x: this.position.x, y: this.position.y };
 
     this.skill = Skills.None;
-    if (this.impact) {
-      this.impact = Math.max(0, this.impact - deltaTime);
-    }
     if (!this.isActive) return;
     // this._updateSkillInformation(deltaTime);
   }
@@ -125,7 +122,7 @@ export class Marble {
       hue: this.hue,
       isActive: this.isActive,
       skill: this.skill,
-      impact: this.impact,
+      isDummy: this.isDummy,
     };
   }
 }

@@ -26,6 +26,7 @@ export class Roulette {
   private _goalDist: number = Infinity;
   private _isRunning: boolean = false;
   private _winner: Marble | null = null;
+  private _lastUsedSkill: { playerId: string; nickname: string; skillType: string; skillPosition: { x: number; y: number }; extra: any } | null = null;
 
   private physics!: IPhysics; // Box2dPhysics 인스턴스가 할당됨
 
@@ -65,9 +66,6 @@ export class Roulette {
     for (let i = 0; i < this._marbles.length; i++) {
       const marble = this._marbles[i];
       marble.update(deltaTime);
-      if (marble.skill === Skills.Impact) {
-        this.physics.impact(marble.id);
-      }
       if (marble.y > this._stage.goalY) {
         this._winners.push(marble);
         // 승자 결정 및 게임 종료 로직 개선
@@ -277,6 +275,29 @@ export class Roulette {
     this._totalMarbleCount = totalCount;
   }
 
+  public applyImpact(position: { x: number; y: number }, radius: number, force: number): void {
+    this.physics.applyRadialImpulse(position, radius, force);
+  }
+
+  public createDummyMarbles(position: { x: number; y: number }, count: number): void {
+    const currentMaxId = this._marbles.reduce((maxId, marble) => Math.max(maxId, marble.id), -1);
+    for (let i = 0; i < count; i++) {
+      const newId = currentMaxId + 1 + i;
+      const dummyMarble = new Marble(this.physics, newId, 0, `Dummy-${newId}`, 1);
+      dummyMarble.isDummy = true;
+      // 스킬 위치 근처에 생성 (약간의 랜덤 오프셋 추가)
+      const offsetX = (Math.random() - 0.5) * 0.5;
+      const offsetY = (Math.random() - 0.5) * 0.5;
+      this.physics.createMarble(newId, position.x + offsetX, position.y + offsetY);
+      this._marbles.push(dummyMarble);
+    }
+    this._totalMarbleCount += count; // 더미 마블도 총 마블 수에 포함 (필요에 따라 조정)
+  }
+
+  public setLastUsedSkill(playerId: string, nickname: string, skillType: string, skillPosition: { x: number; y: number }, extra: any): void {
+    this._lastUsedSkill = { playerId, nickname, skillType, skillPosition, extra };
+  }
+
   private _clearMap() {
     this.physics.clear();
     this._marbles = [];
@@ -330,6 +351,7 @@ export class Roulette {
       winnerRank: this._winnerRank,
       totalMarbleCount: this._totalMarbleCount,
       shakeAvailable: this._shakeAvailable,
+      lastUsedSkill: this._lastUsedSkill, // 스킬 사용 정보 추가
     };
   }
 

@@ -1,7 +1,8 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, BadRequestException } from '@nestjs/common';
 import { Server } from 'socket.io';
 import { GameSessionService } from './game-session.service'; // GameSessionService 임포트
 import { prefixRoomId } from './utils/roomId.util'; // prefixRoomId 유틸리티 임포트
+import { SkillType, SkillPosition, ImpactSkillExtra, DummyMarbleSkillExtra } from './types/skill.type';
 
 @Injectable()
 export class GameEngineService implements OnModuleDestroy { // OnModuleDestroy 인터페이스 구현 명시
@@ -11,6 +12,47 @@ export class GameEngineService implements OnModuleDestroy { // OnModuleDestroy �
 
   // GameSessionService 주입
   constructor(private readonly gameSessionService: GameSessionService) {}
+
+  /**
+   * 스킬 사용 로직을 처리합니다.
+   * @param roomId - 스킬을 사용할 방의 ID
+   * @param skillType - 사용할 스킬의 타입
+   * @param skillPosition - 스킬이 발동될 위치 (x, y 좌표)
+   * @param extra - 스킬 타입에 따라 달라지는 추가 데이터
+   */
+  async useSkill(
+    roomId: number,
+    skillType: SkillType,
+    skillPosition: SkillPosition,
+    extra: ImpactSkillExtra | DummyMarbleSkillExtra, // Union Type으로 명시
+  ): Promise<void> {
+    const room = this.gameSessionService.getRoom(roomId);
+    if (!room || !room.game) {
+      throw new BadRequestException(`방 ${roomId}를 찾을 수 없거나 게임이 시작되지 않았습니다.`);
+    }
+
+    // 스킬 타입에 따라 다른 로직을 수행
+    switch (skillType) {
+      case SkillType.Impact:
+        // Impact 스킬 로직
+        const impactExtra = extra as ImpactSkillExtra;
+        this.logger.log(
+          `Room ${roomId}: Impact skill used at (${skillPosition.x}, ${skillPosition.y}) with radius ${impactExtra.radius}`,
+        );
+        room.game.applyImpact(skillPosition, impactExtra.radius, 50); // force 값은 임의로 50으로 설정
+        break;
+      case SkillType.DummyMarble:
+        // DummyMarble 스킬 로직
+        const dummyMarbleExtra = extra as DummyMarbleSkillExtra;
+        this.logger.log(
+          `Room ${roomId}: DummyMarble skill used at (${skillPosition.x}, ${skillPosition.y}) to create ${dummyMarbleExtra.count} marbles`,
+        );
+        room.game.createDummyMarbles(skillPosition, dummyMarbleExtra.count);
+        break;
+      default:
+        throw new BadRequestException(`알 수 없는 스킬 타입: ${skillType}`);
+    }
+  }
 
   /**
    * 특정 방의 게임 루프를 시작합니다.

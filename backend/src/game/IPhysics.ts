@@ -20,7 +20,8 @@ export interface IPhysics {
 
   getEntities(): MapEntityState[];
 
-  impact(id: number): void;
+  applyRadialImpulse(position: { x: number; y: number }, radius: number, force: number): void;
+
 
   start(): void;
 
