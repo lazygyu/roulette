@@ -38,7 +38,7 @@ export class GameEngineService implements OnModuleDestroy {
         // Impact 스킬 로직
         const impactExtra = extra as SkillExtra<SkillType.Impact>;
         this.logger.log(`Room ${roomId}: Impact skill used at (${skillPosition.x}, ${skillPosition.y}) with radius 10`);
-        room.game.applyImpact(skillPosition, 10, 50); // force 값은 임의로 50으로 설정
+        room.game.applyImpact(skillPosition, 30, 50); // force 값은 임의로 50으로 설정
         break;
       case SkillType.DummyMarble:
         // DummyMarble 스킬 로직
