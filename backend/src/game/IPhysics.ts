@@ -7,10 +7,11 @@ export interface IPhysics {
   clear(): void;
 
   clearMarbles(): void;
+  clearEntities(): void; // clearEntities 추가
 
   createStage(stage: StageDef): void;
 
-  createMarble(id: number, x: number, y: number): void;
+  createMarble(id: number, x: number, y: number, isDummy?: boolean, initialVelocity?: { x: number; y: number }): void;
 
   shakeMarble(id: number): void;
 
@@ -20,7 +21,8 @@ export interface IPhysics {
 
   getEntities(): MapEntityState[];
 
-  impact(id: number): void;
+  applyRadialImpulse(position: { x: number; y: number }, radius: number, force: number): void;
+
 
   start(): void;
 

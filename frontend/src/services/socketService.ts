@@ -282,6 +282,23 @@ class SocketService {
     return await this.socket.emitWithAck('reset_game', { roomId: this.currentRoomId });
   }
 
+  public async useSkill(
+    skillType: string, // Skills enum 대신 string으로 받음 (백엔드와 통일)
+    skillPosition: { x: number; y: number },
+    extra: any,
+  ): Promise<{ success: boolean; message?: string }> {
+    if (!this.socket || !this.currentRoomId) {
+      console.warn('socketService: Cannot use skill, socket not connected or not in a room.');
+      return { success: false, message: 'Socket not connected or not in a room.' };
+    }
+    return await this.socket.emitWithAck('use_skill', {
+      roomId: this.currentRoomId,
+      skillType,
+      skillPosition,
+      extra,
+    });
+  }
+
   public disconnect(): void {
     this.socket?.disconnect();
     // currentRoomId 등은 disconnect 이벤트 핸들러에서 이미 초기화됨

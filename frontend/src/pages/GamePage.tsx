@@ -42,6 +42,11 @@ const GamePageContent: FC = () => {
     onMapChange,
     onAutoRecordingChange,
     passwordInputRef,
+    lastUsedSkill,
+    selectedSkill,
+    handleSkillSelect,
+    handleCanvasClick,
+    gameState, // gameState 추가
   } = useGamePageLogic();
 
   return (
@@ -69,7 +74,61 @@ const GamePageContent: FC = () => {
         onStartClick={onStartClick}
       />
       <GameFooter />
-      <RouletteCanvas initializeGame={initializeGame} />
+      {gameState?.isRunning && useSkills && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            zIndex: 1000,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            padding: '10px',
+            borderRadius: '5px',
+          }}
+        >
+          <label htmlFor="skill-select" style={{ marginRight: '10px' }}>
+            스킬 선택:
+          </label>
+          <select
+            id="skill-select"
+            value={selectedSkill}
+            onChange={handleSkillSelect}
+            style={{
+              padding: '5px',
+              borderRadius: '3px',
+              border: '1px solid #ccc',
+              backgroundColor: '#333',
+              color: 'white',
+            }}
+          >
+            <option value="None">없음</option>
+            <option value="Impact">Impact</option>
+            <option value="DummyMarble">DummyMarble</option>
+          </select>
+        </div>
+      )}
+      <div onClick={handleCanvasClick} style={{ cursor: selectedSkill !== 'None' ? 'crosshair' : 'default' }}>
+        <RouletteCanvas initializeGame={initializeGame} />
+      </div>
+      {lastUsedSkill && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '10%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            padding: '10px 20px',
+            borderRadius: '5px',
+            fontSize: '1.2em',
+            zIndex: 1000,
+          }}
+        >
+          {lastUsedSkill.nickname}님이 {lastUsedSkill.skillType} 스킬을 사용했습니다!
+        </div>
+      )}
       {showRankingModal && finalRanking && (
         <RankingDisplay ranking={finalRanking} roomName={roomName} onClose={() => setShowRankingModal(false)} />
       )}

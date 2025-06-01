@@ -1,7 +1,8 @@
 // filepath: c:\Users\TAK\Desktop\2025 4-1\Capstone_Design\project\roulette\roulette-app\src\types\gameTypes.ts
 export enum Skills {
-  None,
-  Impact,
+  None = 'None',
+  Impact = 'Impact',
+  DummyMarble = 'DummyMarble',
 }
 
 export interface MarbleState {
@@ -61,9 +62,7 @@ export interface GameState {
   winnerRank: number;
   totalMarbleCount: number;
   shakeAvailable: boolean;
-  // currentMapIndex?: number; // 백엔드에서 현재 맵 인덱스를 보내준다면 추가
-  // currentMapIndex?: number; // 백엔드에서 현재 맵 인덱스를 보내준다면 추가
-  // currentSpeed?: number; // 백엔드에서 현재 속도를 보내준다면 추가
+  lastUsedSkill: { playerId: string; nickname: string; skillType: Skills; skillPosition: { x: number; y: number }; extra: any } | null;
 }
 
 // --- 추가된 타입 ---
@@ -85,6 +84,7 @@ export interface GameInfo {
   speed: number | null;
   useSkills: boolean; // 추가
   autoRecording: boolean; // 추가
+  isRunning: boolean; // 게임 진행 상태 추가
   // ranking: MarbleState[] | null; // 최종 랭킹 -> 별도 API로 분리되므로 제거 또는 RankingEntry[] 타입으로 변경
   createdAt: string; // Date는 string으로 변환될 수 있음
   updatedAt: string;

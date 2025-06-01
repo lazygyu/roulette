@@ -10,6 +10,8 @@ export class Camera {
   private _zoom: number = 1;
   private _targetZoom: number = 1;
   private _locked = false;
+  public width: number = 0; // 캔버스 너비
+  public height: number = 0; // 캔버스 높이
 
   get zoom() {
     return this._zoom;
@@ -103,6 +105,16 @@ export class Camera {
     return current + d / 10;
   }
 
+  constructor(width: number = 0, height: number = 0) {
+    this.width = width;
+    this.height = height;
+  }
+
+  setSize(width: number, height: number) {
+    this.width = width;
+    this.height = height;
+  }
+
   renderScene(
     ctx: CanvasRenderingContext2D,
     callback: (ctx: CanvasRenderingContext2D) => void
@@ -117,5 +129,27 @@ export class Camera {
     );
     callback(ctx);
     ctx.restore();
+  }
+
+  // 월드 좌표계 변환을 위한 유틸리티 메서드들
+  public getWorldBounds(): { left: number; right: number; top: number; bottom: number } {
+    const halfWidth = this.width / (2 * this._zoom);
+    const halfHeight = this.height / (2 * this._zoom);
+    
+    return {
+      left: this._position.x - halfWidth,
+      right: this._position.x + halfWidth,
+      top: this._position.y - halfHeight,
+      bottom: this._position.y + halfHeight,
+    };
+  }
+
+  public getViewportInfo() {
+    return {
+      position: { ...this._position },
+      zoom: this._zoom,
+      size: { width: this.width, height: this.height },
+      worldBounds: this.getWorldBounds(),
+    };
   }
 }

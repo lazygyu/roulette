@@ -31,6 +31,8 @@ import { StartGameDto } from './dto/start-game.dto';
 import { ResetGameDto } from './dto/reset-game.dto';
 import { GetGameStateDto } from './dto/get-game-state.dto';
 import { GetMapsDto } from './dto/get-maps.dto';
+import { UseSkillDto } from './dto/use-skill.dto';
+import { SkillType } from './types/skill.type';
 
 @WebSocketGateway({
   cors: {
@@ -458,6 +460,58 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Error getting maps for room ${roomId}: ${message}`);
       return { success: false, message: `맵 목록 조회 중 오류 발생: ${message}`, maps: [] };
+    }
+  }
+
+  @UseGuards(WsUserAttachedGuard)
+  @SubscribeMessage('use_skill')
+  async handleUseSkill(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: UseSkillDto<any>, // 제네릭 DTO 사용
+    @SocketCurrentUser() user: User,
+  ) {
+    const { roomId, skillType, skillPosition, extra } = data;
+    this.logger.log('스킬 사용 요청 수신:', {
+      roomId,
+      skillType,
+      skillPosition,
+      extra,
+      user: user ? `${user.nickname} (${user.id})` : '익명 사용자',
+    });
+    const prefixedRoomId = prefixRoomId(roomId);
+
+    try {
+      // 스킬 사용 권한 확인 (예: 매니저만 사용 가능 또는 특정 조건)
+      // 현재는 모든 인증된 사용자가 스킬을 사용할 수 있다고 가정
+      // 필요하다면 this.roomsService.isManager(roomId, user.id)와 같은 로직 추가
+
+      this.logger.log(
+        `클라이언트 ${user.nickname} (${client.id})가 방 ${prefixedRoomId}(${roomId})에서 스킬 사용 시도: ${skillType}`,
+      );
+
+      // gameEngineService에 스킬 발동 로직 위임 (사용자 닉네임 전달)
+      await this.gameEngineService.useSkill(roomId, skillType, skillPosition, extra, user.nickname);
+
+      // 스킬 사용 정보 저장 및 게임 상태 업데이트
+      this.gameSessionService
+        .getRoom(roomId)
+        ?.game?.setLastUsedSkill(client.id, user.nickname, skillType, skillPosition, extra);
+
+      // 스킬 발동 후 게임 상태 업데이트 및 클라이언트에게 전파
+      const gameState = this.gameSessionService.getGameState(roomId);
+      this.server.to(prefixedRoomId).emit('game_state', gameState);
+      // skill_used 이벤트는 game_state에 포함되므로 별도로 보낼 필요 없음
+
+      this.logger.log(
+        `방 ${prefixedRoomId}(${roomId})에서 스킬 ${skillType} 발동 완료 by ${user.nickname} (${client.id})`,
+      );
+      return { success: true, message: `스킬 ${skillType} 발동 성공` };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `방 ${prefixedRoomId}(${roomId})에서 스킬 ${skillType} 발동 중 오류 발생 by ${user.nickname} (${client.id}): ${message}`,
+      );
+      throw new WsException(`스킬 발동 중 오류 발생: ${message}`);
     }
   }
 }

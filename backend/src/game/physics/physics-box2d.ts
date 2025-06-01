@@ -143,7 +143,7 @@ export class Box2dPhysics implements IPhysics {
     this.entities = [];
   }
 
-  createMarble(id: number, x: number, y: number): void {
+  createMarble(id: number, x: number, y: number, isDummy: boolean = false, initialVelocity?: { x: number; y: number }): void {
     const circleShape = new this.Box2D.b2CircleShape();
     circleShape.set_m_radius(0.25);
 
@@ -152,9 +152,24 @@ export class Box2dPhysics implements IPhysics {
     bodyDef.set_position(new this.Box2D.b2Vec2(x, y));
 
     const body = this.world.CreateBody(bodyDef);
-    body.CreateFixture(circleShape, 1 + Math.random());
-    body.SetAwake(false);
-    body.SetEnabled(false);
+    body.CreateFixture(circleShape, 1 + Math.random()); // 무게는 기존처럼 랜덤하게 설정 (필요시 isDummy에 따라 조정 가능)
+
+    if (isDummy) {
+      body.SetAwake(true);
+      body.SetEnabled(true);
+      if (initialVelocity) {
+        const impulse = new this.Box2D.b2Vec2(initialVelocity.x, initialVelocity.y);
+        // 더미 마블은 질량이 1이라고 가정하고 힘을 가함. 실제 질량에 따라 힘 조절 필요 시 추가 로직.
+        // Box2D에서는 body.GetMass()로 질량을 가져올 수 있으나, Fixture 생성 후 바로 질량이 설정되는지 확인 필요.
+        // 여기서는 단순하게 고정된 힘을 가하거나, Marble 클래스에서 무게를 전달받아 사용.
+        // 현재 Marble 클래스의 weight는 0.1 ~ 1 사이의 값. Box2D의 밀도와는 다름.
+        // 여기서는 간단히 초기 속도 방향으로 힘을 가함. 힘의 크기는 적절히 조절.
+        body.ApplyLinearImpulseToCenter(new this.Box2D.b2Vec2(initialVelocity.x * 0.1, initialVelocity.y * 0.1), true);
+      }
+    } else {
+      body.SetAwake(false);
+      body.SetEnabled(false);
+    }
     this.marbleMap[id] = body;
   }
 
@@ -195,28 +210,35 @@ export class Box2dPhysics implements IPhysics {
     });
   }
 
-  impact(id: number): void {
-    const src = this.marbleMap[id];
-    if (!src) return;
+  applyRadialImpulse(position: { x: number; y: number }, radius: number, force: number): void {
+    const center = new this.Box2D.b2Vec2(position.x, position.y);
+    const radiusSq = radius * radius;
 
-    Object.values(this.marbleMap).forEach((body) => {
-      if (body === src) return;
-
-      const distVector = new this.Box2D.b2Vec2(
-        body.GetPosition().x,
-        body.GetPosition().y,
-      );
-      distVector.op_sub(src.GetPosition());
+    for (const id in this.marbleMap) {
+      const body = this.marbleMap[id];
+      const marblePos = body.GetPosition();
+      const distVector = new this.Box2D.b2Vec2(marblePos.x - center.x, marblePos.y - center.y);
       const distSq = distVector.LengthSquared();
 
-      if (distSq < 100) {
-        distVector.Normalize();
-        const power = 1 - distVector.Length() / 10;
-        distVector.op_mul(power * power * 5);
-        body.ApplyLinearImpulseToCenter(distVector, true);
+      if (distSq < radiusSq) {
+        const dist = Math.sqrt(distSq);
+        if (dist === 0) { // 중심에 있는 경우, 무작위 방향으로 힘 가하기
+          const randomAngle = Math.random() * 2 * Math.PI;
+          const impulse = new this.Box2D.b2Vec2(force * Math.cos(randomAngle), force * Math.sin(randomAngle));
+          body.ApplyLinearImpulseToCenter(impulse, true);
+        } else {
+          distVector.Normalize();
+          const power = 1 - (dist / radius); // 거리에 따라 힘 감소
+          const impulse = new this.Box2D.b2Vec2(
+            distVector.get_x() * force * power,
+            distVector.get_y() * force * power,
+          );
+          body.ApplyLinearImpulseToCenter(impulse, true);
+        }
       }
-    });
+    }
   }
+
 
   start(): void {
     for (const key in this.marbleMap) {

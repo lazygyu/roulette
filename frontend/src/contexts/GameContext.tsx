@@ -13,7 +13,7 @@ import socketService from '../services/socketService';
 import options from '../options';
 import { getRoomDetails, getRoomGameDetails, getGameRanking } from '../services/api';
 import { useAuth } from './AuthContext';
-import { GameStatus, RoomInfo, RankingEntry, GameInfo } from '../types/gameTypes';
+import { GameStatus, RoomInfo, RankingEntry, GameInfo, GameState } from '../types/gameTypes';
 import { TranslatedLanguages, TranslationKeys, Translations } from '../data/languages';
 import { parseName } from '../utils/parseName'; // 분리된 parseName 임포트
 
@@ -22,6 +22,7 @@ interface GameContextType {
   roomName: string | null;
   roomDetails: RoomInfo | null;
   gameDetails: GameInfo | null;
+  gameState: GameState | null; // GameState 추가
   isManager: boolean;
   finalRanking: RankingEntry[] | null;
   showRankingModal: boolean;
@@ -45,6 +46,7 @@ interface GameContextType {
   setMap: (index: number) => void;
   setAutoRecording: (auto: boolean) => void;
   parseName: (nameStr: string) => { name: string; weight: number; count: number };
+  lastUsedSkill: { playerId: string; nickname: string; skillType: string; skillPosition: { x: number; y: number }; extra: any } | null;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -60,6 +62,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [roomName, setRoomName] = useState<string | null>(null);
   const [roomDetails, setRoomDetails] = useState<RoomInfo | null>(null);
   const [gameDetails, setGameDetails] = useState<GameInfo | null>(null);
+  const [gameState, setGameState] = useState<GameState | null>(null); // gameState 상태 추가
   const gameDetailsRef = useRef(gameDetails); // For use in socket callbacks
   const [finalRanking, setFinalRanking] = useState<RankingEntry[] | null>(null);
   const [showRankingModal, setShowRankingModal] = useState(false);
@@ -69,6 +72,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [currentLocale, setCurrentLocale] = useState<TranslatedLanguages>('en');
   const [availableMaps, setAvailableMaps] = useState<{ index: number; title: string }[]>([]);
   const [winningRankDisplay, setWinningRankDisplay] = useState<number | null>(1); // UI에 표시될 1-index 값
+  const [lastUsedSkill, setLastUsedSkill] = useState<{ playerId: string; nickname: string; skillType: string; skillPosition: { x: number; y: number }; extra: any } | null>(null);
 
   useEffect(() => {
     gameDetailsRef.current = gameDetails;
@@ -334,6 +338,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const unsubscribeGameState = socketService.onGameStateUpdate(async (gameState) => {
       if (!gameState || !currentRouletteInstance) return;
       currentRouletteInstance.updateStateFromServer(gameState);
+      setGameState(gameState); // gameState 상태 업데이트 추가
       setGameDetails((prev) => {
         const newStatus =
           !gameState.isRunning && gameState.winner
@@ -342,6 +347,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               ? GameStatus.IN_PROGRESS
               : GameStatus.WAITING;
           const marbles = gameState.marbles ? gameState.marbles.map((m) => m.name) : prev?.marbles || [];
+          setLastUsedSkill(gameState.lastUsedSkill); // lastUsedSkill 상태 업데이트
         return {
           id: prev?.id || 0,
           status: newStatus,
@@ -351,6 +357,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           speed: prev?.speed ?? null,
           useSkills: prev?.useSkills ?? true, // 기본값 설정
           autoRecording: prev?.autoRecording ?? options.autoRecording, // 기본값 설정
+          isRunning: gameState.isRunning, // isRunning 추가
           createdAt: prev?.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -422,6 +429,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setMap,
     setAutoRecording,
     parseName,
+    lastUsedSkill,
+    gameState, // gameState 추가
   };
 
   return <GameContext.Provider value={contextValue}>{children}</GameContext.Provider>;
