@@ -13,7 +13,7 @@ import { GameSessionService } from './game-session.service';
 import { GameEngineService } from './game-engine.service';
 import { Logger, UsePipes, ValidationPipe, UseGuards } from '@nestjs/common';
 import { generateAnonymousNickname } from './utils/nickname.util';
-import { prefixRoomId, unprefixRoomId } from './utils/roomId.util';
+import { prefixGameRoomId, unprefixGameRoomId } from './utils/roomId.util';
 import { WsUserAttachedGuard } from '../auth/guards/ws-user-attached.guard';
 import { SocketCurrentUser } from '../decorators/socket-user.decorator';
 import { User } from '@prisma/client';
@@ -99,7 +99,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     joinedPrefixedRoomIds.forEach((prefixedRoomId) => {
       let roomId: number;
       try {
-        roomId = unprefixRoomId(prefixedRoomId);
+        roomId = unprefixGameRoomId(prefixedRoomId);
         const players = this.gameSessionService.getPlayers(roomId);
         const player = players.find((p) => p.id === client.id);
         this.gameSessionService.removePlayer(roomId, client.id);
@@ -190,7 +190,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`방 ${roomId}는 이미 메모리에 로드되어 있습니다.`);
     }
 
-    const prefixedRoomId = prefixRoomId(roomId);
+    const prefixedRoomId = prefixGameRoomId(roomId);
     client.join(prefixedRoomId);
     this.gameSessionService.addPlayer(roomId, client.id, finalUserInfo);
 
@@ -219,7 +219,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() data: LeaveRoomDto) {
     // DTO 사용
     const { roomId } = data;
-    const prefixedRoomId = prefixRoomId(roomId);
+    const prefixedRoomId = prefixGameRoomId(roomId);
     try {
       const players = this.gameSessionService.getPlayers(roomId);
       const player = players.find((p) => p.id === client.id);
@@ -254,7 +254,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SocketCurrentUser() user: User,
   ) {
     const { roomId, names } = data;
-    const prefixedRoomId = prefixRoomId(roomId);
+    const prefixedRoomId = prefixGameRoomId(roomId);
 
     // 권한 확인
     const isManager = await this.roomsService.isManager(roomId, user.id);
@@ -285,7 +285,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SocketCurrentUser() user: User,
   ) {
     const { roomId, rank } = data;
-    const prefixedRoomId = prefixRoomId(roomId);
+    const prefixedRoomId = prefixGameRoomId(roomId);
 
     // 권한 확인
     const isManager = await this.roomsService.isManager(roomId, user.id);
@@ -316,7 +316,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SocketCurrentUser() user: User,
   ) {
     const { roomId, mapIndex } = data;
-    const prefixedRoomId = prefixRoomId(roomId);
+    const prefixedRoomId = prefixGameRoomId(roomId);
 
     // 권한 확인
     const isManager = await this.roomsService.isManager(roomId, user.id);
@@ -347,7 +347,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SocketCurrentUser() user: User,
   ) {
     const { roomId, speed } = data;
-    const prefixedRoomId = prefixRoomId(roomId);
+    const prefixedRoomId = prefixGameRoomId(roomId);
 
     // 권한 확인
     const isManager = await this.roomsService.isManager(roomId, user.id);
@@ -377,7 +377,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SocketCurrentUser() user: User,
   ) {
     const { roomId } = data;
-    const prefixedRoomId = prefixRoomId(roomId);
+    const prefixedRoomId = prefixGameRoomId(roomId);
 
     // 권한 확인
     const isManager = await this.roomsService.isManager(roomId, user.id);
@@ -408,7 +408,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SocketCurrentUser() user: User,
   ) {
     const { roomId } = data;
-    const prefixedRoomId = prefixRoomId(roomId);
+    const prefixedRoomId = prefixGameRoomId(roomId);
 
     // 권한 확인
     const isManager = await this.roomsService.isManager(roomId, user.id);
@@ -478,7 +478,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       extra,
       user: user ? `${user.nickname} (${user.id})` : '익명 사용자',
     });
-    const prefixedRoomId = prefixRoomId(roomId);
+    const prefixedRoomId = prefixGameRoomId(roomId);
 
     try {
       // 스킬 사용 권한 확인 (예: 매니저만 사용 가능 또는 특정 조건)
