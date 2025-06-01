@@ -121,12 +121,20 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         // 방에 남아있는 소켓 수 확인
         const socketsInRoom = await this.server.in(prefixedRoomId).fetchSockets();
-        if (socketsInRoom.length === 0) {
-          this.logger.log(`방 ${prefixedRoomId}(${roomId})에 남은 플레이어가 없습니다. 방을 제거합니다.`);
-          this.gameEngineService.stopGameLoop(roomId); // 게임 루프 중지
-          this.gameSessionService.removeRoom(roomId); // 메모리에서 방 제거
-        } else {
-          this.logger.log(`방 ${prefixedRoomId}(${roomId})에 ${socketsInRoom.length}명의 플레이어가 남아있습니다.`);
+        const room = this.gameSessionService.getRoom(roomId); // GameSessionService에서 방 정보 가져오기
+
+        if (room && !room.isRunning) { // 게임이 진행 중이 아닐 때만 (WAITING 상태)
+          if (socketsInRoom.length === 0) {
+            this.logger.log(`방 ${prefixedRoomId}(${roomId})는 WAITING 상태이며, 남은 플레이어가 없습니다. 방을 제거합니다.`);
+            this.gameEngineService.stopGameLoop(roomId); // 게임 루프 중지 (방어적 호출)
+            this.gameSessionService.removeRoom(roomId); // 메모리에서 방 제거
+          } else {
+            this.logger.log(`방 ${prefixedRoomId}(${roomId})에 ${socketsInRoom.length}명의 플레이어가 남아있습니다.`);
+          }
+        } else if (room && room.isRunning) { // 게임이 진행 중일 때
+          this.logger.log(`방 ${prefixedRoomId}(${roomId})는 게임 진행 중입니다. ${socketsInRoom.length}명의 플레이어가 남아있습니다.`);
+        } else { // 방이 메모리에 없는 경우 (이미 정리되었거나, 잘못된 접근)
+          this.logger.warn(`방 ${prefixedRoomId}(${roomId})가 메모리에 없습니다. (handleDisconnect)`);
         }
 
         if (this.gameEngineService.isLoopRunning(roomId)) {
@@ -282,12 +290,20 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // 방에 남아있는 소켓 수 확인
       const socketsInRoom = await this.server.in(prefixedRoomId).fetchSockets();
-      if (socketsInRoom.length === 0) {
-        this.logger.log(`방 ${prefixedRoomId}(${roomId})에 남은 플레이어가 없습니다. 방을 제거합니다.`);
-        this.gameEngineService.stopGameLoop(roomId); // 게임 루프 중지
-        this.gameSessionService.removeRoom(roomId); // 메모리에서 방 제거
-      } else {
-        this.logger.log(`방 ${prefixedRoomId}(${roomId})에 ${socketsInRoom.length}명의 플레이어가 남아있습니다.`);
+      const room = this.gameSessionService.getRoom(roomId); // GameSessionService에서 방 정보 가져오기
+
+      if (room && !room.isRunning) { // 게임이 진행 중이 아닐 때만 (WAITING 상태)
+        if (socketsInRoom.length === 0) {
+          this.logger.log(`방 ${prefixedRoomId}(${roomId})는 WAITING 상태이며, 남은 플레이어가 없습니다. 방을 제거합니다.`);
+          this.gameEngineService.stopGameLoop(roomId); // 게임 루프 중지 (방어적 호출)
+          this.gameSessionService.removeRoom(roomId); // 메모리에서 방 제거
+        } else {
+          this.logger.log(`방 ${prefixedRoomId}(${roomId})에 ${socketsInRoom.length}명의 플레이어가 남아있습니다.`);
+        }
+      } else if (room && room.isRunning) { // 게임이 진행 중일 때
+        this.logger.log(`방 ${prefixedRoomId}(${roomId})는 게임 진행 중입니다. ${socketsInRoom.length}명의 플레이어가 남아있습니다.`);
+      } else { // 방이 메모리에 없는 경우 (이미 정리되었거나, 잘못된 접근)
+        this.logger.warn(`방 ${prefixedRoomId}(${roomId})가 메모리에 없습니다. (handleLeaveRoom)`);
       }
 
       if (this.gameEngineService.isLoopRunning(roomId)) {
