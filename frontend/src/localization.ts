@@ -53,6 +53,3 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('detected locale: ', browserLocale);
   setLocale(browserLocale);
 });
-
-// eslint-disable-next-line
-(window as any).translateElement = translateElement;

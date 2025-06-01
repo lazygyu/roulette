@@ -83,6 +83,8 @@ export interface GameInfo {
   marbles: string[]; // 마블 이름 목록
   winningRank: number | null;
   speed: number | null;
+  useSkills: boolean; // 추가
+  autoRecording: boolean; // 추가
   // ranking: MarbleState[] | null; // 최종 랭킹 -> 별도 API로 분리되므로 제거 또는 RankingEntry[] 타입으로 변경
   createdAt: string; // Date는 string으로 변환될 수 있음
   updatedAt: string;
