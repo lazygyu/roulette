@@ -22,15 +22,6 @@ import { AuthService } from '../auth/auth.service'; // AuthService 임포트
 import { AnonymousUser } from '../types/socket'; // AnonymousUser 타입 임포트
 import { PrismaService } from '../prisma/prisma.service'; // PrismaService 임포트 추가
 
-// Player 인터페이스 정의 (GameGateway 내부에서 사용)
-interface Player {
-  id: string; // 소켓 ID
-  userInfo: {
-    id: number | string; // 인증된 사용자의 DB ID (number) 또는 익명 사용자의 소켓 ID (string)
-    nickname: string;
-    isAnonymous: boolean; // 익명 사용자 여부
-  };
-}
 
 // DTO 임포트
 import { JoinRoomDto } from './dto/join-room.dto';
@@ -121,26 +112,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           `방 ${prefixedRoomId}(${roomId})에서 플레이어 ${client.user?.nickname || '익명'} (${client.id}) 퇴장`,
         );
 
-        // 방에 남아있는 소켓 수 확인
+        // 방 정리 로직을 GameSessionService로 위임
+        await this.gameSessionService.handlePlayerDeparture(roomId, this.server);
+        // GameEngineService의 루프 중지 로직은 GameSessionService에서 방 제거 시 호출되도록 변경되었거나,
+        // GameGateway에서 직접 호출해야 하는 경우에만 유지.
+        // 현재 GameSessionService.handlePlayerDeparture에서 removeRoom을 호출하고,
+        // GameEngineService.stopGameLoop은 GameEngineService 내부에서만 호출되므로 여기서는 제거.
+        // 따라서, 플레이어가 0명일 때 게임 루프를 중지하는 로직은 GameGateway에서 직접 처리해야 함.
         const socketsInRoom = await this.server.in(prefixedRoomId).fetchSockets();
-        const room = this.gameSessionService.getRoom(roomId); // GameSessionService에서 방 정보 가져오기
-
-        if (room && !room.isRunning) { // 게임이 진행 중이 아닐 때만 (WAITING 상태)
-          if (socketsInRoom.length === 0) {
-            this.logger.log(`방 ${prefixedRoomId}(${roomId})는 WAITING 상태이며, 남은 플레이어가 없습니다. 방을 제거합니다.`);
-            this.gameEngineService.stopGameLoop(roomId); // 게임 루프 중지 (방어적 호출)
-            this.gameSessionService.removeRoom(roomId); // 메모리에서 방 제거
-          } else {
-            this.logger.log(`방 ${prefixedRoomId}(${roomId})에 ${socketsInRoom.length}명의 플레이어가 남아있습니다.`);
-          }
-        } else if (room && room.isRunning) { // 게임이 진행 중일 때
-          this.logger.log(`방 ${prefixedRoomId}(${roomId})는 게임 진행 중입니다. ${socketsInRoom.length}명의 플레이어가 남아있습니다.`);
-        } else { // 방이 메모리에 없는 경우 (이미 정리되었거나, 잘못된 접근)
-          this.logger.warn(`방 ${prefixedRoomId}(${roomId})가 메모리에 없습니다. (handleDisconnect)`);
-        }
-
-        if (this.gameEngineService.isLoopRunning(roomId)) {
-          this.logger.log(`Player left room ${prefixedRoomId}(${roomId}) while game loop was running.`);
+        if (socketsInRoom.length === 0) {
+          this.gameEngineService.stopGameLoop(roomId, this.server); // 게임 루프 중지 및 소켓 정리
         }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
@@ -149,14 +130,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  // 특정 방의 플레이어 목록을 가져오는 헬퍼 메서드
-  private async getPlayersInRoom(prefixedRoomId: string): Promise<Player[]> {
-    const socketsInRoom = await this.server.in(prefixedRoomId).fetchSockets();
-    return socketsInRoom.map(socket => ({
-      id: socket.id,
-      userInfo: socket.user, // socket.d.ts에서 정의된 user 속성 활용
-    }));
-  }
 
   @SubscribeMessage('join_room')
   async handleJoinRoom(
@@ -261,9 +234,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.join(prefixedRoomId);
     // this.gameSessionService.addPlayer(roomId, client.id, finalUserInfo); // 제거
 
-    const currentPlayers = await this.getPlayersInRoom(prefixedRoomId); // 헬퍼 메서드 사용
-    this.logger.log(`방 ${prefixedRoomId}(${roomId}) 현재 플레이어 목록 (${currentPlayers.length}명):`);
-    currentPlayers.forEach((p) => this.logger.log(`- ${p.userInfo.nickname} (${p.id})`));
+    // 플레이어 목록 로깅 제거 (불필요한 상세 로그 제거)
+    // const currentPlayers = await this.getPlayersInRoom(prefixedRoomId); // 헬퍼 메서드 사용
+    // this.logger.log(`방 ${prefixedRoomId}(${roomId}) 현재 플레이어 목록 (${currentPlayers.length}명):`);
+    // currentPlayers.forEach((p) => this.logger.log(`- ${p.userInfo.nickname} (${p.id})`));
 
     client.to(prefixedRoomId).emit('player_joined', {
       playerId: client.id, // 소켓 ID
@@ -300,26 +274,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       this.logger.log(`클라이언트 ${nickname} (${client.id})가 방 ${prefixedRoomId}(${roomId})에서 나갔습니다.`);
 
-      // 방에 남아있는 소켓 수 확인
+      // 방 정리 로직을 GameSessionService로 위임
+      await this.gameSessionService.handlePlayerDeparture(roomId, this.server);
+      // GameEngineService의 루프 중지 로직은 GameSessionService에서 방 제거 시 호출되도록 변경되었거나,
+      // GameGateway에서 직접 호출해야 하는 경우에만 유지.
+      // 현재 GameSessionService.handlePlayerDeparture에서 removeRoom을 호출하고,
+      // GameEngineService.stopGameLoop은 GameEngineService 내부에서만 호출되므로 여기서는 제거.
+      // 따라서, 플레이어가 0명일 때 게임 루프를 중지하는 로직은 GameGateway에서 직접 처리해야 함.
       const socketsInRoom = await this.server.in(prefixedRoomId).fetchSockets();
-      const room = this.gameSessionService.getRoom(roomId); // GameSessionService에서 방 정보 가져오기
-
-      if (room && !room.isRunning) { // 게임이 진행 중이 아닐 때만 (WAITING 상태)
-        if (socketsInRoom.length === 0) {
-          this.logger.log(`방 ${prefixedRoomId}(${roomId})는 WAITING 상태이며, 남은 플레이어가 없습니다. 방을 제거합니다.`);
-          this.gameEngineService.stopGameLoop(roomId); // 게임 루프 중지 (방어적 호출)
-          this.gameSessionService.removeRoom(roomId); // 메모리에서 방 제거
-        } else {
-          this.logger.log(`방 ${prefixedRoomId}(${roomId})에 ${socketsInRoom.length}명의 플레이어가 남아있습니다.`);
-        }
-      } else if (room && room.isRunning) { // 게임이 진행 중일 때
-        this.logger.log(`방 ${prefixedRoomId}(${roomId})는 게임 진행 중입니다. ${socketsInRoom.length}명의 플레이어가 남아있습니다.`);
-      } else { // 방이 메모리에 없는 경우 (이미 정리되었거나, 잘못된 접근)
-        this.logger.warn(`방 ${prefixedRoomId}(${roomId})가 메모리에 없습니다. (handleLeaveRoom)`);
-      }
-
-      if (this.gameEngineService.isLoopRunning(roomId)) {
-        this.logger.log(`Player left room ${prefixedRoomId}(${roomId}) while game loop was running.`);
+      if (socketsInRoom.length === 0) {
+        this.gameEngineService.stopGameLoop(roomId, this.server); // 게임 루프 중지 및 소켓 정리
       }
       return { success: true, message: `방 ${roomId}에서 나갔습니다.` };
     } catch (error: unknown) {

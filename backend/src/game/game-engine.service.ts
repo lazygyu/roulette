@@ -5,7 +5,7 @@ import { prefixGameRoomId } from './utils/roomId.util'; // prefixRoomId 유틸�
 import { SkillType, SkillPosition, SkillExtra } from './types/skill.type';
 import { ImpactSkillEffect } from './types/skill-effect.type'; // ImpactSkillEffect 임포트
 
-// 스킬 속성 상수 정의
+// 스킬 속성 상수 정의 (TODO: 별도 설정 파일로 분리 고려)
 const IMPACT_SKILL_RADIUS = 5; // Impact 스킬의 반경
 const IMPACT_SKILL_FORCE = 10; // Impact 스킬의 힘
 
@@ -42,7 +42,6 @@ export class GameEngineService implements OnModuleDestroy {
     switch (skillType) {
       case SkillType.Impact:
         // Impact 스킬 로직
-        // const impactExtra = extra as SkillExtra<SkillType.Impact>; // 현재 사용되지 않으므로 주석 처리
         this.logger.log(`Room ${roomId}: Impact skill used at (${skillPosition.x}, ${skillPosition.y}) with radius ${IMPACT_SKILL_RADIUS} and force ${IMPACT_SKILL_FORCE}`);
         room.game.applyImpact(skillPosition, IMPACT_SKILL_RADIUS, IMPACT_SKILL_FORCE);
 
@@ -82,40 +81,48 @@ export class GameEngineService implements OnModuleDestroy {
     this.logger.log(`Starting game loop for room ${roomId}`);
     const prefixedRoomId = prefixGameRoomId(roomId);
 
-    const interval = setInterval(async () => { // async 추가
-      try {
-        const room = this.gameSessionService.getRoom(roomId);
-        if (room && room.game) {
-          if (room.isRunning) {
-            room.game.update();
-          }
-
-          const gameState = room.game.getGameState();
-          server.to(prefixedRoomId).emit('game_state', gameState);
-
-          if (!gameState.isRunning && room.isRunning) {
-            this.logger.log(
-              `Game in room ${roomId} has ended according to gameState. Notifying GameSessionService and cleaning up.`,
-            );
-            await this.gameSessionService.endGame(roomId); // await 추가
-            server.to(prefixedRoomId).emit('game_over', {
-              winner: gameState.winner,
-            });
-            this.stopGameLoop(roomId, server); // server 인자 추가
-          }
-        } else {
-          this.logger.warn(`Room or game not found for room ${roomId}. Stopping loop.`);
-          this.stopGameLoop(roomId, server); // server 인자 추가
-        }
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        const errorStack = error instanceof Error ? error.stack : undefined;
-        this.logger.error(`Error in game loop for room ${roomId}: ${errorMessage}`, errorStack);
-        this.stopGameLoop(roomId, server); // server 인자 추가
-      }
-    }, 1000 / 60);
+    const interval = setInterval(() => this._gameLoopTick(roomId, server, prefixedRoomId), 1000 / 60);
 
     this.gameLoops.set(roomId, interval);
+  }
+
+  /**
+   * 게임 루프의 단일 틱을 처리합니다.
+   * @param roomId - 게임 루프가 실행 중인 방의 ID
+   * @param server - 클라이언트에게 상태를 전송할 Socket.IO 서버 인스턴스
+   * @param prefixedRoomId - 접두사가 붙은 방 ID (소켓 룸 이름)
+   */
+  private async _gameLoopTick(roomId: number, server: Server, prefixedRoomId: string) {
+    try {
+      const room = this.gameSessionService.getRoom(roomId);
+      if (room && room.game) {
+        if (room.isRunning) {
+          room.game.update();
+        }
+
+        const gameState = room.game.getGameState();
+        server.to(prefixedRoomId).emit('game_state', gameState);
+
+        if (!gameState.isRunning && room.isRunning) {
+          this.logger.log(
+            `Game in room ${roomId} has ended according to gameState. Notifying GameSessionService and cleaning up.`,
+          );
+          await this.gameSessionService.endGame(roomId); // await 추가
+          server.to(prefixedRoomId).emit('game_over', {
+            winner: gameState.winner,
+          });
+          this.stopGameLoop(roomId, server); // server 인자 추가
+        }
+      } else {
+        this.logger.warn(`Room or game not found for room ${roomId}. Stopping loop.`);
+        this.stopGameLoop(roomId, server); // server 인자 추가
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      this.logger.error(`Error in game loop for room ${roomId}: ${errorMessage}`, errorStack);
+      this.stopGameLoop(roomId, server); // server 인자 추가
+    }
   }
 
   /**
@@ -139,7 +146,7 @@ export class GameEngineService implements OnModuleDestroy {
         this.logger.log(`Room ${roomId}: Game session removed from memory.`);
       }
     } else {
-      // this.logger.warn(`No active game loop found for room ${roomId} to stop.`);
+      // 루프가 활성화되어 있지 않음
     }
   }
 
