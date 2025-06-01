@@ -3,8 +3,6 @@ import { rad } from './utils/utils';
 import options from './options';
 import { VectorLike } from './types/VectorLike';
 import { Vector } from './utils/Vector';
-import { IPhysics } from './IPhysics';
-
 export class Marble {
   type = 'marble' as const;
   name: string = '';
@@ -22,12 +20,15 @@ export class Marble {
   private _stuckTime = 0;
   private lastPosition: VectorLike = { x: 0, y: 0 };
 
-  private physics: IPhysics;
+  // private physics: IPhysics; // 물리 엔진 제거로 인한 주석 처리
 
   id: number;
 
+  // position, x, y, angle getter는 물리 엔진에 의존하므로 제거하거나 대체해야 합니다.
+  // 현재는 서버에서 상태를 받아오므로 이 부분은 Roulette 클래스에서 처리될 것입니다.
+  // 따라서 이 getter들은 더 이상 필요하지 않습니다.
   get position() {
-    return this.physics.getMarblePosition(this.id) || { x: 0, y: 0, angle: 0 };
+    return { x: 0, y: 0, angle: 0 }; // 임시 값 또는 제거
   }
 
   get x() {
@@ -51,7 +52,7 @@ export class Marble {
   }
 
   constructor(
-    physics: IPhysics,
+    // physics: IPhysics, // 물리 엔진 제거
     order: number,
     max: number,
     name?: string,
@@ -59,7 +60,7 @@ export class Marble {
   ) {
     this.name = name || `M${order}`;
     this.weight = weight;
-    this.physics = physics;
+    // this.physics = physics; // 물리 엔진 제거
 
     this._maxCoolTime = 1000 + (1 - this.weight) * 4000;
     this._coolTime = this._maxCoolTime * Math.random();
@@ -72,28 +73,29 @@ export class Marble {
     this.color = `hsl(${this.hue} 100% 70%)`;
     this.id = order;
 
-    physics.createMarble(
-      order,
-      10.25 + (order % 10) * 0.6,
-      maxLine - line + lineDelta,
-    );
+    // physics.createMarble( // 물리 엔진 제거
+    //   order,
+    //   10.25 + (order % 10) * 0.6,
+    //   maxLine - line + lineDelta,
+    // );
   }
 
   update(deltaTime: number) {
-    if (
-      this.isActive &&
-      Vector.lenSq(Vector.sub(this.lastPosition, this.position)) < 0.00001
-    ) {
-      this._stuckTime += deltaTime;
+    // 물리 엔진 의존성 제거
+    // if (
+    //   this.isActive &&
+    //   Vector.lenSq(Vector.sub(this.lastPosition, this.position)) < 0.00001
+    // ) {
+    //   this._stuckTime += deltaTime;
 
-      if (this._stuckTime > STUCK_DELAY) {
-        this.physics.shakeMarble(this.id);
-        this._stuckTime = 0;
-      }
-    } else {
-      this._stuckTime = 0;
-    }
-    this.lastPosition = { x: this.position.x, y: this.position.y };
+    //   if (this._stuckTime > STUCK_DELAY) {
+    //     this.physics.shakeMarble(this.id);
+    //     this._stuckTime = 0;
+    //   }
+    // } else {
+    //   this._stuckTime = 0;
+    // }
+    // this.lastPosition = { x: this.position.x, y: this.position.y };
 
     this.skill = Skills.None;
     if (this.impact) {

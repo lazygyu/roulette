@@ -15,7 +15,6 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "axios": "^1.7.2",
-    "box2d-wasm": "^7.0.0",
     "jwt-decode": "^4.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

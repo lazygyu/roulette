@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext'; // AuthProvider import
 import UserInfoDisplay from './components/UserInfoDisplay'; // UserInfoDisplay import
-import HomePage from './pages/HomePage'; // HomePage import
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage'; // RegisterPage 임포트
 import CreateRoomPage from './pages/CreateRoomPage';

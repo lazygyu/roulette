@@ -30,6 +30,8 @@ interface JoinRoomResponse {
 class SocketService {
   private socket: Socket | null = null;
   private currentRoomId: string | null = null;
+  private isConnecting: boolean = false; // 연결 시도 중인지 나타내는 상태 추가
+  private latestAvailableMaps: MapInfo[] | null = null; // Cache for available maps
 
   private gameStateListeners: Array<(gameState: GameState) => void> = [];
   private availableMapsListeners: Array<(maps: MapInfo[]) => void> = [];
@@ -43,6 +45,12 @@ class SocketService {
 
   public connect(roomId: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (this.isConnecting) {
+        console.log('Socket connection already in progress.');
+        resolve(); // 또는 reject('Connection in progress')
+        return;
+      }
+
       if (this.socket?.connected && this.currentRoomId === roomId) {
         console.log('Socket already connected to this room.');
         resolve();
@@ -52,6 +60,8 @@ class SocketService {
       if (this.socket?.connected) {
         this.disconnect();
       }
+
+      this.isConnecting = true; // 연결 시도 시작
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.hostname;
@@ -114,6 +124,7 @@ class SocketService {
 
     this.socket.off('available_maps').on('available_maps', (maps: MapInfo[]) => {
       // console.debug('socketService: Received available_maps:', maps);
+      this.latestAvailableMaps = maps; // Cache the maps
       this.availableMapsListeners.forEach((listener) => listener(maps));
     });
 
@@ -158,6 +169,10 @@ class SocketService {
 
   public onAvailableMapsUpdate(listener: (maps: MapInfo[]) => void): () => void {
     this.availableMapsListeners.push(listener);
+    // If maps are already available, call the listener immediately
+    if (this.latestAvailableMaps) {
+      listener(this.latestAvailableMaps);
+    }
     return () => {
       this.availableMapsListeners = this.availableMapsListeners.filter((l) => l !== listener);
     };
@@ -207,67 +222,64 @@ class SocketService {
 
   // --- Room and Game Actions ---
   // joinRoom 메서드를 public으로 변경하고 password 인자 추가
-  public joinRoom(roomId: string, password?: string, callback?: (response: JoinRoomResponse) => void): void {
+  public async joinRoom(roomId: string, password?: string): Promise<JoinRoomResponse> {
     if (!this.socket) {
       console.error('socketService: Socket not connected for joinRoom.');
-      if (callback) callback({ success: false, message: 'Socket not connected.' });
-      return;
+      return { success: false, message: 'Socket not connected.' };
     }
-    // password를 emit 데이터에 포함
-    this.socket.emit('join_room', { roomId, password }, (response: JoinRoomResponse) => {
-      if (response.success) {
-        this.currentRoomId = roomId; // 방 참여 성공 시 currentRoomId 설정
-      }
-      if (callback) callback(response);
-    });
+    const response: JoinRoomResponse = await this.socket.emitWithAck('join_room', { roomId, password });
+    if (response.success) {
+      this.currentRoomId = roomId;
+    }
+    return response;
   }
 
-  public setMarbles(names: string[]): void {
+  public async setMarbles(names: string[]): Promise<{ success: boolean; message?: string }> {
     if (!this.socket || !this.currentRoomId) {
       console.warn('socketService: Cannot set marbles, socket not connected or not in a room.');
-      return;
+      return { success: false, message: 'Socket not connected or not in a room.' };
     }
-    this.socket.emit('set_marbles', { roomId: this.currentRoomId, names });
+    return await this.socket.emitWithAck('set_marbles', { roomId: this.currentRoomId, names });
   }
 
-  public setWinningRank(rank: number): void {
+  public async setWinningRank(rank: number): Promise<{ success: boolean; message?: string }> {
     if (!this.socket || !this.currentRoomId) {
       console.warn('socketService: Cannot set winning rank, socket not connected or not in a room.');
-      return;
+      return { success: false, message: 'Socket not connected or not in a room.' };
     }
-    this.socket.emit('set_winning_rank', { roomId: this.currentRoomId, rank });
+    return await this.socket.emitWithAck('set_winning_rank', { roomId: this.currentRoomId, rank });
   }
 
-  public setMap(mapIndex: number): void {
+  public async setMap(mapIndex: number): Promise<{ success: boolean; message?: string }> {
     if (!this.socket || !this.currentRoomId) {
       console.warn('socketService: Cannot set map, socket not connected or not in a room.');
-      return;
+      return { success: false, message: 'Socket not connected or not in a room.' };
     }
-    this.socket.emit('set_map', { roomId: this.currentRoomId, mapIndex });
+    return await this.socket.emitWithAck('set_map', { roomId: this.currentRoomId, mapIndex });
   }
 
-  public setSpeed(speed: number): void {
+  public async setSpeed(speed: number): Promise<{ success: boolean; message?: string }> {
     if (!this.socket || !this.currentRoomId) {
       console.warn('socketService: Cannot set speed, socket not connected or not in a room.');
-      return;
+      return { success: false, message: 'Socket not connected or not in a room.' };
     }
-    this.socket.emit('set_speed', { roomId: this.currentRoomId, speed });
+    return await this.socket.emitWithAck('set_speed', { roomId: this.currentRoomId, speed });
   }
 
-  public startGame(): void {
+  public async startGame(): Promise<{ success: boolean; message?: string }> {
     if (!this.socket || !this.currentRoomId) {
       console.warn('socketService: Cannot start game, socket not connected or not in a room.');
-      return;
+      return { success: false, message: 'Socket not connected or not in a room.' };
     }
-    this.socket.emit('start_game', { roomId: this.currentRoomId });
+    return await this.socket.emitWithAck('start_game', { roomId: this.currentRoomId });
   }
 
-  public resetGame(): void {
+  public async resetGame(): Promise<{ success: boolean; message?: string }> {
     if (!this.socket || !this.currentRoomId) {
       console.warn('socketService: Cannot reset game, socket not connected or not in a room.');
-      return;
+      return { success: false, message: 'Socket not connected or not in a room.' };
     }
-    this.socket.emit('reset_game', { roomId: this.currentRoomId });
+    return await this.socket.emitWithAck('reset_game', { roomId: this.currentRoomId });
   }
 
   public disconnect(): void {
@@ -278,6 +290,17 @@ class SocketService {
 
   public isConnected(): boolean {
     return !!this.socket?.connected;
+  }
+
+  public getCurrentRoomId(): string | null {
+    return this.currentRoomId;
+  }
+
+  // Method to check if the client has successfully joined a specific room
+  public getJoinedStatus(roomId: string): boolean {
+    // This is a simplified check. A more robust solution might involve
+    // the server confirming the join status or tracking it more explicitly.
+    return !!(this.socket?.connected && this.currentRoomId === roomId);
   }
 }
 
