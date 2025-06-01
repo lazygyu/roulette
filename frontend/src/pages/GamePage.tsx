@@ -42,6 +42,7 @@ const GamePageContent: FC = () => {
     onMapChange,
     onAutoRecordingChange,
     passwordInputRef,
+    lastUsedSkill,
   } = useGamePageLogic();
 
   return (
@@ -70,6 +71,24 @@ const GamePageContent: FC = () => {
       />
       <GameFooter />
       <RouletteCanvas initializeGame={initializeGame} />
+      {lastUsedSkill && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '10%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            padding: '10px 20px',
+            borderRadius: '5px',
+            fontSize: '1.2em',
+            zIndex: 1000,
+          }}
+        >
+          {lastUsedSkill.nickname}님이 {lastUsedSkill.skillType} 스킬을 사용했습니다!
+        </div>
+      )}
       {showRankingModal && finalRanking && (
         <RankingDisplay ranking={finalRanking} roomName={roomName} onClose={() => setShowRankingModal(false)} />
       )}

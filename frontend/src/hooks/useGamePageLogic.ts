@@ -38,6 +38,7 @@ interface UseGamePageLogicResult {
   onMapChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   onAutoRecordingChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   passwordInputRef: React.RefObject<HTMLInputElement | null>; // HTMLInputElement -> HTMLInputElement | null 로 변경
+  lastUsedSkill: { playerId: string; nickname: string; skillType: string; skillPosition: { x: number; y: number }; extra: any } | null;
 }
 
 export const useGamePageLogic = (): UseGamePageLogicResult => {
@@ -69,6 +70,7 @@ export const useGamePageLogic = (): UseGamePageLogicResult => {
     setUseSkills: setGameContextUseSkills, // GameContext의 setUseSkills와 충돌 방지
     setMap,
     setAutoRecording: setGameContextAutoRecording, // GameContext의 setAutoRecording과 충돌 방지
+    lastUsedSkill,
   } = useGame();
 
   // Local states for controlled components
@@ -201,5 +203,6 @@ export const useGamePageLogic = (): UseGamePageLogicResult => {
     onMapChange: handleMapChange,
     onAutoRecordingChange: handleAutoRecordingChange,
     passwordInputRef,
+    lastUsedSkill,
   };
 };

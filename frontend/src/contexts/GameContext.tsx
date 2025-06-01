@@ -45,6 +45,7 @@ interface GameContextType {
   setMap: (index: number) => void;
   setAutoRecording: (auto: boolean) => void;
   parseName: (nameStr: string) => { name: string; weight: number; count: number };
+  lastUsedSkill: { playerId: string; nickname: string; skillType: string; skillPosition: { x: number; y: number }; extra: any } | null;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -69,6 +70,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [currentLocale, setCurrentLocale] = useState<TranslatedLanguages>('en');
   const [availableMaps, setAvailableMaps] = useState<{ index: number; title: string }[]>([]);
   const [winningRankDisplay, setWinningRankDisplay] = useState<number | null>(1); // UI에 표시될 1-index 값
+  const [lastUsedSkill, setLastUsedSkill] = useState<{ playerId: string; nickname: string; skillType: string; skillPosition: { x: number; y: number }; extra: any } | null>(null);
 
   useEffect(() => {
     gameDetailsRef.current = gameDetails;
@@ -342,6 +344,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               ? GameStatus.IN_PROGRESS
               : GameStatus.WAITING;
           const marbles = gameState.marbles ? gameState.marbles.map((m) => m.name) : prev?.marbles || [];
+          setLastUsedSkill(gameState.lastUsedSkill); // lastUsedSkill 상태 업데이트
         return {
           id: prev?.id || 0,
           status: newStatus,
@@ -422,6 +425,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setMap,
     setAutoRecording,
     parseName,
+    lastUsedSkill,
   };
 
   return <GameContext.Provider value={contextValue}>{children}</GameContext.Provider>;
