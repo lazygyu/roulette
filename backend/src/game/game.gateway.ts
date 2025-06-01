@@ -19,6 +19,17 @@ import { SocketCurrentUser } from '../decorators/socket-user.decorator';
 import { User } from '@prisma/client';
 import { RoomsService } from '../rooms/rooms.service';
 import { AuthService } from '../auth/auth.service'; // AuthService 임포트
+import { AnonymousUser } from '../types/socket'; // AnonymousUser 타입 임포트
+
+// Player 인터페이스 정의 (GameGateway 내부에서 사용)
+interface Player {
+  id: string; // 소켓 ID
+  userInfo: {
+    id: number | string; // 인증된 사용자의 DB ID (number) 또는 익명 사용자의 소켓 ID (string)
+    nickname: string;
+    isAnonymous: boolean; // 익명 사용자 여부
+  };
+}
 
 // DTO 임포트
 import { JoinRoomDto } from './dto/join-room.dto';
@@ -90,26 +101,33 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
     // client 타입을 Socket으로 변경
     this.logger.log(`클라이언트 연결 종료: ${client.id} (${new Date().toLocaleString()})`);
     const joinedPrefixedRoomIds = Array.from(client.rooms.values()).filter((room) => room !== client.id);
 
-    joinedPrefixedRoomIds.forEach((prefixedRoomId) => {
+    for (const prefixedRoomId of joinedPrefixedRoomIds) {
       let roomId: number;
       try {
         roomId = unprefixGameRoomId(prefixedRoomId);
-        const players = this.gameSessionService.getPlayers(roomId);
-        const player = players.find((p) => p.id === client.id);
-        this.gameSessionService.removePlayer(roomId, client.id);
-
+        // 플레이어 퇴장 알림은 유지
         client.to(prefixedRoomId).emit('player_left', {
           playerId: client.id,
-          nickname: player?.userInfo.nickname, // player.userInfo는 항상 존재하므로 fallback 제거
+          nickname: client.user?.nickname || '익명', // client.user 사용
         });
         this.logger.log(
-          `방 ${prefixedRoomId}(${roomId})에서 플레이어 ${player?.userInfo.nickname || '익명'} (${client.id}) 퇴장`, // 로그에는 익명 fallback 유지
+          `방 ${prefixedRoomId}(${roomId})에서 플레이어 ${client.user?.nickname || '익명'} (${client.id}) 퇴장`,
         );
+
+        // 방에 남아있는 소켓 수 확인
+        const socketsInRoom = await this.server.in(prefixedRoomId).fetchSockets();
+        if (socketsInRoom.length === 0) {
+          this.logger.log(`방 ${prefixedRoomId}(${roomId})에 남은 플레이어가 없습니다. 방을 제거합니다.`);
+          this.gameEngineService.stopGameLoop(roomId); // 게임 루프 중지
+          this.gameSessionService.removeRoom(roomId); // 메모리에서 방 제거
+        } else {
+          this.logger.log(`방 ${prefixedRoomId}(${roomId})에 ${socketsInRoom.length}명의 플레이어가 남아있습니다.`);
+        }
 
         if (this.gameEngineService.isLoopRunning(roomId)) {
           this.logger.log(`Player left room ${prefixedRoomId}(${roomId}) while game loop was running.`);
@@ -118,7 +136,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const message = error instanceof Error ? error.message : String(error);
         this.logger.error(`Error handling disconnect for client ${client.id} in room ${prefixedRoomId}: ${message}`);
       }
-    });
+    }
+  }
+
+  // 특정 방의 플레이어 목록을 가져오는 헬퍼 메서드
+  private async getPlayersInRoom(prefixedRoomId: string): Promise<Player[]> {
+    const socketsInRoom = await this.server.in(prefixedRoomId).fetchSockets();
+    return socketsInRoom.map(socket => ({
+      id: socket.id,
+      userInfo: socket.user, // socket.d.ts에서 정의된 user 속성 활용
+    }));
   }
 
   @SubscribeMessage('join_room')
@@ -212,9 +239,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const prefixedRoomId = prefixGameRoomId(roomId);
     client.join(prefixedRoomId);
-    this.gameSessionService.addPlayer(roomId, client.id, finalUserInfo);
+    // this.gameSessionService.addPlayer(roomId, client.id, finalUserInfo); // 제거
 
-    const currentPlayers = this.gameSessionService.getPlayers(roomId);
+    const currentPlayers = await this.getPlayersInRoom(prefixedRoomId); // 헬퍼 메서드 사용
     this.logger.log(`방 ${prefixedRoomId}(${roomId}) 현재 플레이어 목록 (${currentPlayers.length}명):`);
     currentPlayers.forEach((p) => this.logger.log(`- ${p.userInfo.nickname} (${p.id})`));
 
@@ -236,17 +263,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('leave_room')
-  handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() data: LeaveRoomDto) {
+  async handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() data: LeaveRoomDto) {
     // DTO 사용
     const { roomId } = data;
     const prefixedRoomId = prefixGameRoomId(roomId);
     try {
-      const players = this.gameSessionService.getPlayers(roomId);
-      const player = players.find((p) => p.id === client.id);
-      const nickname = player?.userInfo.nickname || generateAnonymousNickname(client.id);
+      const nickname = client.user?.nickname || generateAnonymousNickname(client.id); // client.user 사용
 
       client.leave(prefixedRoomId);
-      this.gameSessionService.removePlayer(roomId, client.id);
+      // this.gameSessionService.removePlayer(roomId, client.id); // 제거
 
       client.to(prefixedRoomId).emit('player_left', {
         playerId: client.id,
@@ -254,6 +279,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
 
       this.logger.log(`클라이언트 ${nickname} (${client.id})가 방 ${prefixedRoomId}(${roomId})에서 나갔습니다.`);
+
+      // 방에 남아있는 소켓 수 확인
+      const socketsInRoom = await this.server.in(prefixedRoomId).fetchSockets();
+      if (socketsInRoom.length === 0) {
+        this.logger.log(`방 ${prefixedRoomId}(${roomId})에 남은 플레이어가 없습니다. 방을 제거합니다.`);
+        this.gameEngineService.stopGameLoop(roomId); // 게임 루프 중지
+        this.gameSessionService.removeRoom(roomId); // 메모리에서 방 제거
+      } else {
+        this.logger.log(`방 ${prefixedRoomId}(${roomId})에 ${socketsInRoom.length}명의 플레이어가 남아있습니다.`);
+      }
 
       if (this.gameEngineService.isLoopRunning(roomId)) {
         this.logger.log(`Player left room ${prefixedRoomId}(${roomId}) while game loop was running.`);

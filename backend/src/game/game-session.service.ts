@@ -4,23 +4,12 @@ import { PrismaService } from '../prisma/prisma.service'; // PrismaService 임�
 import { Game, GameStatus, Prisma } from '@prisma/client'; // GameStatus 및 Prisma 임포트
 import { stages } from './data/maps'; // stages 임포트 추가
 
-// Player 인터페이스 수정
-interface Player {
-  id: string; // 소켓 ID
-  userInfo: {
-    id: number | string; // 인증된 사용자의 DB ID (number) 또는 익명 사용자의 소켓 ID (string)
-    nickname: string;
-    isAnonymous: boolean; // 익명 사용자 여부
-  };
-}
-
-// GameRoom 인터페이스 수정: id 타입을 number로 변경하고 interval 제거
+// GameRoom 인터페이스 수정: id 타입을 number로 변경하고 interval 제거, players 속성 제거
 export interface GameRoom {
   id: number; // 숫자 ID 사용
   game: Roulette;
-  players: Map<string, Player>; // 플레이어 ID는 여전히 string
+  // players: Map<string, Player>; // 제거
   isRunning: boolean;
-  // interval?: NodeJS.Timeout; // GameEngineService에서 관리하므로 제거
 }
 
 @Injectable()
@@ -126,7 +115,7 @@ export class GameSessionService {
     const room: GameRoom = {
       id: roomId, // 숫자 ID 사용
       game,
-      players: new Map(),
+      // players: new Map(), // 제거
       isRunning: false,
     };
 
@@ -151,23 +140,19 @@ export class GameSessionService {
       room = await this.createRoom(roomId); // await 추가
     }
 
-    room.players.set(playerId, {
-      id: playerId, // 이 id는 소켓 ID
-      userInfo: userInfo,
-    });
+    // room.players.set(playerId, { id: playerId, userInfo: userInfo }); // 제거
+    // 플레이어 정보는 소켓에 저장되고, 소켓이 방에 join하는 것으로 충분
   }
 
-  // 방에서 플레이어 제거: roomId 타입을 number로 변경
+  // removePlayer 메서드 수정: players Map에서 제거하는 로직 제거, 방 제거 로직은 GameGateway에서 소켓 수 확인 후 호출
   removePlayer(roomId: number, playerId: string): void {
     const room = this.getRoom(roomId);
     if (room) {
-      const deleted = room.players.delete(playerId);
-      if (deleted && room.players.size === 0) {
-        // 플레이어가 없고 성공적으로 삭제되었다면 방 제거
-        this.removeRoom(roomId);
-      }
+      // room.players.delete(playerId); // 제거
+      // if (room.players.size === 0) { // 제거
+      //   this.removeRoom(roomId); // GameGateway에서 소켓 수 확인 후 호출
+      // }
     } else {
-       // 방이 존재하지 않는 경우 로그 또는 에러 처리
        console.warn(`Attempted to remove player from non-existent room: ${roomId}`);
     }
   }
@@ -445,9 +430,9 @@ export class GameSessionService {
     // 게임 데이터가 없으면 아무것도 안 함 (리셋할 대상이 없음)
   }
 
-  // 플레이어 목록 가져오기: roomId 타입을 number로 변경
-  getPlayers(roomId: number): Player[] {
-    const room = this.getRoom(roomId);
-    return room ? Array.from(room.players.values()) : [];
-  }
+  // getPlayers 메서드 제거
+  // getPlayers(roomId: number): Player[] {
+  //   const room = this.getRoom(roomId);
+  //   return room ? Array.from(room.players.values()) : [];
+  // }
 }

@@ -12,4 +12,12 @@ declare module 'socket.io' {
   interface Socket {
     user: User | AnonymousUser; // Socket 객체에 선택적 user 속성 추가
   }
+
+  interface RemoteSocket<
+    EmitEvents extends DefaultEventsMap,
+    ListenEvents extends DefaultEventsMap,
+    DataType = any
+  > {
+    user: User | AnonymousUser; // RemoteSocket 객체에도 user 속성 추가
+  }
 }
