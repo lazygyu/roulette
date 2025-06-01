@@ -13,7 +13,7 @@ import socketService from '../services/socketService';
 import options from '../options';
 import { getRoomDetails, getRoomGameDetails, getGameRanking } from '../services/api';
 import { useAuth } from './AuthContext';
-import { GameStatus, RoomInfo, RankingEntry, GameInfo } from '../types/gameTypes';
+import { GameStatus, RoomInfo, RankingEntry, GameInfo, GameState } from '../types/gameTypes';
 import { TranslatedLanguages, TranslationKeys, Translations } from '../data/languages';
 import { parseName } from '../utils/parseName'; // 분리된 parseName 임포트
 
@@ -22,6 +22,7 @@ interface GameContextType {
   roomName: string | null;
   roomDetails: RoomInfo | null;
   gameDetails: GameInfo | null;
+  gameState: GameState | null; // GameState 추가
   isManager: boolean;
   finalRanking: RankingEntry[] | null;
   showRankingModal: boolean;
@@ -61,6 +62,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [roomName, setRoomName] = useState<string | null>(null);
   const [roomDetails, setRoomDetails] = useState<RoomInfo | null>(null);
   const [gameDetails, setGameDetails] = useState<GameInfo | null>(null);
+  const [gameState, setGameState] = useState<GameState | null>(null); // gameState 상태 추가
   const gameDetailsRef = useRef(gameDetails); // For use in socket callbacks
   const [finalRanking, setFinalRanking] = useState<RankingEntry[] | null>(null);
   const [showRankingModal, setShowRankingModal] = useState(false);
@@ -336,6 +338,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const unsubscribeGameState = socketService.onGameStateUpdate(async (gameState) => {
       if (!gameState || !currentRouletteInstance) return;
       currentRouletteInstance.updateStateFromServer(gameState);
+      setGameState(gameState); // gameState 상태 업데이트 추가
       setGameDetails((prev) => {
         const newStatus =
           !gameState.isRunning && gameState.winner
@@ -354,6 +357,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           speed: prev?.speed ?? null,
           useSkills: prev?.useSkills ?? true, // 기본값 설정
           autoRecording: prev?.autoRecording ?? options.autoRecording, // 기본값 설정
+          isRunning: gameState.isRunning, // isRunning 추가
           createdAt: prev?.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -426,6 +430,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAutoRecording,
     parseName,
     lastUsedSkill,
+    gameState, // gameState 추가
   };
 
   return <GameContext.Provider value={contextValue}>{children}</GameContext.Provider>;

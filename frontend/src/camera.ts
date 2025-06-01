@@ -10,6 +10,8 @@ export class Camera {
   private _zoom: number = 1;
   private _targetZoom: number = 1;
   private _locked = false;
+  public width: number = 0; // 캔버스 너비
+  public height: number = 0; // 캔버스 높이
 
   get zoom() {
     return this._zoom;
@@ -101,6 +103,16 @@ export class Camera {
     }
 
     return current + d / 10;
+  }
+
+  constructor(width: number = 0, height: number = 0) {
+    this.width = width;
+    this.height = height;
+  }
+
+  setSize(width: number, height: number) {
+    this.width = width;
+    this.height = height;
   }
 
   renderScene(

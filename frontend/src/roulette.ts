@@ -40,7 +40,7 @@ export class Roulette extends EventTarget {
   private _particleManager = new ParticleManager();
   private _stage: StageDef | null = null; // Keep local stage definition
 
-  private _camera: Camera = new Camera();
+  private _camera: Camera;
   private _renderer: RouletteRenderer = new RouletteRenderer();
 
   private _effects: GameObject[] = []; // Keep local visual effects
@@ -90,7 +90,7 @@ export class Roulette extends EventTarget {
 
   constructor() {
     super();
-    // Renderer initialization will be handled by a separate public method
+    this._camera = new Camera(); // 인자 없이 생성
   }
 
   public async initialize(container: HTMLElement): Promise<void> {
@@ -99,6 +99,7 @@ export class Roulette extends EventTarget {
       throw new Error('Container element is required for Roulette initialization.');
     }
     await this._renderer.init(container);
+    this._camera.setSize(this._renderer.width, this._renderer.height); // 렌더러 초기화 후 카메라 크기 설정
     await this._init(); // _init no longer initializes physics
     this._isReady = true; // Indicates renderer and roulette logic are ready
     this._update(); // Start the render loop
@@ -377,5 +378,21 @@ export class Roulette extends EventTarget {
     } else {
       console.error('Invalid map index for local stage update:', index);
     }
+  }
+
+  public screenToWorld(clientX: number, clientY: number, canvas: HTMLCanvasElement): { x: number; y: number } {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const canvasX = (clientX - rect.left) * scaleX;
+    const canvasY = (clientY - rect.top) * scaleY;
+
+    // 캔버스 좌표를 월드 좌표로 변환
+    // 렌더러의 줌과 카메라 위치를 고려해야 함
+    const worldX = (canvasX / this._renderer.width) * this._camera.width + this._camera.x - this._camera.width / 2;
+    const worldY = (canvasY / this._renderer.height) * this._camera.height + this._camera.y - this._camera.height / 2;
+
+    return { x: worldX, y: worldY };
   }
 }

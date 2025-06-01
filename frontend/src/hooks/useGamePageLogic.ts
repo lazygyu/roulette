@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import options from '../options';
 import { useGame } from '../contexts/GameContext';
-import { GameStatus, RoomInfo, RankingEntry, GameInfo } from '../types/gameTypes';
+import { GameStatus, RoomInfo, RankingEntry, GameInfo, Skills, GameState } from '../types/gameTypes'; // Skills, GameState 임포트
 import { Roulette } from '../roulette'; // Roulette 타입 임포트
+import socketService from '../services/socketService'; // socketService 임포트
 
 interface UseGamePageLogicResult {
   roomName: string | null; // string | undefined -> string | null 로 변경
@@ -39,6 +40,10 @@ interface UseGamePageLogicResult {
   onAutoRecordingChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   passwordInputRef: React.RefObject<HTMLInputElement | null>; // HTMLInputElement -> HTMLInputElement | null 로 변경
   lastUsedSkill: { playerId: string; nickname: string; skillType: string; skillPosition: { x: number; y: number }; extra: any } | null;
+  selectedSkill: Skills;
+  handleSkillSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void;
+  handleCanvasClick: (event: React.MouseEvent<HTMLDivElement>) => void;
+  gameState: GameState | null; // GameState 추가
 }
 
 export const useGamePageLogic = (): UseGamePageLogicResult => {
@@ -48,7 +53,8 @@ export const useGamePageLogic = (): UseGamePageLogicResult => {
   const {
     roomName,
     roomDetails,
-    gameDetails,
+    gameDetails, // GameInfo는 설정 패널에 필요하므로 유지
+    gameState, // GameState 추가
     isManager,
     finalRanking,
     showRankingModal,
@@ -78,6 +84,7 @@ export const useGamePageLogic = (): UseGamePageLogicResult => {
   const [autoRecording, setAutoRecording] = useState<boolean>(options.autoRecording);
   const [useSkills, setUseSkills] = useState<boolean>(true); // GamePage.tsx의 defaultChecked에 따라 초기값 설정
   const [mapIndex, setMapIndex] = useState<number | null>(null);
+  const [selectedSkill, setSelectedSkill] = useState<Skills>(Skills.None);
 
   // Ref for password input (still needed for focus)
   const passwordInputRef = useRef<HTMLInputElement>(null);
@@ -91,7 +98,7 @@ export const useGamePageLogic = (): UseGamePageLogicResult => {
     }
   }, [updateParticipants]);
 
-  // Update local states based on gameDetails from context
+  // Update local states based on gameDetails and gameState from context
   useEffect(() => {
     if (gameDetails) {
       if (gameDetails.status === GameStatus.WAITING || gameDetails.status === GameStatus.IN_PROGRESS) {
@@ -105,7 +112,7 @@ export const useGamePageLogic = (): UseGamePageLogicResult => {
         setAutoRecording(gameDetails.autoRecording); // gameDetails에서 autoRecording 상태 동기화
       }
     }
-  }, [gameDetails]);
+  }, [gameDetails]); // gameDetails에 의존
 
   // Sync local autoRecording state with rouletteInstance and GameContext
   useEffect(() => {
@@ -170,6 +177,44 @@ export const useGamePageLogic = (): UseGamePageLogicResult => {
     setAutoRecording(e.target.checked);
   }, []); // setGameContextAutoRecording는 useEffect에서 동기화되므로 의존성 제거
 
+  const handleSkillSelect = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedSkill(e.target.value as Skills);
+  }, []);
+
+  const handleCanvasClick = useCallback(async (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!rouletteInstance || selectedSkill === Skills.None || !gameState?.isRunning) {
+      return;
+    }
+
+    const canvas = e.currentTarget.querySelector('canvas');
+    if (!canvas) {
+      console.error('Canvas element not found.');
+      return;
+    }
+
+    const skillPosition = rouletteInstance.screenToWorld(e.clientX, e.clientY, canvas);
+    let extra: any = {};
+
+    switch (selectedSkill) {
+      case Skills.Impact:
+        extra = { radius: 5 }; // 임의의 반경 값
+        break;
+      case Skills.DummyMarble:
+        extra = { count: 3 }; // 임의의 더미 마블 수
+        break;
+      default:
+        break;
+    }
+
+    try {
+      await socketService.useSkill(selectedSkill, skillPosition, extra);
+      setSelectedSkill(Skills.None); // 스킬 사용 후 선택 초기화
+    } catch (error) {
+      console.error('Failed to use skill:', error);
+      alert('스킬 사용에 실패했습니다.');
+    }
+  }, [rouletteInstance, selectedSkill, gameState?.isRunning]);
+
   return {
     roomName,
     roomDetails,
@@ -204,5 +249,9 @@ export const useGamePageLogic = (): UseGamePageLogicResult => {
     onAutoRecordingChange: handleAutoRecordingChange,
     passwordInputRef,
     lastUsedSkill,
+    selectedSkill,
+    handleSkillSelect,
+    handleCanvasClick,
+    gameState, // gameState 추가
   };
 };
