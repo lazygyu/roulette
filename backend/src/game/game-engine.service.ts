@@ -2,10 +2,11 @@ import { Injectable, Logger, OnModuleDestroy, BadRequestException } from '@nestj
 import { Server } from 'socket.io';
 import { GameSessionService } from './game-session.service'; // GameSessionService 임포트
 import { prefixRoomId } from './utils/roomId.util'; // prefixRoomId 유틸리티 임포트
-import { SkillType, SkillPosition, ImpactSkillExtra, DummyMarbleSkillExtra } from './types/skill.type';
+import { SkillType, SkillPosition, SkillExtra } from './types/skill.type';
 
 @Injectable()
-export class GameEngineService implements OnModuleDestroy { // OnModuleDestroy 인터페이스 구현 명시
+export class GameEngineService implements OnModuleDestroy {
+  // OnModuleDestroy 인터페이스 구현 명시
   private readonly logger = new Logger(GameEngineService.name);
   // gameLoops Map의 key 타입을 number로 변경
   private gameLoops: Map<number, NodeJS.Timeout> = new Map();
@@ -20,11 +21,11 @@ export class GameEngineService implements OnModuleDestroy { // OnModuleDestroy �
    * @param skillPosition - 스킬이 발동될 위치 (x, y 좌표)
    * @param extra - 스킬 타입에 따라 달라지는 추가 데이터
    */
-  async useSkill(
+  async useSkill<T extends SkillType>(
     roomId: number,
-    skillType: SkillType,
+    skillType: T,
     skillPosition: SkillPosition,
-    extra: ImpactSkillExtra | DummyMarbleSkillExtra, // Union Type으로 명시
+    extra: SkillExtra<T>,
   ): Promise<void> {
     const room = this.gameSessionService.getRoom(roomId);
     if (!room || !room.game) {
@@ -35,19 +36,17 @@ export class GameEngineService implements OnModuleDestroy { // OnModuleDestroy �
     switch (skillType) {
       case SkillType.Impact:
         // Impact 스킬 로직
-        const impactExtra = extra as ImpactSkillExtra;
-        this.logger.log(
-          `Room ${roomId}: Impact skill used at (${skillPosition.x}, ${skillPosition.y}) with radius ${impactExtra.radius}`,
-        );
-        room.game.applyImpact(skillPosition, impactExtra.radius, 50); // force 값은 임의로 50으로 설정
+        const impactExtra = extra as SkillExtra<SkillType.Impact>;
+        this.logger.log(`Room ${roomId}: Impact skill used at (${skillPosition.x}, ${skillPosition.y}) with radius 10`);
+        room.game.applyImpact(skillPosition, 10, 50); // force 값은 임의로 50으로 설정
         break;
       case SkillType.DummyMarble:
         // DummyMarble 스킬 로직
-        const dummyMarbleExtra = extra as DummyMarbleSkillExtra;
+        const dummyMarbleExtra = extra as SkillExtra<SkillType.DummyMarble>;
         this.logger.log(
-          `Room ${roomId}: DummyMarble skill used at (${skillPosition.x}, ${skillPosition.y}) to create ${dummyMarbleExtra.count} marbles`,
+          `Room ${roomId}: DummyMarble skill used at (${skillPosition.x}, ${skillPosition.y}) to create 5 marbles`,
         );
-        room.game.createDummyMarbles(skillPosition, dummyMarbleExtra.count);
+        room.game.createDummyMarbles(skillPosition, 5);
         break;
       default:
         throw new BadRequestException(`알 수 없는 스킬 타입: ${skillType}`);
@@ -59,7 +58,8 @@ export class GameEngineService implements OnModuleDestroy { // OnModuleDestroy �
    * @param roomId - 게임 루프를 시작할 방의 숫자 ID
    * @param server - 클라이언트에게 상태를 전송할 Socket.IO 서버 인스턴스
    */
-  startGameLoop(roomId: number, server: Server) { // roomId 타입을 number로 변경
+  startGameLoop(roomId: number, server: Server) {
+    // roomId 타입을 number로 변경
     if (this.gameLoops.has(roomId)) {
       this.logger.warn(`Game loop for room ${roomId} is already running.`);
       return;
@@ -73,7 +73,8 @@ export class GameEngineService implements OnModuleDestroy { // OnModuleDestroy �
       try {
         const room = this.gameSessionService.getRoom(roomId); // GameRoom 가져오기
         if (room && room.game) {
-          if (room.isRunning) { // 게임이 실제로 실행 중일 때만 업데이트
+          if (room.isRunning) {
+            // 게임이 실제로 실행 중일 때만 업데이트
             room.game.update(); // Roulette 인스턴스의 update() 호출
           }
 
@@ -83,8 +84,11 @@ export class GameEngineService implements OnModuleDestroy { // OnModuleDestroy �
           server.to(prefixedRoomId).emit('game_state', gameState);
 
           // 게임이 종료되었는지 확인 (gameState.isRunning은 room.game.update()에 의해 변경될 수 있음)
-          if (!gameState.isRunning && room.isRunning) { // room.isRunning은 아직 true일 수 있으므로 gameState.isRunning으로 판단
-            this.logger.log(`Game in room ${roomId} has ended according to gameState. Stopping loop and notifying GameSessionService.`);
+          if (!gameState.isRunning && room.isRunning) {
+            // room.isRunning은 아직 true일 수 있으므로 gameState.isRunning으로 판단
+            this.logger.log(
+              `Game in room ${roomId} has ended according to gameState. Stopping loop and notifying GameSessionService.`,
+            );
             this.gameSessionService.endGame(roomId); // GameSessionService에 게임 종료 알림
             this.stopGameLoop(roomId); // 숫자 ID로 루프 중지
             // 게임 종료 이벤트 전송 (접두사 붙은 ID 사용)
@@ -113,7 +117,8 @@ export class GameEngineService implements OnModuleDestroy { // OnModuleDestroy �
    * 특정 방의 게임 루프를 중지합니다.
    * @param roomId - 게임 루프를 중지할 방의 숫자 ID
    */
-  stopGameLoop(roomId: number) { // roomId 타입을 number로 변경
+  stopGameLoop(roomId: number) {
+    // roomId 타입을 number로 변경
     const interval = this.gameLoops.get(roomId);
     if (interval) {
       clearInterval(interval);
@@ -130,7 +135,8 @@ export class GameEngineService implements OnModuleDestroy { // OnModuleDestroy �
    * @param roomId - 확인할 방의 숫자 ID
    * @returns 루프 실행 중 여부
    */
-  isLoopRunning(roomId: number): boolean { // roomId 타입을 number로 변경
+  isLoopRunning(roomId: number): boolean {
+    // roomId 타입을 number로 변경
     return this.gameLoops.has(roomId);
   }
 

@@ -13,14 +13,9 @@ export class SkillPosition {
   y!: number;
 }
 
-// Impact 스킬의 extra 필드 타입 (예시: 반경)
-export class ImpactSkillExtra {
-  @IsNumber()
-  radius!: number;
+interface SkillExtraMapper {
+  [SkillType.Impact]: {};
+  [SkillType.DummyMarble]: {};
 }
 
-// DummyMarble 스킬의 extra 필드 타입 (예시: 생성할 더미 마블 수)
-export class DummyMarbleSkillExtra {
-  @IsNumber()
-  count!: number;
-}
+export type SkillExtra<T extends SkillType> = SkillExtraMapper[T];

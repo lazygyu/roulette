@@ -31,7 +31,7 @@ import { StartGameDto } from './dto/start-game.dto';
 import { ResetGameDto } from './dto/reset-game.dto';
 import { GetGameStateDto } from './dto/get-game-state.dto';
 import { GetMapsDto } from './dto/get-maps.dto';
-import { UseSkillDto, UseImpactSkillDto, UseDummyMarbleSkillDto } from './dto/use-skill.dto';
+import { UseSkillDto } from './dto/use-skill.dto';
 import { SkillType } from './types/skill.type';
 
 @WebSocketGateway({
@@ -471,6 +471,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SocketCurrentUser() user: User,
   ) {
     const { roomId, skillType, skillPosition, extra } = data;
+    this.logger.log('스킬 사용 요청 수신:', {
+      roomId,
+      skillType,
+      skillPosition,
+      extra,
+      user: user ? `${user.nickname} (${user.id})` : '익명 사용자',
+    });
     const prefixedRoomId = prefixRoomId(roomId);
 
     try {
@@ -486,13 +493,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       await this.gameEngineService.useSkill(roomId, skillType, skillPosition, extra);
 
       // 스킬 사용 정보 저장 및 게임 상태 업데이트
-      this.gameSessionService.getRoom(roomId)?.game?.setLastUsedSkill(
-        client.id,
-        user.nickname,
-        skillType,
-        skillPosition,
-        extra,
-      );
+      this.gameSessionService
+        .getRoom(roomId)
+        ?.game?.setLastUsedSkill(client.id, user.nickname, skillType, skillPosition, extra);
 
       // 스킬 발동 후 게임 상태 업데이트 및 클라이언트에게 전파
       const gameState = this.gameSessionService.getGameState(roomId);
