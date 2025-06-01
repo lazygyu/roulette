@@ -21,6 +21,7 @@ import { RoomsService } from '../rooms/rooms.service';
 import { AuthService } from '../auth/auth.service'; // AuthService 임포트
 import { AnonymousUser } from '../types/socket'; // AnonymousUser 타입 임포트
 import { PrismaService } from '../prisma/prisma.service'; // PrismaService 임포트 추가
+import { GamePersistenceService } from './game-persistence.service'; // GamePersistenceService 임포트 추가
 
 
 // DTO 임포트
@@ -58,6 +59,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly roomsService: RoomsService,
     private readonly authService: AuthService,
     private readonly prisma: PrismaService, // PrismaService 주입 추가
+    private readonly gamePersistenceService: GamePersistenceService, // GamePersistenceService 주입 추가
   ) {}
 
   afterInit() {
@@ -177,10 +179,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     // DB에서 직접 게임 상태 확인
-    const gameRecord = await this.prisma.game.findUnique({
-      where: { roomId },
-      select: { status: true },
-    });
+    const gameRecord = await this.gamePersistenceService.loadGameData(roomId);
 
     if (gameRecord && gameRecord.status === GameStatus.FINISHED) { // GameStatus.FINISHED 사용
       this.logger.warn(

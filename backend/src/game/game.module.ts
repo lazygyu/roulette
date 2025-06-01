@@ -5,11 +5,12 @@ import { GameEngineService } from './game-engine.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RoomsModule } from '../rooms/rooms.module'; // RoomsModule 임포트 추가
 import { AuthModule } from 'src/auth/auth.module';
+import { GamePersistenceService } from './game-persistence.service'; // GamePersistenceService 임포트
 
 @Module({
   imports: [PrismaModule, RoomsModule, AuthModule], // RoomsModule 임포트 배열에 추가
   // RoomManagerService를 GameSessionService로 변경
-  providers: [GameGateway, GameSessionService, GameEngineService],
+  providers: [GameGateway, GameSessionService, GameEngineService, GamePersistenceService],
   exports: [GameSessionService], // GameSessionService export
 })
 export class GameModule {}
