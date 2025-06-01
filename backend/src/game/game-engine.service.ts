@@ -3,6 +3,11 @@ import { Server } from 'socket.io';
 import { GameSessionService } from './game-session.service'; // GameSessionService 임포트
 import { prefixRoomId } from './utils/roomId.util'; // prefixRoomId 유틸리티 임포트
 import { SkillType, SkillPosition, SkillExtra } from './types/skill.type';
+import { ImpactSkillEffect } from './types/skill-effect.type'; // ImpactSkillEffect 임포트
+
+// 스킬 속성 상수 정의
+const IMPACT_SKILL_RADIUS = 30; // Impact 스킬의 반경
+const IMPACT_SKILL_FORCE = 50; // Impact 스킬의 힘
 
 @Injectable()
 export class GameEngineService implements OnModuleDestroy {
@@ -37,9 +42,16 @@ export class GameEngineService implements OnModuleDestroy {
     switch (skillType) {
       case SkillType.Impact:
         // Impact 스킬 로직
-        const impactExtra = extra as SkillExtra<SkillType.Impact>;
-        this.logger.log(`Room ${roomId}: Impact skill used at (${skillPosition.x}, ${skillPosition.y}) with radius 10`);
-        room.game.applyImpact(skillPosition, 30, 50); // force 값은 임의로 50으로 설정
+        // const impactExtra = extra as SkillExtra<SkillType.Impact>; // 현재 사용되지 않으므로 주석 처리
+        this.logger.log(`Room ${roomId}: Impact skill used at (${skillPosition.x}, ${skillPosition.y}) with radius ${IMPACT_SKILL_RADIUS} and force ${IMPACT_SKILL_FORCE}`);
+        room.game.applyImpact(skillPosition, IMPACT_SKILL_RADIUS, IMPACT_SKILL_FORCE);
+
+        // Impact 스킬 이펙트 정보 추가
+        room.game.addSkillEffect({
+          type: SkillType.Impact,
+          position: skillPosition,
+          radius: IMPACT_SKILL_RADIUS,
+        } as Omit<ImpactSkillEffect, 'id' | 'timestamp'>); // 타입 단언
         break;
       case SkillType.DummyMarble:
         // DummyMarble 스킬 로직

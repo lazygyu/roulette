@@ -5,6 +5,8 @@ import { parseName } from './utils/utils';
 import { IPhysics } from './IPhysics';
 import { Box2dPhysics } from './physics/physics-box2d';
 import { MapEntityState } from './types/MapEntity.type'; // getGameState에서 사용
+import { SkillEffect } from './types/skill-effect.type'; // SkillEffect 임포트
+import { v4 as uuidv4 } from 'uuid'; // uuidv4 임포트
 
 export class Roulette {
   private _marbles: Marble[] = []; // 일반 마블
@@ -27,7 +29,7 @@ export class Roulette {
   private _goalDist: number = Infinity;
   private _isRunning: boolean = false;
   private _winner: Marble | null = null;
-  private _lastUsedSkill: { playerId: string; nickname: string; skillType: string; skillPosition: { x: number; y: number }; extra: any } | null = null;
+  private _skillEffects: SkillEffect[] = [];
 
   private physics!: IPhysics; // Box2dPhysics 인스턴스가 할당됨
 
@@ -313,8 +315,13 @@ export class Roulette {
   }
 
 
-  public setLastUsedSkill(playerId: string, nickname: string, skillType: string, skillPosition: { x: number; y: number }, extra: any): void {
-    this._lastUsedSkill = { playerId, nickname, skillType, skillPosition, extra };
+  public addSkillEffect(effectData: Omit<SkillEffect, 'id' | 'timestamp'>): void {
+    const newEffect: SkillEffect = {
+      ...effectData,
+      id: uuidv4(), // UUID 생성
+      timestamp: Date.now(),
+    } as SkillEffect; // 타입 단언
+    this._skillEffects.push(newEffect);
   }
 
   private _clearMap() {
@@ -378,8 +385,9 @@ export class Roulette {
       winnerRank: this._winnerRank,
       totalMarbleCount: this._totalMarbleCount, // 일반 마블 수
       shakeAvailable: this._shakeAvailable,
-      lastUsedSkill: this._lastUsedSkill,
+      skillEffects: [...this._skillEffects], // 현재 이펙트 목록 복사본 전달
     };
+    this._skillEffects = []; // 전달 후 이펙트 목록 초기화
   }
 
   // 게임 종료 후 '일반' 마블의 최종 순위를 반환하는 메서드
