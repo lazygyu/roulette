@@ -7,7 +7,7 @@ import { ParticleManager } from './particleManager';
 import { GameObject } from './gameObject';
 import { UIObject } from './UIObject';
 import { VectorLike } from './types/VectorLike';
-// import { MapEntityState } from './types/MapEntity.type'; // No longer needed
+import { ServerSkillType, FrontendSkillEffectWrapper, ImpactSkillEffectFromServer } from './types/skillTypes'; // 스킬 이펙트 관련 타입 임포트
 
 export type RenderParameters = {
   camera: Camera;
@@ -17,6 +17,7 @@ export type RenderParameters = {
   winners: MarbleState[]; // Uses MarbleState from gameTypes
   particleManager: ParticleManager;
   effects: GameObject[];
+  skillEffects: FrontendSkillEffectWrapper[]; // 스킬 이펙트 추가
   winnerRank: number;
   winner: MarbleState | null; // Uses MarbleState from gameTypes
   size: VectorLike;
@@ -99,6 +100,7 @@ export class RouletteRenderer {
       this.renderEntities(renderParameters.entities);
       this.renderEffects(renderParameters);
       this.renderMarbles(renderParameters);
+      this.renderSkillEffects(renderParameters.skillEffects, renderParameters.camera, this.ctx); // 스킬 이펙트 렌더링 추가
     });
     this.ctx.restore();
 
@@ -154,6 +156,81 @@ export class RouletteRenderer {
     effects.forEach((effect) => effect.render(this.ctx, camera.zoom * initialZoom));
   }
 
+  // 스킬 이펙트 렌더링을 위한 새로운 메서드
+  public renderSkillEffects(effects: FrontendSkillEffectWrapper[], camera: Camera, context: CanvasRenderingContext2D) {
+    if (effects.length > 0) {
+      console.log('[Renderer] renderSkillEffects called with:', JSON.stringify(effects));
+    }
+    effects.forEach((effectWrapper) => {
+      this.renderSingleSkillEffect(effectWrapper, camera, context);
+    });
+  }
+
+  // 단일 스킬 이펙트 렌더링 (타입별 분기)
+  private renderSingleSkillEffect(
+    effectWrapper: FrontendSkillEffectWrapper,
+    camera: Camera,
+    context: CanvasRenderingContext2D,
+  ) {
+    switch (effectWrapper.type) {
+      case ServerSkillType.Impact:
+        this.renderImpactEffect(effectWrapper, camera, context);
+        break;
+      case ServerSkillType.DummyMarble:
+        // DummyMarble 이펙트 렌더링 로직 (필요시 구현)
+        // 예: 작은 파티클 효과나 텍스트 표시 등
+        break;
+      default:
+        // 알 수 없는 스킬 타입 처리
+        break;
+    }
+  }
+
+  // Impact 스킬 이펙트 렌더링
+  private renderImpactEffect(
+    effectWrapper: FrontendSkillEffectWrapper,
+    camera: Camera,
+    context: CanvasRenderingContext2D,
+  ) {
+    const effectData = effectWrapper.serverEffectData as ImpactSkillEffectFromServer;
+    const elapsed = Date.now() - effectWrapper.startTime;
+    const progress = Math.min(elapsed / effectWrapper.duration, 1);
+
+    // 월드 좌표를 화면 좌표로 변환
+    const screenPos = camera.worldToScreen(effectData.position);
+    console.log(
+      '[Renderer] Impact effect:',
+      JSON.stringify({
+        worldPos: effectData.position,
+        screenPos,
+        progress,
+        duration: effectWrapper.duration,
+        startTime: effectWrapper.startTime,
+        elapsed,
+        radius: effectData.radius,
+      }),
+    );
+
+    // 시간에 따른 투명도 및 크기 변화 (단순화된 버전으로 테스트)
+    const opacity = 1 - progress;
+    // 월드 반경을 화면 반경으로 변환 (initialZoom은 renderScene에서 이미 적용되므로, camera.zoom만 곱함)
+    const currentRadius = effectData.radius * camera.zoom * (0.5 + progress * 0.5);
+
+    if (opacity <= 0 || currentRadius <= 0) {
+      return;
+    }
+
+    context.save();
+    context.globalAlpha = opacity;
+    context.strokeStyle = 'rgba(255, 255, 0, 1)'; // 노란색 테두리
+    context.lineWidth = 2 / (camera.zoom * initialZoom); // 줌에 따라 선 굵기 조절
+
+    context.beginPath();
+    context.arc(screenPos.x, screenPos.y, currentRadius, 0, Math.PI * 2, false);
+    context.stroke();
+    context.restore();
+  }
+
   // Updated to render based on MarbleState (Restored full logic + radius fallback)
   private renderMarbles({ marbles, camera, winnerRank, winners }: RenderParameters) {
     const winnerIndex = winnerRank - winners.length;
@@ -163,7 +240,7 @@ export class RouletteRenderer {
       // console.log(`Rendering marble ${i}:`, marbleState);
 
       // --- Fallback for missing or invalid radius ---
-      const radius = (marbleState.radius && marbleState.radius > 0) ? marbleState.radius : 0.25;
+      const radius = marbleState.radius && marbleState.radius > 0 ? marbleState.radius : 0.25;
       if (!marbleState.radius || marbleState.radius <= 0) {
         // console.warn(`Marble ${i} (${marbleState.name}) missing or invalid radius (${marbleState.radius}). Using default: ${radius}`);
       }

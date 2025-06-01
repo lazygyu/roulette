@@ -47,7 +47,7 @@ export class Roulette {
   // Getter for current map index
   get currentMapIndex(): number {
     if (!this._stage) return -1; // Or throw an error if stage should always exist
-    return stages.findIndex(stage => stage === this._stage);
+    return stages.findIndex((stage) => stage === this._stage);
   }
 
   // 생성자를 private으로 변경하여 외부 직접 생성을 막고 createInstance를 통하도록 강제
@@ -77,7 +77,8 @@ export class Roulette {
       marble.update(deltaTime);
 
       if (marble.y > this._stage.goalY) {
-        if (!marble.isDummy) { // 일반 마블만 승자 처리
+        if (!marble.isDummy) {
+          // 일반 마블만 승자 처리
           this._winners.push(marble);
           // 승자 결정 및 게임 종료 로직 개선
           if (this._isRunning) {
@@ -87,9 +88,12 @@ export class Roulette {
               this._isRunning = false;
             }
             // 2. 꼴등이 승자이고, 마지막 한 명 빼고 모두 골인한 경우
-            else if (this._winnerRank === this._totalMarbleCount - 1 && this._winners.length === this._totalMarbleCount - 1) {
+            else if (
+              this._winnerRank === this._totalMarbleCount - 1 &&
+              this._winners.length === this._totalMarbleCount - 1
+            ) {
               // 이때 필드에 남아있는 일반 마블이 승자가 되어야 함.
-              const remainingMarbles = this._marbles.filter(m => !this._winners.find(w => w.id === m.id));
+              const remainingMarbles = this._marbles.filter((m) => !this._winners.find((w) => w.id === m.id));
               if (remainingMarbles.length === 1 && remainingMarbles[0].id !== marble.id) {
                 this._winner = remainingMarbles[0];
               }
@@ -100,62 +104,67 @@ export class Roulette {
         setTimeout(() => {
           this.physics.removeMarble(marble.id);
           if (marble.isDummy) {
-            this._dummyMarbles = this._dummyMarbles.filter(dm => dm.id !== marble.id);
+            this._dummyMarbles = this._dummyMarbles.filter((dm) => dm.id !== marble.id);
           }
         }, 500);
       }
     }
-    
+
     // 일반 마블만으로 순위 및 줌 계산
-    const activeMarbles = this._marbles.filter((m) => !this._winners.find(w => w.id === m.id));
+    const activeMarbles = this._marbles.filter((m) => !this._winners.find((w) => w.id === m.id));
     if (activeMarbles.length > 0) {
-        const targetIndex = Math.max(0, this._winnerRank - this._winners.length); // 음수 방지
-        const topY = activeMarbles[targetIndex] ? activeMarbles[targetIndex].y : 0;
-        this._goalDist = Math.abs(this._stage.zoomY - topY);
-        this._timeScale = this._calcTimeScale(activeMarbles); // activeMarbles 전달
+      const targetIndex = Math.max(0, this._winnerRank - this._winners.length); // 음수 방지
+      const topY = activeMarbles[targetIndex] ? activeMarbles[targetIndex].y : 0;
+      this._goalDist = Math.abs(this._stage.zoomY - topY);
+      this._timeScale = this._calcTimeScale(activeMarbles); // activeMarbles 전달
     } else {
-        this._goalDist = 0;
-        this._timeScale = 1;
+      this._goalDist = 0;
+      this._timeScale = 1;
     }
 
-
     // 골인한 일반 마블을 _marbles 배열에서 제거
-    this._marbles = this._marbles.filter((m) => !this._winners.find(w => w.id === m.id));
+    this._marbles = this._marbles.filter((m) => !this._winners.find((w) => w.id === m.id));
 
     // 꼴등 승자 결정 로직 (모든 다른 일반 마블이 골인한 후)
-    if (this._isRunning && this._winnerRank === this._totalMarbleCount - 1 && this._winners.length === this._totalMarbleCount - 1) {
-      if (this._marbles.length === 1) { // 필드에 정확히 한 명의 일반 마블이 남았을 때
+    if (
+      this._isRunning &&
+      this._winnerRank === this._totalMarbleCount - 1 &&
+      this._winners.length === this._totalMarbleCount - 1
+    ) {
+      if (this._marbles.length === 1) {
+        // 필드에 정확히 한 명의 일반 마블이 남았을 때
         this._winner = this._marbles[0]; // 남은 한 명이 승자
         this._isRunning = false;
       } else if (this._marbles.length === 0 && this._winners.length === this._totalMarbleCount) {
-        if (this._winners[this._winnerRank] && this._winnerRank === this._totalMarbleCount -1) {
-            this._winner = this._winners[this._winnerRank];
-            this._isRunning = false;
+        if (this._winners[this._winnerRank] && this._winnerRank === this._totalMarbleCount - 1) {
+          this._winner = this._winners[this._winnerRank];
+          this._isRunning = false;
         }
       }
     }
-    
+
     // 모든 일반 마블이 골인한 경우 게임 종료
     if (this._isRunning && this._winners.length === this._totalMarbleCount && this._totalMarbleCount > 0) {
-        this._isRunning = false;
-        if (!this._winner && this._winners[this._winnerRank]) {
-            this._winner = this._winners[this._winnerRank];
-        }
+      this._isRunning = false;
+      if (!this._winner && this._winners[this._winnerRank]) {
+        this._winner = this._winners[this._winnerRank];
+      }
     }
   }
 
-  private _calcTimeScale(currentMarbles: Marble[]): number { // 현재 필드 위의 '일반' 마블들을 받도록 수정
+  private _calcTimeScale(currentMarbles: Marble[]): number {
+    // 현재 필드 위의 '일반' 마블들을 받도록 수정
     if (!this._stage) return 1;
-    const targetDisplayRank = this._winnerRank + 1; 
+    const targetDisplayRank = this._winnerRank + 1;
     if (this._winners.length < targetDisplayRank && currentMarbles.length > 0) {
-      const remainingTargetRank = targetDisplayRank - this._winners.length -1;
+      const remainingTargetRank = targetDisplayRank - this._winners.length - 1;
       if (remainingTargetRank >= 0 && remainingTargetRank < currentMarbles.length) {
         const targetMarbleForZoom = currentMarbles[remainingTargetRank];
         if (targetMarbleForZoom) {
-            const distToZoomY = Math.abs(this._stage.zoomY - targetMarbleForZoom.y);
-            if (distToZoomY < zoomThreshold && targetMarbleForZoom.y > this._stage.zoomY - zoomThreshold * 1.2) {
-                return Math.max(0.2, distToZoomY / zoomThreshold);
-            }
+          const distToZoomY = Math.abs(this._stage.zoomY - targetMarbleForZoom.y);
+          if (distToZoomY < zoomThreshold && targetMarbleForZoom.y > this._stage.zoomY - zoomThreshold * 1.2) {
+            return Math.max(0.2, distToZoomY / zoomThreshold);
+          }
         }
       }
     }
@@ -187,12 +196,11 @@ export class Roulette {
     if (this._marbles.length > 1) {
       this._marbles.sort((a, b) => b.y - a.y);
     }
-    
+
     // 더미 마블도 y좌표 기준으로 정렬 (필요하다면)
     // if (this._dummyMarbles.length > 1) {
     //   this._dummyMarbles.sort((a, b) => b.y - a.y);
     // }
-
 
     // 쉐이크 가능 여부는 일반 마블 기준으로 판단
     if (this._isRunning && this._marbles.length > 0 && this._noMoveDuration > 3000) {
@@ -220,7 +228,8 @@ export class Roulette {
 
   public start() {
     this._isRunning = true;
-    if (this._winnerRank >= this._marbles.length && this._marbles.length > 0) { // 일반 마블 기준으로
+    if (this._winnerRank >= this._marbles.length && this._marbles.length > 0) {
+      // 일반 마블 기준으로
       this._winnerRank = this._marbles.length - 1;
     } else if (this._marbles.length === 0) {
       this._winnerRank = 0; // 마블이 없으면 0등
@@ -302,18 +311,17 @@ export class Roulette {
       const dummyName = `${userNickname}-${i + 1}`;
       // 더미 마블 생성 시 isDummy=true, 초기 속도 전달
       const dummyMarble = new Marble(this.physics, newId, 0, dummyName, 1, true); // max는 0 또는 의미 없는 값 전달
-      
+
       // 스킬 위치 근처에 생성 (약간의 랜덤 오프셋 추가)
       const offsetX = (Math.random() - 0.5) * 1; // 오프셋 범위 약간 증가
       const offsetY = (Math.random() - 0.5) * 1;
-      
+
       // physics.createMarble 호출 시 isDummy와 초기 속도 전달
       this.physics.createMarble(newId, position.x + offsetX, position.y + offsetY, true, { x: 0, y: 10 }); // y: 10은 아래로 향하는 힘 (조정 가능)
       this._dummyMarbles.push(dummyMarble);
     }
     // this._totalMarbleCount는 더미 마블로 인해 변경되지 않음
   }
-
 
   public addSkillEffect(effectData: Omit<SkillEffect, 'id' | 'timestamp'>): void {
     const newEffect: SkillEffect = {
@@ -375,7 +383,7 @@ export class Roulette {
 
   // 게임 상태 직렬화를 위한 메서드
   public getGameState() {
-    return {
+    const result = {
       // 일반 마블과 더미 마블 모두 클라이언트에 전달 (렌더링 목적)
       marbles: this._allMarbles.map((marble) => marble.toJSON()),
       winners: this._winners.map((marble) => marble.toJSON()), // 일반 마블 중에서만
@@ -388,10 +396,16 @@ export class Roulette {
       skillEffects: [...this._skillEffects], // 현재 이펙트 목록 복사본 전달
     };
     this._skillEffects = []; // 전달 후 이펙트 목록 초기화
+    return result;
   }
 
   // 게임 종료 후 '일반' 마블의 최종 순위를 반환하는 메서드
-  public getFinalRankingForAllMarbles(): Array<{ name: string; finalRank: number | string; yPos: number; isWinnerGoal: boolean }> {
+  public getFinalRankingForAllMarbles(): Array<{
+    name: string;
+    finalRank: number | string;
+    yPos: number;
+    isWinnerGoal: boolean;
+  }> {
     const rankedMarbles: Array<{ name: string; finalRank: number | string; yPos: number; isWinnerGoal: boolean }> = [];
 
     // 1. 골인한 '일반' 마블들 (_winners 배열 사용)
@@ -420,38 +434,39 @@ export class Roulette {
           isWinnerGoal: isThisNonGoaledMarbleTheWinner,
         });
       });
-    
+
     if (this._winner) {
-        const winnerInRankedList = rankedMarbles.find(r => r.name === this._winner!.name);
-        if (winnerInRankedList && !winnerInRankedList.isWinnerGoal) {
-            winnerInRankedList.isWinnerGoal = true;
-            rankedMarbles.forEach(r => {
-                if (r.name !== this._winner!.name) {
-                    r.isWinnerGoal = false;
-                }
-            });
-        } else if (!winnerInRankedList && !this._winner.isDummy) { // 더미가 아닌 승자인데 목록에 없다면 추가
-             let rankForWinner = this._winnerRank + 1;
-             if (this._winnerRank === this._totalMarbleCount -1 && !this._winners.find(w => w.id === this._winner!.id)) {
-                 rankForWinner = this._totalMarbleCount;
-             }
-             rankedMarbles.push({
-                name: this._winner.name,
-                finalRank: rankForWinner,
-                yPos: this._winner.y,
-                isWinnerGoal: true,
-             });
-             rankedMarbles.forEach(r => {
-                if (r.name !== this._winner!.name) {
-                    r.isWinnerGoal = false;
-                }
-            });
-            rankedMarbles.sort((a,b) => {
-                const rankA = typeof a.finalRank === 'number' ? a.finalRank : Infinity;
-                const rankB = typeof b.finalRank === 'number' ? b.finalRank : Infinity;
-                return rankA - rankB;
-            });
+      const winnerInRankedList = rankedMarbles.find((r) => r.name === this._winner!.name);
+      if (winnerInRankedList && !winnerInRankedList.isWinnerGoal) {
+        winnerInRankedList.isWinnerGoal = true;
+        rankedMarbles.forEach((r) => {
+          if (r.name !== this._winner!.name) {
+            r.isWinnerGoal = false;
+          }
+        });
+      } else if (!winnerInRankedList && !this._winner.isDummy) {
+        // 더미가 아닌 승자인데 목록에 없다면 추가
+        let rankForWinner = this._winnerRank + 1;
+        if (this._winnerRank === this._totalMarbleCount - 1 && !this._winners.find((w) => w.id === this._winner!.id)) {
+          rankForWinner = this._totalMarbleCount;
         }
+        rankedMarbles.push({
+          name: this._winner.name,
+          finalRank: rankForWinner,
+          yPos: this._winner.y,
+          isWinnerGoal: true,
+        });
+        rankedMarbles.forEach((r) => {
+          if (r.name !== this._winner!.name) {
+            r.isWinnerGoal = false;
+          }
+        });
+        rankedMarbles.sort((a, b) => {
+          const rankA = typeof a.finalRank === 'number' ? a.finalRank : Infinity;
+          const rankB = typeof b.finalRank === 'number' ? b.finalRank : Infinity;
+          return rankA - rankB;
+        });
+      }
     }
     // 더미 마블은 순위 리스트에 포함하지 않음
     return rankedMarbles;

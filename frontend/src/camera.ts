@@ -131,6 +131,44 @@ export class Camera {
     ctx.restore();
   }
 
+  // 월드 좌표를 캔버스 화면 좌표로 변환하는 메서드
+  public worldToScreen(worldPos: VectorLike): VectorLike {
+    // renderScene 콜백 내부에서 사용되는 좌표는 이미 initialZoom이 적용된 상태의 좌표계입니다.
+    // 따라서 worldToScreen은 이 좌표계로 변환해야 합니다.
+
+    // 1. 월드 좌표를 카메라 위치 기준으로 변환
+    const xRelativeToCamera = worldPos.x - this._position.x;
+    const yRelativeToCamera = worldPos.y - this._position.y;
+
+    // 2. 카메라 줌 적용
+    const zoomedX = xRelativeToCamera * this._zoom;
+    const zoomedY = yRelativeToCamera * this._zoom;
+
+    // 3. 캔버스 중앙 오프셋 적용
+    // this.width와 this.height는 RouletteRenderer.init에서 설정된 캔버스의 실제 픽셀 크기입니다.
+    // renderScene의 zoomFactor는 initialZoom * 2 * this._zoom 입니다.
+    // renderScene에서 translate 오프셋은 (캔버스 픽셀 너비 / zoomFactor) 입니다.
+    // 이 오프셋은 initialZoom 스케일이 적용되기 전의 값입니다.
+    // worldToScreen은 initialZoom 스케일이 적용된 후의 좌표를 반환해야 합니다.
+    
+    const renderSceneZoomFactor = initialZoom * 2 * this._zoom;
+    // 캔버스 너비/높이를 initialZoom으로 나눈 값이 renderScene 콜백 내에서의 "1 유닛"에 해당합니다.
+    // 하지만 renderScene의 translate는 실제 캔버스 픽셀 크기를 사용합니다.
+    const offsetX = this.width / renderSceneZoomFactor;
+    const offsetY = this.height / renderSceneZoomFactor;
+    
+    // 최종 화면 좌표 (renderScene 콜백 내부에서 사용되는 좌표)
+    // (카메라 기준 줌된 좌표 + 중앙 오프셋)
+    // 이 결과는 renderScene 콜백 내부의 좌표계와 일치합니다 (즉, initialZoom이 이미 적용된 것으로 간주).
+    const screenX = zoomedX + offsetX;
+    const screenY = zoomedY + offsetY;
+    
+    return {
+      x: screenX,
+      y: screenY,
+    };
+  }
+
   // 월드 좌표계 변환을 위한 유틸리티 메서드들
   public getWorldBounds(): { left: number; right: number; top: number; bottom: number } {
     const halfWidth = this.width / (2 * this._zoom);

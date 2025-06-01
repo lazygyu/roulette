@@ -6,8 +6,8 @@ import { SkillType, SkillPosition, SkillExtra } from './types/skill.type';
 import { ImpactSkillEffect } from './types/skill-effect.type'; // ImpactSkillEffect 임포트
 
 // 스킬 속성 상수 정의
-const IMPACT_SKILL_RADIUS = 30; // Impact 스킬의 반경
-const IMPACT_SKILL_FORCE = 50; // Impact 스킬의 힘
+const IMPACT_SKILL_RADIUS = 5; // Impact 스킬의 반경
+const IMPACT_SKILL_FORCE = 10; // Impact 스킬의 힘
 
 @Injectable()
 export class GameEngineService implements OnModuleDestroy {
