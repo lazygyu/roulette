@@ -21,7 +21,7 @@ interface UseGamePageLogicResult {
   winnerSelectionType: 'first' | 'last' | 'custom';
   winningRankDisplay: number | null;
   rouletteInstance: Roulette | null;
-  availableMaps: { index: number; title: string; }[];
+  availableMaps: { index: number; title: string }[];
   initializeGame: (container: HTMLDivElement) => void;
   handlePasswordJoin: () => void;
   namesInput: string;
@@ -39,7 +39,13 @@ interface UseGamePageLogicResult {
   onMapChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   onAutoRecordingChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   passwordInputRef: React.RefObject<HTMLInputElement | null>; // HTMLInputElement -> HTMLInputElement | null 로 변경
-  lastUsedSkill: { playerId: string; nickname: string; skillType: string; skillPosition: { x: number; y: number }; extra: any } | null;
+  lastUsedSkill: {
+    playerId: string;
+    nickname: string;
+    skillType: string;
+    skillPosition: { x: number; y: number };
+    extra: any;
+  } | null;
   selectedSkill: Skills;
   handleSkillSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   handleCanvasClick: (event: React.MouseEvent<HTMLDivElement>) => void;
@@ -127,16 +133,21 @@ export const useGamePageLogic = (): UseGamePageLogicResult => {
     setGameContextUseSkills(useSkills);
   }, [useSkills, setGameContextUseSkills]);
 
+  const handleInNamesInput = useCallback(
+    (e: React.FormEvent<HTMLTextAreaElement>) => {
+      setNamesInput(e.currentTarget.value);
+      updateParticipants(e.currentTarget.value);
+    },
+    [updateParticipants],
+  );
 
-  const handleInNamesInput = useCallback((e: React.FormEvent<HTMLTextAreaElement>) => {
-    setNamesInput(e.currentTarget.value);
-    updateParticipants(e.currentTarget.value);
-  }, [updateParticipants]);
-
-  const handleInNamesBlur = useCallback((e: React.FocusEvent<HTMLTextAreaElement>) => {
-    setNamesInput(e.currentTarget.value);
-    updateParticipants(e.currentTarget.value);
-  }, [updateParticipants]);
+  const handleInNamesBlur = useCallback(
+    (e: React.FocusEvent<HTMLTextAreaElement>) => {
+      setNamesInput(e.currentTarget.value);
+      updateParticipants(e.currentTarget.value);
+    },
+    [updateParticipants],
+  );
 
   const handleBtnShuffleClick = useCallback(() => {
     updateParticipants(namesInput); // 현재 namesInput 상태 사용
@@ -167,11 +178,14 @@ export const useGamePageLogic = (): UseGamePageLogicResult => {
     setWinnerRank(1, 'first');
   }, [setWinnerRank]);
 
-  const handleMapChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const index = parseInt(e.target.value, 10);
-    setMapIndex(index); // 로컬 상태 업데이트
-    setMap(index); // GameContext 업데이트
-  }, [setMap]);
+  const handleMapChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const index = parseInt(e.target.value, 10);
+      setMapIndex(index); // 로컬 상태 업데이트
+      setMap(index); // GameContext 업데이트
+    },
+    [setMap],
+  );
 
   const handleAutoRecordingChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setAutoRecording(e.target.checked);
@@ -181,39 +195,43 @@ export const useGamePageLogic = (): UseGamePageLogicResult => {
     setSelectedSkill(e.target.value as Skills);
   }, []);
 
-  const handleCanvasClick = useCallback(async (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!rouletteInstance || selectedSkill === Skills.None || !gameState?.isRunning) {
-      return;
-    }
+  const handleCanvasClick = useCallback(
+    async (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!rouletteInstance || selectedSkill === Skills.None || !gameState?.isRunning) {
+        return;
+      }
 
-    const canvas = e.currentTarget.querySelector('canvas');
-    if (!canvas) {
-      console.error('Canvas element not found.');
-      return;
-    }
+      const canvas = e.currentTarget.querySelector('canvas');
+      if (!canvas) {
+        console.error('Canvas element not found.');
+        return;
+      }
 
-    const skillPosition = rouletteInstance.screenToWorld(e.clientX, e.clientY, canvas);
-    let extra: any = {};
+      const skillPosition = rouletteInstance.screenToWorld(e.clientX, e.clientY, canvas);
+      let extra: any = {};
 
-    switch (selectedSkill) {
-      case Skills.Impact:
-        extra = { radius: 5 }; // 임의의 반경 값
-        break;
-      case Skills.DummyMarble:
-        extra = { count: 3 }; // 임의의 더미 마블 수
-        break;
-      default:
-        break;
-    }
+      switch (selectedSkill) {
+        case Skills.Impact:
+          extra = { radius: 5 }; // 임의의 반경 값
+          break;
+        case Skills.DummyMarble:
+          extra = { count: 3 }; // 임의의 더미 마블 수
+          break;
+        default:
+          break;
+      }
 
-    try {
-      await socketService.useSkill(selectedSkill, skillPosition, extra);
-      setSelectedSkill(Skills.None); // 스킬 사용 후 선택 초기화
-    } catch (error) {
-      console.error('Failed to use skill:', error);
-      alert('스킬 사용에 실패했습니다.');
-    }
-  }, [rouletteInstance, selectedSkill, gameState?.isRunning]);
+      try {
+        await socketService.useSkill(selectedSkill, skillPosition, extra);
+        console.log('스킬 사용 성공:', { skillPosition, selectedSkill, extra });
+        setSelectedSkill(Skills.None); // 스킬 사용 후 선택 초기화
+      } catch (error) {
+        console.error('Failed to use skill:', error);
+        alert('스킬 사용에 실패했습니다.');
+      }
+    },
+    [rouletteInstance, selectedSkill, gameState?.isRunning],
+  );
 
   return {
     roomName,

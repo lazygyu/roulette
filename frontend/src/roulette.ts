@@ -54,6 +54,9 @@ export class Roulette extends EventTarget {
   private _autoRecording: boolean = false; // Keep local options for now
   private _recorder!: VideoRecorder; // Keep recorder
 
+  // 좌표 변환을 위한 추가 상태 정보
+  private _currentCanvasRect: DOMRect | null = null;
+  private _currentCanvasScaling: { scaleX: number; scaleY: number } | null = null;
 
   private _isReady: boolean = false; // Keep ready flag, might indicate renderer readiness
   get isReady() {
@@ -192,6 +195,10 @@ export class Roulette extends EventTarget {
 
   private _render() {
     if (!this._stage) return; // Keep stage check
+    
+    // 캔버스 상태 업데이트 (좌표 변환을 위해)
+    this._updateCanvasInfo();
+    
     // Pass server state to renderer
     const renderParams = {
       camera: this._camera,
@@ -214,6 +221,17 @@ export class Roulette extends EventTarget {
 
     // Assuming RouletteRenderer is updated to handle MarbleState[] and MapEntityState[]
     this._renderer.render(renderParams, this._uiObjects);
+  }
+
+  // 캔버스 정보 업데이트 메서드
+  private _updateCanvasInfo() {
+    if (this._renderer.canvas) {
+      this._currentCanvasRect = this._renderer.canvas.getBoundingClientRect();
+      this._currentCanvasScaling = {
+        scaleX: this._renderer.canvas.width / this._currentCanvasRect.width,
+        scaleY: this._renderer.canvas.height / this._currentCanvasRect.height,
+      };
+    }
   }
 
   private async _init() {
@@ -381,17 +399,51 @@ export class Roulette extends EventTarget {
   }
 
   public screenToWorld(clientX: number, clientY: number, canvas: HTMLCanvasElement): { x: number; y: number } {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    // 현재 캔버스 정보가 없으면 업데이트
+    if (!this._currentCanvasRect || !this._currentCanvasScaling) {
+      this._updateCanvasInfo();
+    }
 
-    const canvasX = (clientX - rect.left) * scaleX;
-    const canvasY = (clientY - rect.top) * scaleY;
+    // 캐시된 정보 사용
+    const rect = this._currentCanvasRect || canvas.getBoundingClientRect();
+    const scaling = this._currentCanvasScaling || {
+      scaleX: canvas.width / rect.width,
+      scaleY: canvas.height / rect.height,
+    };
 
-    // 캔버스 좌표를 월드 좌표로 변환
-    // 렌더러의 줌과 카메라 위치를 고려해야 함
-    const worldX = (canvasX / this._renderer.width) * this._camera.width + this._camera.x - this._camera.width / 2;
-    const worldY = (canvasY / this._renderer.height) * this._camera.height + this._camera.y - this._camera.height / 2;
+    // 브라우저 좌표를 캔버스 좌표로 변환
+    const canvasX = (clientX - rect.left) * scaling.scaleX;
+    const canvasY = (clientY - rect.top) * scaling.scaleY;
+
+    // 캔버스 좌표를 초기줌 좌표계로 변환 (renderScene에서 사용하는 좌표계)
+    const normalizedX = canvasX / initialZoom;
+    const normalizedY = canvasY / initialZoom;
+
+    // renderScene의 변환 과정을 역으로 적용
+    // renderScene에서: ctx.translate(ctx.canvas.width / zoomFactor, ctx.canvas.height / zoomFactor);
+    const zoomFactor = initialZoom * 2 * this._camera.zoom;
+    const centerOffsetX = canvas.width / zoomFactor;
+    const centerOffsetY = canvas.height / zoomFactor;
+
+    // renderScene에서: ctx.scale(this.zoom, this.zoom);
+    const scaledX = (normalizedX - centerOffsetX) / this._camera.zoom;
+    const scaledY = (normalizedY - centerOffsetY) / this._camera.zoom;
+
+    // renderScene에서: ctx.translate(-this.x * this._zoom, -this.y * this._zoom);
+    const worldX = scaledX + this._camera.x;
+    const worldY = scaledY + this._camera.y;
+
+    // 디버깅 로그 (개발 중에만 사용)
+    console.log('좌표 변환 정보:', {
+      client: { x: clientX, y: clientY },
+      canvas: { x: canvasX, y: canvasY },
+      normalized: { x: normalizedX, y: normalizedY },
+      scaled: { x: scaledX, y: scaledY },
+      world: { x: worldX, y: worldY },
+      camera: { x: this._camera.x, y: this._camera.y, zoom: this._camera.zoom },
+      zoomFactor,
+      centerOffset: { x: centerOffsetX, y: centerOffsetY }
+    });
 
     return { x: worldX, y: worldY };
   }

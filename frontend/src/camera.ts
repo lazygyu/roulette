@@ -130,4 +130,26 @@ export class Camera {
     callback(ctx);
     ctx.restore();
   }
+
+  // 월드 좌표계 변환을 위한 유틸리티 메서드들
+  public getWorldBounds(): { left: number; right: number; top: number; bottom: number } {
+    const halfWidth = this.width / (2 * this._zoom);
+    const halfHeight = this.height / (2 * this._zoom);
+    
+    return {
+      left: this._position.x - halfWidth,
+      right: this._position.x + halfWidth,
+      top: this._position.y - halfHeight,
+      bottom: this._position.y + halfHeight,
+    };
+  }
+
+  public getViewportInfo() {
+    return {
+      position: { ...this._position },
+      zoom: this._zoom,
+      size: { width: this.width, height: this.height },
+      worldBounds: this.getWorldBounds(),
+    };
+  }
 }
