@@ -45,7 +45,10 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "strip-ansi": "^6.0.1",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "ioredis": "^5.4.1",
+    "@socket.io/redis-adapter": "^8.3.0",
+    "redis": "^4.6.13"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
