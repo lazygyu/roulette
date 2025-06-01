@@ -158,9 +158,6 @@ export class RouletteRenderer {
 
   // 스킬 이펙트 렌더링을 위한 새로운 메서드
   public renderSkillEffects(effects: FrontendSkillEffectWrapper[], camera: Camera, context: CanvasRenderingContext2D) {
-    if (effects.length > 0) {
-      console.log('[Renderer] renderSkillEffects called with:', JSON.stringify(effects));
-    }
     effects.forEach((effectWrapper) => {
       this.renderSingleSkillEffect(effectWrapper, camera, context);
     });
@@ -195,21 +192,6 @@ export class RouletteRenderer {
     const effectData = effectWrapper.serverEffectData as ImpactSkillEffectFromServer;
     const elapsed = Date.now() - effectWrapper.startTime;
     const progress = Math.min(elapsed / effectWrapper.duration, 1);
-
-    // 월드 좌표를 화면 좌표로 변환 (이펙트가 월드 좌표계에서 직접 그려지므로, camera.worldToScreen 호출 제거)
-    // const screenPos = camera.worldToScreen(effectData.position); // 이 줄 제거
-    console.log(
-      '[Renderer] Impact effect:',
-      JSON.stringify({
-        worldPos: effectData.position,
-        // screenPos, // 제거
-        progress,
-        duration: effectWrapper.duration,
-        startTime: effectWrapper.startTime,
-        elapsed,
-        radius: effectData.radius,
-      }),
-    );
 
     // 시간에 따른 투명도 및 크기 변화
     const opacity = 1 - progress;

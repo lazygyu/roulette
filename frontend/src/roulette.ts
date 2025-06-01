@@ -86,7 +86,6 @@ export class Roulette extends EventTarget {
     if (!Array.isArray(serverEffects) || serverEffects.length === 0) {
       return;
     }
-    console.log('[Roulette] processServerSkillEffects received:', JSON.stringify(serverEffects));
     const now = Date.now();
     serverEffects.forEach((serverEffect) => {
       // 이미 존재하는 이펙트인지 확인 (id 기준)
@@ -112,10 +111,6 @@ export class Roulette extends EventTarget {
         });
       }
     });
-    console.log(
-      '[Roulette] _activeSkillEffects after processing:',
-      JSON.parse(JSON.stringify(this._activeSkillEffects)),
-    );
 
     // Trigger UI updates based on state changes if not handled by specific events
     // e.g., update winner display, marble counts etc.
@@ -263,13 +258,6 @@ export class Roulette extends EventTarget {
       winner: this._winner, // Use winner state from server
       size: { x: this._renderer.width, y: this._renderer.height },
     };
-    // Log the parameters being sent to the renderer for debugging
-    if (this._activeSkillEffects.length > 0) {
-      console.log(
-        '[Roulette] _render passing skillEffects to renderer:',
-        (JSON.stringify(this._activeSkillEffects)),
-      );
-    }
     if (this._marbles.length > 0 || this._mapEntitiesState.length > 0 || this._activeSkillEffects.length > 0) {
       // Log only when there's something to render
       // console.log(`Rendering state: ${this._marbles.length} marbles, ${this._mapEntitiesState.length} entities, ${this._activeSkillEffects.length} skill effects`); // Uncommented log
