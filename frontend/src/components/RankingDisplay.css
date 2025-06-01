@@ -30,6 +30,8 @@
   list-style-type: none;
   padding: 0;
   margin: 20px 0;
+  max-height: 300px; /* 랭킹 목록의 최대 높이 설정 */
+  overflow-y: auto; /* 내용이 넘칠 경우 스크롤바 표시 */
 }
 
 .ranking-modal-content li {
