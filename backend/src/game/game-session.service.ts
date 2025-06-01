@@ -125,7 +125,6 @@ export class GameSessionService {
 
   // 방 가져오기: roomId 타입을 number로 변경
   getRoom(roomId: number): GameRoom | undefined {
-    this.logger.log(`Total rooms in memory: ${this.rooms.size}`);
     return this.rooms.get(roomId);
   }
 
