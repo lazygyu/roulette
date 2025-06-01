@@ -5,7 +5,6 @@ import { StageDef, stages } from './data/maps';
 import { parseName } from './utils/utils';
 import { Camera } from './camera';
 import { RouletteRenderer } from './rouletteRenderer';
-import { SkillEffect } from './skillEffect';
 import { GameObject } from './gameObject';
 import options from './options';
 import { bound } from './utils/bound.decorator';
@@ -14,6 +13,12 @@ import { RankRenderer } from './rankRenderer';
 import { Minimap } from './minimap';
 import { VideoRecorder } from './utils/videoRecorder';
 import { GameState, MarbleState, MapEntityState } from './types/gameTypes'; // Import types from gameTypes
+import {
+  ServerSkillType,
+  ServerSkillEffect,
+  FrontendSkillEffectWrapper,
+  ImpactSkillEffectFromServer,
+} from './types/skillTypes'; // 스킬 이펙트 관련 타입 임포트
 
 export class Roulette extends EventTarget {
   // Store state received from server
@@ -44,6 +49,7 @@ export class Roulette extends EventTarget {
   private _renderer: RouletteRenderer = new RouletteRenderer();
 
   private _effects: GameObject[] = []; // Keep local visual effects
+  private _activeSkillEffects: FrontendSkillEffectWrapper[] = []; // 활성 스킬 이펙트 목록
 
   // private _winnerRank = 0; // State comes from server
   // private _totalMarbleCount = 0; // State comes from server
@@ -73,6 +79,38 @@ export class Roulette extends EventTarget {
     this._winnerRank = gameState.winnerRank;
     this._totalMarbleCount = gameState.totalMarbleCount;
     this._shakeAvailable = gameState.shakeAvailable; // Already handled in socketService listener? Redundant? Keep for direct access if needed.
+  }
+
+  // 서버로부터 받은 스킬 이펙트를 처리하여 활성 이펙트 목록에 추가
+  public processServerSkillEffects(serverEffects: ServerSkillEffect[]): void {
+    if (!Array.isArray(serverEffects) || serverEffects.length === 0) {
+      return;
+    }
+    const now = Date.now();
+    serverEffects.forEach((serverEffect) => {
+      // 이미 존재하는 이펙트인지 확인 (id 기준)
+      if (!this._activeSkillEffects.some((e) => e.id === serverEffect.id)) {
+        let duration = 0;
+        switch (serverEffect.type) {
+          case ServerSkillType.Impact:
+            duration = 500; // Impact 스킬 이펙트 지속 시간 (ms)
+            break;
+          case ServerSkillType.DummyMarble:
+            duration = 1000; // DummyMarble 스킬 이펙트 지속 시간 (ms)
+            break;
+          default:
+            duration = 500; // 기본 지속 시간
+        }
+
+        this._activeSkillEffects.push({
+          id: serverEffect.id,
+          type: serverEffect.type,
+          serverEffectData: serverEffect,
+          startTime: now,
+          duration: duration,
+        });
+      }
+    });
 
     // Trigger UI updates based on state changes if not handled by specific events
     // e.g., update winner display, marble counts etc.
@@ -80,14 +118,14 @@ export class Roulette extends EventTarget {
 
     // Handle game over state change specifically if needed (e.g., showing settings)
     // if (!this._isRunning && this._winner) { // GamePage.tsx will handle UI changes based on its state
-      // Check if game just ended
-      // Use timeout to allow final render/animation?
-      // setTimeout(() => {
-      //   const settingsDiv = document.querySelector('#settings');
-      //   const donateDiv = document.querySelector('#donate');
-      //   if (settingsDiv) settingsDiv.classList.remove('hide');
-      //   if (donateDiv) donateDiv.classList.remove('hide');
-      // }, 1500); // Delay showing settings after game over
+    // Check if game just ended
+    // Use timeout to allow final render/animation?
+    // setTimeout(() => {
+    //   const settingsDiv = document.querySelector('#settings');
+    //   const donateDiv = document.querySelector('#donate');
+    //   if (settingsDiv) settingsDiv.classList.remove('hide');
+    //   if (donateDiv) donateDiv.classList.remove('hide');
+    // }, 1500); // Delay showing settings after game over
     // }
   }
 
@@ -187,18 +225,25 @@ export class Roulette extends EventTarget {
 
   // private _calcTimeScale(): number { ... } // REMOVED - Time scale logic was tied to local simulation
 
-  // Keep effect updates if they are purely visual
+  // 스킬 이펙트 업데이트 및 만료된 이펙트 제거
   private _updateEffects(deltaTime: number) {
+    const now = Date.now();
+    // 기존 _effects (GameObject) 업데이트 로직 유지
     this._effects.forEach((effect) => effect.update(deltaTime));
     this._effects = this._effects.filter((effect) => !effect.isDestroy);
+
+    // 스킬 이펙트 업데이트 및 만료된 이펙트 제거
+    this._activeSkillEffects = this._activeSkillEffects.filter((effect) => {
+      return now - effect.startTime < effect.duration;
+    });
   }
 
   private _render() {
     if (!this._stage) return; // Keep stage check
-    
+
     // 캔버스 상태 업데이트 (좌표 변환을 위해)
     this._updateCanvasInfo();
-    
+
     // Pass server state to renderer
     const renderParams = {
       camera: this._camera,
@@ -207,16 +252,15 @@ export class Roulette extends EventTarget {
       marbles: this._marbles, // Use marble state from server
       winners: this._winners, // Use winner state from server
       particleManager: this._particleManager,
-      effects: this._effects,
+      effects: this._effects, // 기존 GameObject 이펙트
+      skillEffects: this._activeSkillEffects, // 새로운 스킬 이펙트
       winnerRank: this._winnerRank,
       winner: this._winner, // Use winner state from server
       size: { x: this._renderer.width, y: this._renderer.height },
     };
-    // Log the parameters being sent to the renderer for debugging
-    // console.log('Render Params:', JSON.stringify(renderParams)); // Use stringify for deep logging, might be too verbose
-    if (this._marbles.length > 0 || this._mapEntitiesState.length > 0) {
+    if (this._marbles.length > 0 || this._mapEntitiesState.length > 0 || this._activeSkillEffects.length > 0) {
       // Log only when there's something to render
-      // console.log(`Rendering state: ${this._marbles.length} marbles, ${this._mapEntitiesState.length} entities`); // Uncommented log
+      // console.log(`Rendering state: ${this._marbles.length} marbles, ${this._mapEntitiesState.length} entities, ${this._activeSkillEffects.length} skill effects`); // Uncommented log
     }
 
     // Assuming RouletteRenderer is updated to handle MarbleState[] and MapEntityState[]
@@ -237,7 +281,6 @@ export class Roulette extends EventTarget {
   private async _init() {
     // Make _init synchronous as physics init is removed
     this._recorder = new VideoRecorder(this._renderer.canvas);
-
 
     // Keep UI object initialization
     this.addUiObject(new RankRenderer());
@@ -442,7 +485,7 @@ export class Roulette extends EventTarget {
       world: { x: worldX, y: worldY },
       camera: { x: this._camera.x, y: this._camera.y, zoom: this._camera.zoom },
       zoomFactor,
-      centerOffset: { x: centerOffsetX, y: centerOffsetY }
+      centerOffset: { x: centerOffsetX, y: centerOffsetY },
     });
 
     return { x: worldX, y: worldY };

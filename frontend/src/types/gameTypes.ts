@@ -45,6 +45,8 @@ export interface EntityPolylineShape extends EntityShapeBase {
 
 export type EntityShape = EntityBoxShape | EntityCircleShape | EntityPolylineShape;
 
+import { ServerSkillEffect } from './skillTypes'; // ServerSkillEffect 임포트
+
 export interface MapEntityState {
   x: number;
   y: number;
@@ -62,7 +64,7 @@ export interface GameState {
   winnerRank: number;
   totalMarbleCount: number;
   shakeAvailable: boolean;
-  lastUsedSkill: { playerId: string; nickname: string; skillType: Skills; skillPosition: { x: number; y: number }; extra: any } | null;
+  skillEffects?: ServerSkillEffect[]; // 스킬 이펙트 추가
 }
 
 // --- 추가된 타입 ---
