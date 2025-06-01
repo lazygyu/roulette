@@ -16,10 +16,11 @@ import { generateAnonymousNickname } from './utils/nickname.util';
 import { prefixGameRoomId, unprefixGameRoomId } from './utils/roomId.util';
 import { WsUserAttachedGuard } from '../auth/guards/ws-user-attached.guard';
 import { SocketCurrentUser } from '../decorators/socket-user.decorator';
-import { User } from '@prisma/client';
+import { User, GameStatus } from '@prisma/client'; // GameStatus 임포트 추가
 import { RoomsService } from '../rooms/rooms.service';
 import { AuthService } from '../auth/auth.service'; // AuthService 임포트
 import { AnonymousUser } from '../types/socket'; // AnonymousUser 타입 임포트
+import { PrismaService } from '../prisma/prisma.service'; // PrismaService 임포트 추가
 
 // Player 인터페이스 정의 (GameGateway 내부에서 사용)
 interface Player {
@@ -65,6 +66,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly gameEngineService: GameEngineService,
     private readonly roomsService: RoomsService,
     private readonly authService: AuthService,
+    private readonly prisma: PrismaService, // PrismaService 주입 추가
   ) {}
 
   afterInit() {
@@ -188,13 +190,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     let roomDetailsFromDb;
     try {
-      // RoomsService의 getRoom 메서드가 password를 포함한 Room 엔티티를 반환한다고 가정
-      // rooms.controller.ts의 findOne을 보면 roomsService.getRoom(id)가 password를 반환합니다.
       roomDetailsFromDb = await this.roomsService.getRoom(roomId);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`방(ID: ${roomId}) 정보 조회 실패: ${message}`);
-      // NotFoundException 등이 RoomsService에서 발생할 수 있음
       if (error instanceof WsException) throw error;
       throw new WsException(`방(ID: ${roomId}) 정보를 찾을 수 없거나 접근 중 오류가 발생했습니다.`);
     }
@@ -202,6 +201,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!roomDetailsFromDb || roomDetailsFromDb.deletedAt) {
       this.logger.warn(`존재하지 않거나 삭제된 방(ID: ${roomId}) 접근 시도: ${client.id}`);
       throw new WsException(`존재하지 않거나 접근할 수 없는 방입니다: ${roomId}`);
+    }
+
+    // DB에서 직접 게임 상태 확인
+    const gameRecord = await this.prisma.game.findUnique({
+      where: { roomId },
+      select: { status: true },
+    });
+
+    if (gameRecord && gameRecord.status === GameStatus.FINISHED) { // GameStatus.FINISHED 사용
+      this.logger.warn(
+        `클라이언트 ${finalUserInfo.nickname} (${client.id})가 이미 종료된 방 ${roomId} 참가를 시도했습니다.`,
+      );
+      throw new WsException('이미 종료된 게임입니다. 참가할 수 없습니다.');
     }
 
     // 비밀번호 검증
