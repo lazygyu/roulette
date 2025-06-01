@@ -489,8 +489,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         `클라이언트 ${user.nickname} (${client.id})가 방 ${prefixedRoomId}(${roomId})에서 스킬 사용 시도: ${skillType}`,
       );
 
-      // gameEngineService에 스킬 발동 로직 위임
-      await this.gameEngineService.useSkill(roomId, skillType, skillPosition, extra);
+      // gameEngineService에 스킬 발동 로직 위임 (사용자 닉네임 전달)
+      await this.gameEngineService.useSkill(roomId, skillType, skillPosition, extra, user.nickname);
 
       // 스킬 사용 정보 저장 및 게임 상태 업데이트
       this.gameSessionService

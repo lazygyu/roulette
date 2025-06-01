@@ -12,7 +12,7 @@ export class Marble {
   weight: number = 1;
   skill: Skills = Skills.None;
   isActive: boolean = false;
-  isDummy: boolean = false;
+  isDummy: boolean = false; // 기본값 false
 
   private _skillRate = 0.0005;
   private _coolTime = 5000;
@@ -54,10 +54,12 @@ export class Marble {
     max: number,
     name?: string,
     weight: number = 1,
+    isDummy: boolean = false, // isDummy 파라미터 추가
   ) {
     this.name = name || `M${order}`;
     this.weight = weight;
     this.physics = physics;
+    this.isDummy = isDummy; // isDummy 설정
 
     this._maxCoolTime = 1000 + (1 - this.weight) * 4000;
     this._coolTime = this._maxCoolTime * Math.random();
@@ -66,10 +68,16 @@ export class Marble {
     const maxLine = Math.ceil(max / 10);
     const line = Math.floor(order / 10);
     const lineDelta = -Math.max(0, Math.ceil(maxLine - 5));
-    this.hue = (360 / max) * order;
+
+    if (this.isDummy) {
+      this.hue = Math.random() * 360; // 더미 마블은 랜덤 색상
+    } else {
+      this.hue = (360 / max) * order; // 일반 마블은 기존 로직
+    }
     this.color = `hsl(${this.hue} 100% 70%)`;
     this.id = order;
 
+    // physics.createMarble 호출 시 isDummy와 초기 속도 관련 정보 전달 필요 (다음 단계에서 physics 수정 후 반영)
     physics.createMarble(
       order,
       10.25 + (order % 10) * 0.6,

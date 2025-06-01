@@ -26,6 +26,7 @@ export class GameEngineService implements OnModuleDestroy {
     skillType: T,
     skillPosition: SkillPosition,
     extra: SkillExtra<T>,
+    userNickname?: string, // 스킬 사용자의 닉네임 추가
   ): Promise<void> {
     const room = this.gameSessionService.getRoom(roomId);
     if (!room || !room.game) {
@@ -42,11 +43,13 @@ export class GameEngineService implements OnModuleDestroy {
         break;
       case SkillType.DummyMarble:
         // DummyMarble 스킬 로직
-        const dummyMarbleExtra = extra as SkillExtra<SkillType.DummyMarble>;
+        const dummyMarbleExtra = extra as SkillExtra<SkillType.DummyMarble>; // extra는 현재 비어있음
+        const nickname = userNickname || 'UnknownUser'; // 닉네임이 없으면 기본값 사용
         this.logger.log(
-          `Room ${roomId}: DummyMarble skill used at (${skillPosition.x}, ${skillPosition.y}) to create 5 marbles`,
+          `Room ${roomId}: DummyMarble skill used by ${nickname} at (${skillPosition.x}, ${skillPosition.y}) to create 5 marbles`,
         );
-        room.game.createDummyMarbles(skillPosition, 5);
+        // createDummyMarbles 호출 시 사용자 닉네임 전달
+        room.game.createDummyMarbles(skillPosition, 5, nickname);
         break;
       default:
         throw new BadRequestException(`알 수 없는 스킬 타입: ${skillType}`);

@@ -7,7 +7,8 @@ import { Box2dPhysics } from './physics/physics-box2d';
 import { MapEntityState } from './types/MapEntity.type'; // getGameState에서 사용
 
 export class Roulette {
-  private _marbles: Marble[] = [];
+  private _marbles: Marble[] = []; // 일반 마블
+  private _dummyMarbles: Marble[] = []; // 더미 마블
 
   private _lastTime: number = 0;
   private _elapsed: number = 0;
@@ -34,6 +35,11 @@ export class Roulette {
   get isReady() {
     // Box2dPhysics의 world 객체가 생성되었는지 여부로 판단 (init 완료 시 생성됨)
     return !!(this.physics && (this.physics as any).world && (this.physics as any).initialized);
+  }
+
+  // Getter for all marbles (regular and dummy) for physics updates, rendering, etc.
+  private get _allMarbles(): Marble[] {
+    return [...this._marbles, ...this._dummyMarbles];
   }
 
   // Getter for current map index
@@ -63,61 +69,63 @@ export class Roulette {
   private _updateMarbles(deltaTime: number) {
     if (!this._stage) return;
 
-    for (let i = 0; i < this._marbles.length; i++) {
-      const marble = this._marbles[i];
+    // 모든 마블 (일반 + 더미) 업데이트
+    for (let i = this._allMarbles.length - 1; i >= 0; i--) {
+      const marble = this._allMarbles[i];
       marble.update(deltaTime);
+
       if (marble.y > this._stage.goalY) {
-        this._winners.push(marble);
-        // 승자 결정 및 게임 종료 로직 개선
-        if (this._isRunning) {
-          // 1. 일반적인 순위로 승자 결정 (0-indexed _winnerRank)
-          if (this._winnerRank < this._totalMarbleCount - 1 && this._winners.length === this._winnerRank + 1) {
-            this._winner = marble; // 현재 골인한 마블이 승자
-            this._isRunning = false;
-          }
-          // 2. 꼴등이 승자이고, 마지막 한 명 빼고 모두 골인한 경우
-          else if (this._winnerRank === this._totalMarbleCount - 1 && this._winners.length === this._totalMarbleCount - 1) {
-            // 이때 필드에 남아있는 마블이 승자가 되어야 함.
-            // _marbles 배열에는 골인하지 않은 마블만 남아있고, 이 시점에서는 단 하나만 있어야 함.
-            if (this._marbles.length === 1 && this._marbles[0].id !== marble.id) { // 현재 골인한 마블이 아닌, 필드에 남은 마블
-              this._winner = this._marbles[0];
-            } else if (this._marbles.length === 0 && i < this._totalMarbleCount -1) { 
-              // 이 경우는 모든 마블이 골인했고, 마지막으로 골인한 마블이 꼴등 승자가 아닐 때 발생 가능성 희박
-              // 하지만 방어적으로, 만약 _marbles[i+1]이 있었다면 그것이 승자였을 것.
-              // 이 시나리오에서는 현재 골인한 marble이 꼴등이 아닐 수 있으므로,
-              // _winner는 설정하지 않고, getFinalRankingForAllMarbles에서 처리하도록 유도할 수 있음.
-              // 또는, 이전에 _marbles에 남아있던 마지막 마블을 _winner로 지정해야 함.
-              // 여기서는 _updateMarbles가 호출되기 직전의 _marbles 상태를 알 수 없으므로,
-              // _winner를 명확히 지정하기 어려울 수 있음.
-              // 가장 안전한 방법은, 꼴등 승자 조건에서 (N-1)명이 골인하면, 남아있는 1명을 _winner로 지정하는 것.
-              // 이 로직은 _winners.push(marble) 이후, _marbles 필터링 전에 수행되어야 함.
-              // 아래에서 _marbles 필터링 후, 만약 _isRunning이 여전히 true이고 조건 만족 시 _winner 설정
+        if (!marble.isDummy) { // 일반 마블만 승자 처리
+          this._winners.push(marble);
+          // 승자 결정 및 게임 종료 로직 개선
+          if (this._isRunning) {
+            // 1. 일반적인 순위로 승자 결정 (0-indexed _winnerRank)
+            if (this._winnerRank < this._totalMarbleCount - 1 && this._winners.length === this._winnerRank + 1) {
+              this._winner = marble; // 현재 골인한 마블이 승자
+              this._isRunning = false;
             }
-             // this._isRunning = false; // 게임 종료는 아래에서 일괄 처리
+            // 2. 꼴등이 승자이고, 마지막 한 명 빼고 모두 골인한 경우
+            else if (this._winnerRank === this._totalMarbleCount - 1 && this._winners.length === this._totalMarbleCount - 1) {
+              // 이때 필드에 남아있는 일반 마블이 승자가 되어야 함.
+              const remainingMarbles = this._marbles.filter(m => !this._winners.find(w => w.id === m.id));
+              if (remainingMarbles.length === 1 && remainingMarbles[0].id !== marble.id) {
+                this._winner = remainingMarbles[0];
+              }
+            }
           }
         }
+        // 모든 종류의 마블(더미 포함)을 물리 엔진에서 제거
         setTimeout(() => {
           this.physics.removeMarble(marble.id);
+          if (marble.isDummy) {
+            this._dummyMarbles = this._dummyMarbles.filter(dm => dm.id !== marble.id);
+          }
         }, 500);
       }
     }
+    
+    // 일반 마블만으로 순위 및 줌 계산
+    const activeMarbles = this._marbles.filter((m) => !this._winners.find(w => w.id === m.id));
+    if (activeMarbles.length > 0) {
+        const targetIndex = Math.max(0, this._winnerRank - this._winners.length); // 음수 방지
+        const topY = activeMarbles[targetIndex] ? activeMarbles[targetIndex].y : 0;
+        this._goalDist = Math.abs(this._stage.zoomY - topY);
+        this._timeScale = this._calcTimeScale(activeMarbles); // activeMarbles 전달
+    } else {
+        this._goalDist = 0;
+        this._timeScale = 1;
+    }
 
-    const targetIndex = this._winnerRank - this._winners.length;
-    const topY = this._marbles[targetIndex] ? this._marbles[targetIndex].y : 0;
-    this._goalDist = Math.abs(this._stage.zoomY - topY);
-    this._timeScale = this._calcTimeScale();
 
-    // 골인한 마블을 _marbles 배열에서 제거
+    // 골인한 일반 마블을 _marbles 배열에서 제거
     this._marbles = this._marbles.filter((m) => !this._winners.find(w => w.id === m.id));
 
-    // 꼴등 승자 결정 로직 (모든 다른 마블이 골인한 후)
+    // 꼴등 승자 결정 로직 (모든 다른 일반 마블이 골인한 후)
     if (this._isRunning && this._winnerRank === this._totalMarbleCount - 1 && this._winners.length === this._totalMarbleCount - 1) {
-      if (this._marbles.length === 1) { // 필드에 정확히 한 명 남았을 때
+      if (this._marbles.length === 1) { // 필드에 정확히 한 명의 일반 마블이 남았을 때
         this._winner = this._marbles[0]; // 남은 한 명이 승자
         this._isRunning = false;
       } else if (this._marbles.length === 0 && this._winners.length === this._totalMarbleCount) {
-        // 모든 마블이 골인했고, 꼴등이 승자인 경우 (이 경우는 일반 순위 승자 결정 로직에서 이미 처리되었을 수 있음)
-        // 마지막으로 골인한 마블이 _winnerRank(0-indexed)와 일치하는지 확인
         if (this._winners[this._winnerRank] && this._winnerRank === this._totalMarbleCount -1) {
             this._winner = this._winners[this._winnerRank];
             this._isRunning = false;
@@ -125,31 +133,25 @@ export class Roulette {
       }
     }
     
-    // 모든 마블이 골인한 경우 게임 종료 (승자 조건과 관계없이)
-    if (this._isRunning && this._winners.length === this._totalMarbleCount) {
+    // 모든 일반 마블이 골인한 경우 게임 종료
+    if (this._isRunning && this._winners.length === this._totalMarbleCount && this._totalMarbleCount > 0) {
         this._isRunning = false;
-        // 이때 _winner가 설정 안됐으면, _winnerRank에 해당하는 마블을 승자로.
         if (!this._winner && this._winners[this._winnerRank]) {
             this._winner = this._winners[this._winnerRank];
         }
     }
   }
 
-  private _calcTimeScale(): number {
+  private _calcTimeScale(currentMarbles: Marble[]): number { // 현재 필드 위의 '일반' 마블들을 받도록 수정
     if (!this._stage) return 1;
-    // _winnerRank가 0-indexed이므로, 실제 비교 대상 순위는 _winnerRank + 1
     const targetDisplayRank = this._winnerRank + 1; 
-    if (this._winners.length < targetDisplayRank && this._marbles.length > 0) {
-      // 아직 목표 순위의 마블이 골인하지 않았고, 필드에 마블이 남아있을 때
-      // _marbles 배열은 y좌표로 정렬되어 있으므로, 0번째 인덱스가 가장 선두.
-      // 목표 순위의 마블이 현재 몇 번째 선두인지 계산 (골인한 마블 수 제외)
+    if (this._winners.length < targetDisplayRank && currentMarbles.length > 0) {
       const remainingTargetRank = targetDisplayRank - this._winners.length -1;
-      if (remainingTargetRank >= 0 && remainingTargetRank < this._marbles.length) {
-        const targetMarbleForZoom = this._marbles[remainingTargetRank];
+      if (remainingTargetRank >= 0 && remainingTargetRank < currentMarbles.length) {
+        const targetMarbleForZoom = currentMarbles[remainingTargetRank];
         if (targetMarbleForZoom) {
             const distToZoomY = Math.abs(this._stage.zoomY - targetMarbleForZoom.y);
             if (distToZoomY < zoomThreshold && targetMarbleForZoom.y > this._stage.zoomY - zoomThreshold * 1.2) {
-                 // 선두 그룹의 다른 마블도 고려 (옵션)
                 return Math.max(0.2, distToZoomY / zoomThreshold);
             }
         }
@@ -159,8 +161,7 @@ export class Roulette {
   }
 
   public update() {
-    if (!this.isReady || !this._isRunning) { // isReady 조건은 물리엔진 초기화 여부 확인
-      // if (!this.isReady) console.warn("Roulette not ready for update, physics might not be initialized.");
+    if (!this.isReady || !this._isRunning) {
       return;
     }
     if (!this._lastTime) this._lastTime = Date.now();
@@ -176,14 +177,22 @@ export class Roulette {
 
     while (this._elapsed >= this._updateInterval) {
       this.physics.step(interval);
-      this._updateMarbles(this._updateInterval);
+      this._updateMarbles(this._updateInterval); // 이 안에서 _allMarbles 사용
       this._elapsed -= this._updateInterval;
     }
 
+    // 일반 마블만 정렬
     if (this._marbles.length > 1) {
       this._marbles.sort((a, b) => b.y - a.y);
     }
+    
+    // 더미 마블도 y좌표 기준으로 정렬 (필요하다면)
+    // if (this._dummyMarbles.length > 1) {
+    //   this._dummyMarbles.sort((a, b) => b.y - a.y);
+    // }
 
+
+    // 쉐이크 가능 여부는 일반 마블 기준으로 판단
     if (this._isRunning && this._marbles.length > 0 && this._noMoveDuration > 3000) {
       this._changeShakeAvailable(true);
     } else {
@@ -200,20 +209,22 @@ export class Roulette {
   }
 
   public clearMarbles() {
-    this.physics.clearMarbles();
+    this.physics.clearMarbles(); // 모든 마블 (물리 객체) 제거
     this._winner = null;
     this._winners = [];
-    this._marbles = [];
+    this._marbles = []; // 일반 마블 배열 초기화
+    this._dummyMarbles = []; // 더미 마블 배열 초기화
   }
 
   public start() {
     this._isRunning = true;
-    // this._winnerRank = 0;
-    if (this._winnerRank >= this._marbles.length) {
+    if (this._winnerRank >= this._marbles.length && this._marbles.length > 0) { // 일반 마블 기준으로
       this._winnerRank = this._marbles.length - 1;
+    } else if (this._marbles.length === 0) {
+      this._winnerRank = 0; // 마블이 없으면 0등
     }
-    this.physics.start();
-    this._marbles.forEach((marble) => (marble.isActive = true));
+    this.physics.start(); // 물리 엔진 내 모든 마블 활성화 (Box2DPhysics의 start가 알아서 처리)
+    this._allMarbles.forEach((marble) => (marble.isActive = true)); // 모든 Marble 객체 활성화
   }
 
   public setSpeed(value: number) {
@@ -268,50 +279,64 @@ export class Roulette {
       if (member) {
         for (let j = 0; j < member.count; j++) {
           const order = orders.pop() || 0;
-          this._marbles.push(new Marble(this.physics, order, totalCount, member.name, member.weight));
+          // isDummy는 false로 명시적 전달 (일반 마블 생성)
+          this._marbles.push(new Marble(this.physics, order, totalCount, member.name, member.weight, false));
         }
       }
     });
-    this._totalMarbleCount = totalCount;
+    this._totalMarbleCount = totalCount; // 일반 마블 수만 카운트
   }
 
   public applyImpact(position: { x: number; y: number }, radius: number, force: number): void {
-    this.physics.applyRadialImpulse(position, radius, force);
+    this.physics.applyRadialImpulse(position, radius, force); // 모든 마블에 영향
   }
 
-  public createDummyMarbles(position: { x: number; y: number }, count: number): void {
-    const currentMaxId = this._marbles.reduce((maxId, marble) => Math.max(maxId, marble.id), -1);
+  public createDummyMarbles(position: { x: number; y: number }, count: number, userNickname: string): void {
+    // ID 충돌을 피하기 위해 현재 모든 마블(일반+더미)의 최대 ID를 찾음
+    const currentMaxId = this._allMarbles.reduce((maxId, marble) => Math.max(maxId, marble.id), -1);
+
     for (let i = 0; i < count; i++) {
-      const newId = currentMaxId + 1 + i;
-      const dummyMarble = new Marble(this.physics, newId, 0, `Dummy-${newId}`, 1);
-      dummyMarble.isDummy = true;
+      const newId = currentMaxId + 1 + i; // 고유 ID 생성
+      const dummyName = `${userNickname}-${i + 1}`;
+      // 더미 마블 생성 시 isDummy=true, 초기 속도 전달
+      const dummyMarble = new Marble(this.physics, newId, 0, dummyName, 1, true); // max는 0 또는 의미 없는 값 전달
+      
       // 스킬 위치 근처에 생성 (약간의 랜덤 오프셋 추가)
-      const offsetX = (Math.random() - 0.5) * 0.5;
-      const offsetY = (Math.random() - 0.5) * 0.5;
-      this.physics.createMarble(newId, position.x + offsetX, position.y + offsetY);
-      this._marbles.push(dummyMarble);
+      const offsetX = (Math.random() - 0.5) * 1; // 오프셋 범위 약간 증가
+      const offsetY = (Math.random() - 0.5) * 1;
+      
+      // physics.createMarble 호출 시 isDummy와 초기 속도 전달
+      this.physics.createMarble(newId, position.x + offsetX, position.y + offsetY, true, { x: 0, y: 10 }); // y: 10은 아래로 향하는 힘 (조정 가능)
+      this._dummyMarbles.push(dummyMarble);
     }
-    this._totalMarbleCount += count; // 더미 마블도 총 마블 수에 포함 (필요에 따라 조정)
+    // this._totalMarbleCount는 더미 마블로 인해 변경되지 않음
   }
+
 
   public setLastUsedSkill(playerId: string, nickname: string, skillType: string, skillPosition: { x: number; y: number }, extra: any): void {
     this._lastUsedSkill = { playerId, nickname, skillType, skillPosition, extra };
   }
 
   private _clearMap() {
-    this.physics.clear();
-    this._marbles = [];
+    this.physics.clear(); // 물리 엔진의 모든 객체(맵 요소, 마블) 제거
+    this._marbles = []; // 일반 마블 배열 초기화
+    this._dummyMarbles = []; // 더미 마블 배열 초기화
   }
 
   public reset() {
-    this.clearMarbles();
-    this._clearMap();
-    this._loadMap();
+    this.clearMarbles(); // _marbles, _dummyMarbles 비우고 물리 객체도 제거
+    // this._clearMap(); // clearMarbles에서 이미 physics.clearMarbles() 호출, 여기서는 맵 요소만 다시 로드
+    this.physics.clearEntities(); // 맵 요소만 제거
+    this._loadMap(); // 맵 다시 로드
     this._goalDist = Infinity;
+    this._isRunning = false; // 게임 상태도 리셋
+    this._winner = null;
+    this._winners = [];
+    // _totalMarbleCount는 setMarbles에서 재설정되므로 여기서는 불필요
   }
 
   public getCount() {
-    return this._marbles.length;
+    return this._marbles.length; // 일반 마블 수만 반환
   }
 
   private _changeShakeAvailable(v: boolean) {
@@ -335,91 +360,84 @@ export class Roulette {
     if (index < 0 || index > stages.length - 1) {
       throw new Error('Incorrect map number');
     }
+    // 현재 '일반' 마블들의 이름만 가져와서 재설정
     const names = this._marbles.map((marble) => marble.name);
     this._stage = stages[index];
-    this.setMarbles(names);
+    this.setMarbles(names); // 내부에서 reset 호출됨, 더미 마블도 비워짐
   }
 
   // 게임 상태 직렬화를 위한 메서드
   public getGameState() {
     return {
-      marbles: this._marbles.map((marble) => marble.toJSON()),
-      winners: this._winners.map((marble) => marble.toJSON()),
-      winner: this._winner ? this._winner.toJSON() : null,
+      // 일반 마블과 더미 마블 모두 클라이언트에 전달 (렌더링 목적)
+      marbles: this._allMarbles.map((marble) => marble.toJSON()),
+      winners: this._winners.map((marble) => marble.toJSON()), // 일반 마블 중에서만
+      winner: this._winner ? this._winner.toJSON() : null, // 일반 마블 중에서만
       entities: this.physics.getEntities(),
       isRunning: this._isRunning,
       winnerRank: this._winnerRank,
-      totalMarbleCount: this._totalMarbleCount,
+      totalMarbleCount: this._totalMarbleCount, // 일반 마블 수
       shakeAvailable: this._shakeAvailable,
-      lastUsedSkill: this._lastUsedSkill, // 스킬 사용 정보 추가
+      lastUsedSkill: this._lastUsedSkill,
     };
   }
 
-  // 게임 종료 후 모든 마블의 최종 순위를 반환하는 메서드
+  // 게임 종료 후 '일반' 마블의 최종 순위를 반환하는 메서드
   public getFinalRankingForAllMarbles(): Array<{ name: string; finalRank: number | string; yPos: number; isWinnerGoal: boolean }> {
     const rankedMarbles: Array<{ name: string; finalRank: number | string; yPos: number; isWinnerGoal: boolean }> = [];
 
-    // 1. 골인한 마블들 (winners 배열에 골인 순서대로 저장되어 있음)
+    // 1. 골인한 '일반' 마블들 (_winners 배열 사용)
     this._winners.forEach((marble, index) => {
+      // isDummy 체크는 불필요 (_winners는 일반 마블만 포함)
       rankedMarbles.push({
         name: marble.name,
-        finalRank: index + 1, // 골인 순위 (1-based for display)
-        yPos: marble.y, // 실제 y 위치 (참고용)
-        // _winner가 설정되어 있으면 그것을 우선으로, 아니면 기존 로직 (0-based index와 0-based _winnerRank 비교)
+        finalRank: index + 1,
+        yPos: marble.y,
         isWinnerGoal: this._winner ? this._winner.id === marble.id : index === this._winnerRank,
       });
     });
 
-    // 2. 골인하지 못한 마블들 (marbles 배열에 남아있고, y좌표로 정렬되어 있음)
+    // 2. 골인하지 못한 '일반' 마블들 (_marbles 배열 사용)
     const goalCount = this._winners.length;
-    this._marbles
-      .slice() // 원본 배열 변경 방지를 위해 복사본 사용
-      .sort((a, b) => b.y - a.y) // y좌표 내림차순 정렬 (높은 y가 먼저)
+    this._marbles // 현재 _marbles는 골인 안 한 일반 마블만 있음
+      .slice()
+      .sort((a, b) => b.y - a.y)
       .forEach((marble, index) => {
-        // _winner가 설정되어 있고, 그 _winner가 현재 골인 못한 마블 중 하나라면 true
+        // isDummy 체크는 불필요
         const isThisNonGoaledMarbleTheWinner = this._winner ? this._winner.id === marble.id : false;
-        
         rankedMarbles.push({
           name: marble.name,
-          finalRank: goalCount + index + 1, // 골인한 마블 다음 순위부터
+          finalRank: goalCount + index + 1,
           yPos: marble.y,
           isWinnerGoal: isThisNonGoaledMarbleTheWinner,
         });
       });
     
-    // 만약 rankedMarbles에 _winner로 지정된 마블이 있는데 isWinnerGoal이 false이면, 여기서 true로 설정
     if (this._winner) {
         const winnerInRankedList = rankedMarbles.find(r => r.name === this._winner!.name);
         if (winnerInRankedList && !winnerInRankedList.isWinnerGoal) {
             winnerInRankedList.isWinnerGoal = true;
-            // 다른 마블들은 false로 설정 (단일 승자 원칙)
             rankedMarbles.forEach(r => {
                 if (r.name !== this._winner!.name) {
                     r.isWinnerGoal = false;
                 }
             });
-        } else if (!winnerInRankedList) {
-            // _winner가 rankedMarbles에 없는 극히 예외적인 경우 (이론상 발생 안해야함)
-            // 이 경우 _winner 정보를 바탕으로 rankedMarbles에 추가하고 isWinnerGoal을 true로 설정.
-            // 순위는 _winnerRank (0-인덱스) + 1 또는 상황에 따라 결정.
-            // 예: 꼴등 승자인데 골인 안한 경우, 마지막 순위 부여.
-            let rankForWinner = this._winnerRank + 1;
-            if (this._winnerRank === this._totalMarbleCount -1 && !this._winners.find(w => w.id === this._winner!.id)) {
-                rankForWinner = this._totalMarbleCount;
-            }
+        } else if (!winnerInRankedList && !this._winner.isDummy) { // 더미가 아닌 승자인데 목록에 없다면 추가
+             let rankForWinner = this._winnerRank + 1;
+             if (this._winnerRank === this._totalMarbleCount -1 && !this._winners.find(w => w.id === this._winner!.id)) {
+                 rankForWinner = this._totalMarbleCount;
+             }
              rankedMarbles.push({
                 name: this._winner.name,
                 finalRank: rankForWinner,
                 yPos: this._winner.y,
                 isWinnerGoal: true,
              });
-             // 다른 마블들은 false로 설정
              rankedMarbles.forEach(r => {
                 if (r.name !== this._winner!.name) {
                     r.isWinnerGoal = false;
                 }
             });
-             // 순서 재정렬 필요할 수 있음
             rankedMarbles.sort((a,b) => {
                 const rankA = typeof a.finalRank === 'number' ? a.finalRank : Infinity;
                 const rankB = typeof b.finalRank === 'number' ? b.finalRank : Infinity;
@@ -427,14 +445,7 @@ export class Roulette {
             });
         }
     }
-
-
-    // 최종적으로 rankedMarbles에 있는 모든 마블에 대해,
-    // isWinnerGoal이 true인 마블이 정확히 _winnerRank에 해당하는지,
-    // 또는 _winner 객체와 일치하는지 확인하고 조정하는 로직이 필요할 수 있음.
-    // 특히, _winnerRank가 'last'일 때의 처리를 명확히 해야 함.
-    // 현재 _winnerRank는 0-indexed 숫자. (totalMarbleCount - 1)이 꼴등.
-
+    // 더미 마블은 순위 리스트에 포함하지 않음
     return rankedMarbles;
   }
 }
