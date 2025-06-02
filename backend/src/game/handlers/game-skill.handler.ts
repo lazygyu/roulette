@@ -55,10 +55,7 @@ export class GameSkillHandler {
       return { success: true, message: `스킬 ${skillType} 발동 성공` };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `방 ${prefixedRoomId}(${roomId})에서 스킬 ${skillType} 발동 중 오류 발생 by ${user.nickname} (${client.id}): ${message}`,
-      );
-      throw new WsException(`스킬 발동 중 오류 발생: ${message}`);
+      throw new WsException(message || '스킬 발동 중 오류 발생');
     }
   }
 }

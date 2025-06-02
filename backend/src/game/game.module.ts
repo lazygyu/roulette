@@ -12,19 +12,21 @@ import {
   GameControlHandler,
   GameSkillHandler,
 } from './handlers';
+import { ManagerOnlyGuard } from './guards'; // ManagerOnlyGuard 임포트 추가
 
 @Module({
   imports: [PrismaModule, RoomsModule, AuthModule], // RoomsModule 임포트 배열에 추가
   // RoomManagerService를 GameSessionService로 변경
   providers: [
-    GameGateway, 
-    GameSessionService, 
-    GameEngineService, 
+    GameGateway,
+    GameSessionService,
+    GameEngineService,
     GamePersistenceService,
     GameConnectionHandler,
     GameConfigHandler,
     GameControlHandler,
     GameSkillHandler,
+    ManagerOnlyGuard, // ManagerOnlyGuard를 providers에 추가
   ],
   exports: [GameSessionService], // GameSessionService export
 })

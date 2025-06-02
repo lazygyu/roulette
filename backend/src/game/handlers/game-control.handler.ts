@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, UseGuards } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, WsException } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { User } from '@prisma/client';
@@ -6,6 +6,7 @@ import { prefixGameRoomId } from '../utils/roomId.util';
 import { GameSessionService } from '../game-session.service';
 import { GameEngineService } from '../game-engine.service';
 import { RoomsService } from '../../rooms/rooms.service';
+import { ManagerOnlyGuard } from '../guards';
 import { StartGameDto } from '../dto/start-game.dto';
 import { ResetGameDto } from '../dto/reset-game.dto';
 import { GetGameStateDto } from '../dto/get-game-state.dto';
@@ -21,6 +22,7 @@ export class GameControlHandler {
     private readonly roomsService: RoomsService,
   ) {}
 
+  @UseGuards(ManagerOnlyGuard)
   async handleStartGame(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: StartGameDto,
@@ -30,10 +32,10 @@ export class GameControlHandler {
     const { roomId } = data;
     const prefixedRoomId = prefixGameRoomId(roomId);
 
-    const isManager = await this.roomsService.isManager(roomId, user.id);
-    if (!isManager) {
-      throw new WsException('방의 매니저만 게임을 시작할 수 있습니다.');
-    }
+    // const isManager = await this.roomsService.isManager(roomId, user.id);
+    // if (!isManager) {
+    //   throw new WsException('방의 매니저만 게임을 시작할 수 있습니다.');
+    // }
 
     try {
       this.gameSessionService.startGame(roomId);
@@ -43,13 +45,11 @@ export class GameControlHandler {
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `Error starting game in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`,
-      );
-      throw new WsException(`게임 시작 중 오류 발생: ${message}`);
+      throw new WsException(message || '게임 시작 중 오류 발생');
     }
   }
 
+  @UseGuards(ManagerOnlyGuard)
   async handleResetGame(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: ResetGameDto,
@@ -59,10 +59,10 @@ export class GameControlHandler {
     const { roomId } = data;
     const prefixedRoomId = prefixGameRoomId(roomId);
 
-    const isManager = await this.roomsService.isManager(roomId, user.id);
-    if (!isManager) {
-      throw new WsException('방의 매니저만 게임을 리셋할 수 있습니다.');
-    }
+    // const isManager = await this.roomsService.isManager(roomId, user.id);
+    // if (!isManager) {
+    //   throw new WsException('방의 매니저만 게임을 리셋할 수 있습니다.');
+    // }
 
     try {
       this.gameEngineService.stopGameLoop(roomId);
@@ -76,10 +76,7 @@ export class GameControlHandler {
       return { success: true };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `Error resetting game in room ${prefixedRoomId}(${roomId}) by ${user.nickname} (${client.id}): ${message}`,
-      );
-      throw new WsException(`게임 리셋 중 오류 발생: ${message}`);
+      throw new WsException(message || '게임 리셋 중 오류 발생');
     }
   }
 
@@ -90,8 +87,8 @@ export class GameControlHandler {
       return { success: true, gameState };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error getting game state for room ${roomId}: ${message}`);
-      return { success: false, message: `게임 상태 조회 중 오류 발생: ${message}`, gameState: null };
+      // this.logger.error(`Error getting game state for room ${roomId}: ${message}`); // 필터에서 로깅
+      throw new WsException(message || `게임 상태 조회 중 오류 발생`);
     }
   }
 
@@ -102,8 +99,8 @@ export class GameControlHandler {
       return { success: true, maps };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error getting maps for room ${roomId}: ${message}`);
-      return { success: false, message: `맵 목록 조회 중 오류 발생: ${message}`, maps: [] };
+      // this.logger.error(`Error getting maps for room ${roomId}: ${message}`); // 필터에서 로깅
+      throw new WsException(message || `맵 목록 조회 중 오류 발생`);
     }
   }
 }

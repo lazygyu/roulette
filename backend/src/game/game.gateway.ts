@@ -9,7 +9,7 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, UsePipes, ValidationPipe, UseGuards } from '@nestjs/common';
+import { Logger, UsePipes, ValidationPipe, UseGuards, UseFilters } from '@nestjs/common'; // UseFilters 추가
 import { WsUserAttachedGuard } from '../auth/guards/ws-user-attached.guard';
 import { SocketCurrentUser } from '../decorators/socket-user.decorator';
 import { User } from '@prisma/client';
@@ -29,6 +29,7 @@ import { UseSkillDto } from './dto/use-skill.dto';
 
 // 핸들러 임포트
 import { GameConnectionHandler, GameConfigHandler, GameControlHandler, GameSkillHandler } from './handlers';
+import { GlobalWsExceptionFilter } from './filters'; // GlobalWsExceptionFilter 임포트
 
 @WebSocketGateway({
   cors: {
@@ -36,6 +37,7 @@ import { GameConnectionHandler, GameConfigHandler, GameControlHandler, GameSkill
   },
   namespace: 'game',
 })
+@UseFilters(new GlobalWsExceptionFilter()) // GlobalWsExceptionFilter 적용
 @UsePipes(
   new ValidationPipe({ transform: true, whitelist: true, exceptionFactory: (errors) => new WsException(errors) }),
 )
