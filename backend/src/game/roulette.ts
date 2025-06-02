@@ -471,4 +471,22 @@ export class Roulette {
     // 더미 마블은 순위 리스트에 포함하지 않음
     return rankedMarbles;
   }
+
+  public destroy(): void {
+    console.log('Destroying Roulette game instance...');
+    if (this.physics) {
+      this.physics.destroy();
+      // @ts-ignore
+      this.physics = null;
+    }
+    this._marbles = [];
+    this._dummyMarbles = [];
+    this._winners = [];
+    // @ts-ignore
+    this._winner = null;
+    // @ts-ignore
+    this._stage = null;
+    this._skillEffects = [];
+    console.log('Roulette game instance destroyed.');
+  }
 }
