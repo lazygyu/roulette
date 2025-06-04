@@ -1,12 +1,9 @@
-import { Marble } from './marble';
-import { initialZoom, Skills, zoomThreshold } from './data/constants';
+import { initialZoom } from './data/constants';
 import { ParticleManager } from './particleManager';
 import { StageDef, stages } from './data/maps';
-import { parseName } from './utils/utils';
 import { Camera } from './camera';
 import { RouletteRenderer } from './rouletteRenderer';
 import { GameObject } from './gameObject';
-import options from './options';
 import { bound } from './utils/bound.decorator';
 import { UIObject } from './UIObject';
 import { RankRenderer } from './rankRenderer';

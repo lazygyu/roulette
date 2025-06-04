@@ -26,7 +26,6 @@ interface JoinRoomResponse {
   requiresPassword?: boolean; // 비밀번호 실패 시 true로 설정될 수 있음
 }
 
-
 class SocketService {
   private socket: Socket | null = null;
   private currentRoomId: string | null = null;
@@ -41,7 +40,6 @@ class SocketService {
   private gameResetListeners: Array<() => void> = [];
   private gameOverListeners: Array<(data: GameOverData) => void> = [];
   private speedChangedListeners: Array<(data: SpeedChangedData) => void> = [];
-
 
   public connect(roomId: string): Promise<void> {
     return new Promise((resolve, reject) => {

@@ -1,7 +1,6 @@
 import { canvasHeight, canvasWidth, DefaultBloomColor, DefaultEntityColor, initialZoom } from './data/constants';
 import { Camera } from './camera';
 import { StageDef } from './data/maps';
-// import { Marble } from './marble'; // No longer using Marble class instance
 import { MarbleState, MapEntityState } from './types/gameTypes'; // Use types from gameTypes
 import { ParticleManager } from './particleManager';
 import { GameObject } from './gameObject';
