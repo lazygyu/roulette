@@ -5,7 +5,7 @@ import { prefixGameRoomId } from './utils/roomId.util'; // prefixRoomId 유틸�
 import { SkillType, SkillPosition, SkillExtra } from './types/skill.type';
 import { ImpactSkillEffect } from './types/skill-effect.type'; // ImpactSkillEffect 임포트
 
-// 스킬 속성 상수 정의
+// 스킬 속성 상수 정의 (TODO: 별도 설정 파일로 분리 고려)
 const IMPACT_SKILL_RADIUS = 5; // Impact 스킬의 반경
 const IMPACT_SKILL_FORCE = 10; // Impact 스킬의 힘
 
@@ -42,7 +42,6 @@ export class GameEngineService implements OnModuleDestroy {
     switch (skillType) {
       case SkillType.Impact:
         // Impact 스킬 로직
-        // const impactExtra = extra as SkillExtra<SkillType.Impact>; // 현재 사용되지 않으므로 주석 처리
         this.logger.log(`Room ${roomId}: Impact skill used at (${skillPosition.x}, ${skillPosition.y}) with radius ${IMPACT_SKILL_RADIUS} and force ${IMPACT_SKILL_FORCE}`);
         room.game.applyImpact(skillPosition, IMPACT_SKILL_RADIUS, IMPACT_SKILL_FORCE);
 
@@ -74,74 +73,80 @@ export class GameEngineService implements OnModuleDestroy {
    * @param server - 클라이언트에게 상태를 전송할 Socket.IO 서버 인스턴스
    */
   startGameLoop(roomId: number, server: Server) {
-    // roomId 타입을 number로 변경
     if (this.gameLoops.has(roomId)) {
       this.logger.warn(`Game loop for room ${roomId} is already running.`);
       return;
     }
 
     this.logger.log(`Starting game loop for room ${roomId}`);
-    // Socket.IO 통신을 위한 접두사 붙은 ID 생성
     const prefixedRoomId = prefixGameRoomId(roomId);
 
-    const interval = setInterval(() => {
-      try {
-        const room = this.gameSessionService.getRoom(roomId); // GameRoom 가져오기
-        if (room && room.game) {
-          if (room.isRunning) {
-            // 게임이 실제로 실행 중일 때만 업데이트
-            room.game.update(); // Roulette 인스턴스의 update() 호출
-          }
+    const interval = setInterval(() => this._gameLoopTick(roomId, server, prefixedRoomId), 1000 / 60);
 
-          const gameState = room.game.getGameState(); // 업데이트된 상태 가져오기
-
-          // 게임 상태 업데이트 전송 (접두사 붙은 ID 사용)
-          server.to(prefixedRoomId).emit('game_state', gameState);
-
-          // 게임이 종료되었는지 확인 (gameState.isRunning은 room.game.update()에 의해 변경될 수 있음)
-          if (!gameState.isRunning && room.isRunning) {
-            // room.isRunning은 아직 true일 수 있으므로 gameState.isRunning으로 판단
-            this.logger.log(
-              `Game in room ${roomId} has ended according to gameState. Stopping loop and notifying GameSessionService.`,
-            );
-            this.gameSessionService.endGame(roomId); // GameSessionService에 게임 종료 알림
-            this.stopGameLoop(roomId); // 숫자 ID로 루프 중지
-            // 게임 종료 이벤트 전송 (접두사 붙은 ID 사용)
-            server.to(prefixedRoomId).emit('game_over', {
-              winner: gameState.winner,
-            });
-          }
-        } else {
-          // 게임 상태를 가져올 수 없으면 루프 중지 (예: 방이 사라짐)
-          this.logger.warn(`Room or game not found for room ${roomId}. Stopping loop.`);
-          this.stopGameLoop(roomId); // 숫자 ID로 루프 중지
-        }
-      } catch (error: unknown) {
-        // unknown 타입의 에러를 안전하게 처리
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        const errorStack = error instanceof Error ? error.stack : undefined;
-        this.logger.error(`Error in game loop for room ${roomId}: ${errorMessage}`, errorStack);
-        this.stopGameLoop(roomId); // 에러 발생 시 루프 중지 (숫자 ID 사용)
-      }
-    }, 1000 / 60); // 60fps
-
-    this.gameLoops.set(roomId, interval); // 숫자 ID로 인터벌 저장
+    this.gameLoops.set(roomId, interval);
   }
 
   /**
-   * 특정 방의 게임 루프를 중지합니다.
-   * @param roomId - 게임 루프를 중지할 방의 숫자 ID
+   * 게임 루프의 단일 틱을 처리합니다.
+   * @param roomId - 게임 루프가 실행 중인 방의 ID
+   * @param server - 클라이언트에게 상태를 전송할 Socket.IO 서버 인스턴스
+   * @param prefixedRoomId - 접두사가 붙은 방 ID (소켓 룸 이름)
    */
-  stopGameLoop(roomId: number) {
-    // roomId 타입을 number로 변경
+  private async _gameLoopTick(roomId: number, server: Server, prefixedRoomId: string) {
+    try {
+      const room = this.gameSessionService.getRoom(roomId);
+      if (room && room.game) {
+        if (room.isRunning) {
+          room.game.update();
+        }
+
+        const gameState = room.game.getGameState();
+        server.to(prefixedRoomId).emit('game_state', gameState);
+
+        if (!gameState.isRunning && room.isRunning) {
+          this.logger.log(
+            `Game in room ${roomId} has ended according to gameState. Notifying GameSessionService and cleaning up.`,
+          );
+          await this.gameSessionService.endGame(roomId); // await 추가
+          server.to(prefixedRoomId).emit('game_over', {
+            winner: gameState.winner,
+          });
+          this.stopGameLoop(roomId, server); // server 인자 추가
+        }
+      } else {
+        this.logger.warn(`Room or game not found for room ${roomId}. Stopping loop.`);
+        this.stopGameLoop(roomId, server); // server 인자 추가
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      this.logger.error(`Error in game loop for room ${roomId}: ${errorMessage}`, errorStack);
+      this.stopGameLoop(roomId, server); // server 인자 추가
+    }
+  }
+
+  /**
+   * 특정 방의 게임 루프를 중지하고 관련 리소스를 정리합니다.
+   * @param roomId - 게임 루프를 중지할 방의 숫자 ID
+   * @param server - Socket.IO 서버 인스턴스 (선택 사항, 소켓 정리 시 사용)
+   */
+  stopGameLoop(roomId: number, server?: Server) { // server 인자 추가 및 선택적
     const interval = this.gameLoops.get(roomId);
     if (interval) {
       clearInterval(interval);
       this.gameLoops.delete(roomId);
       this.logger.log(`Stopped game loop for room ${roomId}`);
+
+      // 게임 종료 시 소켓 룸에서 모든 클라이언트 leave 처리 및 메모리에서 방 제거
+      if (server) {
+        const prefixedRoomId = prefixGameRoomId(roomId);
+        server.socketsLeave(prefixedRoomId); // 모든 소켓을 해당 룸에서 leave
+        this.logger.log(`Room ${roomId}: All sockets left from room ${prefixedRoomId}.`);
+        this.gameSessionService.removeRoom(roomId); // 메모리에서 방 제거
+        this.logger.log(`Room ${roomId}: Game session removed from memory.`);
+      }
     } else {
-      // 루프가 없을 때 경고 로그는 유지
-      // this.logger.warn(`No active game loop found for room ${roomId} to stop.`);
+      // 루프가 활성화되어 있지 않음
     }
   }
 
