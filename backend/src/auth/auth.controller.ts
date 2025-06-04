@@ -24,7 +24,7 @@ export class AuthController {
   @Post('login')
   @SerializeOptions({ type: LoginResponseDto })
   async login(@Request() req: { user: User }): Promise<LoginResponseDto> {
-    console.log(req);
+    // console.log(req);
     return this.authService.login(req.user);
   }
 }
