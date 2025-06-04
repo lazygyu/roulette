@@ -257,7 +257,6 @@ export class Roulette {
 
   public setWinningRank(rank: number) {
     this._winnerRank = rank;
-    console.log(this._winnerRank);
   }
 
   public setMarbles(names: string[]) {
@@ -479,7 +478,6 @@ export class Roulette {
   }
 
   public destroy(): void {
-    console.log('Destroying Roulette game instance...');
     // Clear all active timeouts
     this.activeTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
     this.activeTimeouts = [];
@@ -497,6 +495,5 @@ export class Roulette {
     // @ts-ignore
     this._stage = null;
     this._skillEffects = [];
-    console.log('Roulette game instance destroyed.');
   }
 }

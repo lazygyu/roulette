@@ -37,9 +37,9 @@ export class Box2dPhysics implements IPhysics {
       // However, it's often managed by the world or is a simple struct.
       // For now, we assume it doesn't need explicit destruction unless docs say otherwise.
       this.initialized = true; // 초기화 완료 플래그 설정
-      console.log('box2d ready');
+      // console.log('box2d ready');
     } catch (error) {
-      console.error('Box2D 초기화 실패:', error);
+      // console.error('Box2D 초기화 실패:', error);
       throw error;
     }
   }
@@ -50,7 +50,7 @@ export class Box2dPhysics implements IPhysics {
       try {
         // 올바른 wasm 파일 경로 지정
         const wasmPath = path.resolve(__dirname, '../../../../node_modules/box2d-wasm/dist/umd/Box2D.wasm');
-        console.log('Loading WASM from:', wasmPath);
+        // console.log('Loading WASM from:', wasmPath);
         
         // 파일 존재 여부 확인
         if (!fs.existsSync(wasmPath)) {
@@ -363,7 +363,7 @@ export class Box2dPhysics implements IPhysics {
   }
 
   public destroy(): void {
-    console.log('Destroying Box2dPhysics...');
+    // console.log('Destroying Box2dPhysics...');
     if (this.world) {
       this.clearMarbles();
       this.clearEntities();
@@ -389,6 +389,6 @@ export class Box2dPhysics implements IPhysics {
     this.marbleMap = {};
     this.entities = [];
     this.deleteCandidates = [];
-    console.log('Box2dPhysics destroyed.');
+    // console.log('Box2dPhysics destroyed.');
   }
 }
