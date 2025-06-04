@@ -6,9 +6,17 @@ import { RoomsModule } from './rooms/rooms.module';
 import { GameModule } from './game/game.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { APP_INTERCEPTOR, APP_PIPE, Reflector } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [UsersModule, AuthModule, RoomsModule, GameModule, PrismaModule],
+  imports: [
+    ScheduleModule.forRoot(), // ScheduleModule 추가
+    UsersModule,
+    AuthModule,
+    RoomsModule,
+    GameModule,
+    PrismaModule,
+  ],
   providers: [
     AppService,
     {

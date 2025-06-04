@@ -6,6 +6,7 @@ import { stages } from './data/maps'; // stages 임포트 추가
 import { Server } from 'socket.io'; // Server 임포트 추가
 import { prefixGameRoomId } from './utils/roomId.util'; // prefixGameRoomId 임포트 추가
 import { GamePersistenceService } from './game-persistence.service'; // GamePersistenceService 임포트
+import { Cron, CronExpression } from '@nestjs/schedule'; // Cron 임포트
 
 // GameRoom 인터페이스 수정: id 타입을 number로 변경하고 interval 제거, players 속성 제거
 export interface GameRoom {
@@ -19,11 +20,17 @@ export class GameSessionService {
   private readonly logger = new Logger(GameSessionService.name);
   // 내부 rooms Map의 key 타입을 number로 변경
   private rooms: Map<number, GameRoom> = new Map();
+  private ioServer: Server; // socket.io Server 인스턴스
+  private isGCRunning = false; // GC 동시 실행 방지 플래그
 
   constructor(
     private prisma: PrismaService, // PrismaService 주입
     private gamePersistenceService: GamePersistenceService, // GamePersistenceService 주입
   ) {}
+
+  setIoServer(server: Server) {
+    this.ioServer = server;
+  }
 
   // 방이 메모리에 로드되었는지 확인
   isRoomLoaded(roomId: number): boolean {
@@ -409,5 +416,47 @@ export class GameSessionService {
       });
     }
     // 게임 데이터가 없으면 아무것도 안 함 (리셋할 대상이 없음)
+  }
+
+  @Cron(CronExpression.EVERY_10_SECONDS) // 10초마다 실행
+  async cleanupRooms() {
+    if (this.isGCRunning) {
+      this.logger.log('GC is already running, skipping this cycle.');
+      return;
+    }
+
+    if (!this.ioServer) {
+      this.logger.warn('Socket.IO Server instance not set in GameSessionService. Skipping GC.');
+      return;
+    }
+
+    this.isGCRunning = true;
+    this.logger.log('Starting periodic room cleanup (GC).');
+    let cleanedRoomsCount = 0;
+
+    this.logger.log(`Current active rooms: ${this.rooms.size}`);
+
+    try {
+      for (const [roomId, room] of this.rooms.entries()) {
+        const prefixedRoomId = prefixGameRoomId(roomId);
+        const socketsInRoom = await this.ioServer.in(prefixedRoomId).fetchSockets();
+
+        // 룸이 WAITING 상태이고, 해당 룸에 연결된 소켓이 없는 경우
+        if (!room.isRunning && socketsInRoom.length === 0) {
+          this.logger.log(`GC: Room ${prefixedRoomId}(${roomId}) is WAITING and has no connected sockets. Removing.`);
+          this.removeRoom(roomId);
+          cleanedRoomsCount++;
+        } else if (room.isRunning) {
+          this.logger.log(`GC: Room ${prefixedRoomId}(${roomId}) is IN_PROGRESS. Sockets: ${socketsInRoom.length}.`);
+        } else {
+          this.logger.log(`GC: Room ${prefixedRoomId}(${roomId}) is WAITING but has ${socketsInRoom.length} connected sockets. Keeping.`);
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error during room cleanup: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      this.isGCRunning = false;
+      this.logger.log(`Periodic room cleanup (GC) finished. Cleaned up ${cleanedRoomsCount} rooms.`);
+    }
   }
 }
