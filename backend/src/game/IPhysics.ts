@@ -27,4 +27,6 @@ export interface IPhysics {
   start(): void;
 
   step(deltaSeconds: number): void;
+
+  destroy(): void;
 }

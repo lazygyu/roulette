@@ -30,6 +30,7 @@ export class Roulette {
   private _isRunning: boolean = false;
   private _winner: Marble | null = null;
   private _skillEffects: SkillEffect[] = [];
+  private activeTimeouts: NodeJS.Timeout[] = []; // setTimeout ID 저장을 위한 배열
 
   private physics!: IPhysics; // Box2dPhysics 인스턴스가 할당됨
 
@@ -101,12 +102,17 @@ export class Roulette {
           }
         }
         // 모든 종류의 마블(더미 포함)을 물리 엔진에서 제거
-        setTimeout(() => {
-          this.physics.removeMarble(marble.id);
-          if (marble.isDummy) {
-            this._dummyMarbles = this._dummyMarbles.filter((dm) => dm.id !== marble.id);
+        const timeoutId = setTimeout(() => {
+          // 콜백 실행 전에 activeTimeouts에서 해당 ID 제거
+          this.activeTimeouts = this.activeTimeouts.filter(id => id !== timeoutId);
+          if (this.physics) { // physics 객체가 유효한지 확인
+            this.physics.removeMarble(marble.id);
+            if (marble.isDummy) {
+              this._dummyMarbles = this._dummyMarbles.filter((dm) => dm.id !== marble.id);
+            }
           }
         }, 500);
+        this.activeTimeouts.push(timeoutId); // 생성된 timeout ID 저장
       }
     }
 
@@ -470,5 +476,27 @@ export class Roulette {
     }
     // 더미 마블은 순위 리스트에 포함하지 않음
     return rankedMarbles;
+  }
+
+  public destroy(): void {
+    console.log('Destroying Roulette game instance...');
+    // Clear all active timeouts
+    this.activeTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+    this.activeTimeouts = [];
+
+    if (this.physics) {
+      this.physics.destroy();
+      // @ts-ignore
+      this.physics = null;
+    }
+    this._marbles = [];
+    this._dummyMarbles = [];
+    this._winners = [];
+    // @ts-ignore
+    this._winner = null;
+    // @ts-ignore
+    this._stage = null;
+    this._skillEffects = [];
+    console.log('Roulette game instance destroyed.');
   }
 }

@@ -165,9 +165,13 @@ export class GameSessionService {
   removeRoom(roomId: number): void {
     const room = this.getRoom(roomId);
     if (room) {
+      if (room.game && typeof room.game.destroy === 'function') {
+        room.game.destroy(); // Destroy Roulette instance and its physics
+        this.logger.log(`Room ${roomId}: Roulette game instance destroyed.`);
+      }
       // GameEngineService에서 루프를 관리하므로 여기서는 interval 제거 로직 불필요
       this.rooms.delete(roomId);
-      this.logger.log(`Room ${roomId} removed.`);
+      this.logger.log(`Room ${roomId} removed from session.`);
     }
   }
 
