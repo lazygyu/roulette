@@ -117,7 +117,6 @@ export interface RoomInfo {
   game: GameInfo | null; // GameInfo는 이제 ranking을 포함하지 않음
 }
 
-
 // --- 기존 타입 ---
 export interface MapInfo {
   index: number;
