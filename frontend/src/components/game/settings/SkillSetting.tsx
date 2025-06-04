@@ -13,7 +13,13 @@ const SkillSetting: FC<SkillSettingProps> = ({ useSkills, onSkillChange, disable
         <i className="icon bomb"></i>
         <span data-trans>Using skills</span>
       </label>
-      <input type="checkbox" id="chkSkill" checked={useSkills} onChange={onSkillChange} disabled={disabled} />
+      <input
+        type="checkbox"
+        id="chkSkill"
+        checked={useSkills}
+        onChange={onSkillChange}
+        disabled={disabled}
+      />
     </div>
   );
 };

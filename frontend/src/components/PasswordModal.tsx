@@ -8,7 +8,7 @@ interface PasswordModalProps {
   joinError: string | null;
   passwordInputRef: React.RefObject<HTMLInputElement | null>; // Adjusted to match what GamePage seems to provide
   // onClose is not strictly necessary based on current GamePage logic, but good practice for modals
-  // onClose: () => void;
+  // onClose: () => void; 
 }
 
 const PasswordModal: React.FC<PasswordModalProps> = ({

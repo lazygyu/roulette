@@ -3,7 +3,12 @@ import { Rect } from './types/rect.type';
 
 export interface UIObject {
   update(deltaTime: number): void;
-  render(ctx: CanvasRenderingContext2D, params: RenderParameters, width: number, height: number): void;
+  render(
+    ctx: CanvasRenderingContext2D,
+    params: RenderParameters,
+    width: number,
+    height: number
+  ): void;
   getBoundingBox(): Rect | null;
 
   onWheel?(e: WheelEvent): void;

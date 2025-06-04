@@ -36,12 +36,14 @@ const AppContent: React.FC = () => {
           </ul>
         </nav>
       )}
+
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} /> {/* 회원가입 페이지 라우트 추가 */}
         <Route path="/create-room" element={<CreateRoomPage />} />
         <Route path="/game/:roomId" element={<GamePage />} /> {/* HomePage를 GamePage로 변경 */}
-        <Route path="/" element={<div>Navigate to /create-room or /game/:roomId</div>} /> {/* 기본 페이지 안내 변경 */}
+        <Route path="/" element={<div>Navigate to /create-room or /game/:roomId</div>} />{' '}
+        {/* 기본 페이지 안내 변경 */}
       </Routes>
     </div>
   );

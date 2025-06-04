@@ -2,7 +2,7 @@ export function bound<T extends Function>(
   // eslint-disable-next-line
   target: any,
   propertyKey: string,
-  descriptor: TypedPropertyDescriptor<T>,
+  descriptor: TypedPropertyDescriptor<T>
 ): TypedPropertyDescriptor<T> {
   return {
     configurable: true,

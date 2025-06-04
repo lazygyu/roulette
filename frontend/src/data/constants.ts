@@ -19,4 +19,4 @@ export const DefaultBloomColor = {
   box: 'cyan',
   circle: 'yellow',
   polyline: 'cyan',
-};
+}

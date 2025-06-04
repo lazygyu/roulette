@@ -2,7 +2,7 @@ import React, { FC } from 'react';
 
 interface MapSettingProps {
   mapIndex: number | null;
-  availableMaps: { index: number; title: string }[];
+  availableMaps: { index: number; title: string; }[];
   onMapChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   disabled: boolean;
 }

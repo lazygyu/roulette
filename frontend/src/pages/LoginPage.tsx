@@ -40,7 +40,13 @@ function LoginPage() {
       <form onSubmit={handleSubmit}>
         <div>
           <label htmlFor="username">사용자명:</label>
-          <input type="text" id="username" value={username} onChange={(e) => setUsername(e.target.value)} required />
+          <input
+            type="text"
+            id="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
         </div>
         <div>
           <label htmlFor="password">비밀번호:</label>
@@ -58,9 +64,7 @@ function LoginPage() {
         </button>
       </form>
       {/* (선택 사항) 회원가입 페이지로 이동하는 링크 */}
-      <p>
-        계정이 없으신가요? <Link to="/register">회원가입</Link>
-      </p>
+      <p>계정이 없으신가요? <Link to="/register">회원가입</Link></p>
     </div>
   );
 }

@@ -13,7 +13,7 @@ interface SettingsPanelProps {
   winnerSelectionType: 'first' | 'last' | 'custom';
   winningRankDisplay: number | null;
   mapIndex: number | null;
-  availableMaps: { index: number; title: string }[];
+  availableMaps: { index: number; title: string; }[];
   autoRecording: boolean;
   useSkills: boolean;
   namesInput: string;
@@ -86,7 +86,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           onWinningRankChange={onWinningRankChange}
           disabled={settingsDisabled}
         />
-        <SkillSetting useSkills={useSkills} onSkillChange={onSkillChange} disabled={settingsDisabled} />
+        <SkillSetting
+          useSkills={useSkills}
+          onSkillChange={onSkillChange}
+          disabled={settingsDisabled}
+        />
       </div>
       <div className="left">
         <NamesInput

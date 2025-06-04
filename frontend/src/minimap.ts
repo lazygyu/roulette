@@ -81,7 +81,12 @@ export class Minimap implements UIObject {
     ctx.save();
     ctx.strokeStyle = 'green';
     ctx.lineWidth = 1;
-    ctx.strokeRect(this.boundingBox.x, this.boundingBox.y, this.boundingBox.w, this.boundingBox.h);
+    ctx.strokeRect(
+      this.boundingBox.x,
+      this.boundingBox.y,
+      this.boundingBox.w,
+      this.boundingBox.h,
+    );
     ctx.restore();
   }
 
@@ -124,7 +129,7 @@ export class Minimap implements UIObject {
           if (shape.points.length > 0) {
             this.ctx.beginPath();
             this.ctx.moveTo(shape.points[0][0], shape.points[0][1]);
-            for (let i = 1; i < shape.points.length; i++) {
+            for(let i = 1; i < shape.points.length; i++) {
               this.ctx.lineTo(shape.points[i][0], shape.points[i][1]);
             }
             this.ctx.stroke();
@@ -140,8 +145,7 @@ export class Minimap implements UIObject {
   private drawMarbles(params: RenderParameters) {
     const { marbles } = params; // marbles is now MarbleState[]
     this.ctx.save();
-    marbles.forEach((marbleState: MarbleState) => {
-      // Use MarbleState type
+    marbles.forEach((marbleState: MarbleState) => { // Use MarbleState type
       // Draw marble based on state for minimap
       this.ctx.beginPath();
       // Use a smaller radius for the minimap representation
