@@ -14,7 +14,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({ ranking, roomName, onCl
   }
 
   // 최종 승자 찾기
-  const winnerEntry = ranking.find(entry => entry.isWinner);
+  const winnerEntry = ranking.find((entry) => entry.isWinner);
 
   return (
     <div className="ranking-modal-overlay">
@@ -42,7 +42,9 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({ ranking, roomName, onCl
             </li>
           ))}
         </ul>
-        <button onClick={onClose} className="close-ranking-button">Close</button>
+        <button onClick={onClose} className="close-ranking-button">
+          Close
+        </button>
       </div>
     </div>
   );

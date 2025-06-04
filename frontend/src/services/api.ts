@@ -36,8 +36,13 @@ export const login = async (username: string, password_hash: string): Promise<Lo
   return response.data; // 응답 데이터에서 access_token과 nickname을 직접 반환
 };
 
-export const register = async (username: string, password_hash: string, nickname: string): Promise<LoginResponse> => { // nickname 인자 추가
-  const response = await apiClient.post<LoginResponse>('/auth/register', { username, password: password_hash, nickname }); // nickname 전달
+export const register = async (username: string, password_hash: string, nickname: string): Promise<LoginResponse> => {
+  // nickname 인자 추가
+  const response = await apiClient.post<LoginResponse>('/auth/register', {
+    username,
+    password: password_hash,
+    nickname,
+  }); // nickname 전달
   return response.data;
 };
 
@@ -65,13 +70,11 @@ export const getGameRanking = async (roomId: number): Promise<{ rankings: Rankin
   return response.data;
 };
 
-
 interface CreateRoomResponse extends Omit<RoomInfo, 'game' | 'manager'> {
   // createRoom 응답은 manager 객체를 포함하지만, game은 포함하지 않음
   // 필요시 manager 타입도 명시적으로 정의
   managerId: number; // manager 객체 대신 managerId만 받을 경우
 }
-
 
 export const createRoom = async (name: string, password?: string): Promise<CreateRoomResponse> => {
   const response = await apiClient.post<CreateRoomResponse>('/rooms', { name, password });

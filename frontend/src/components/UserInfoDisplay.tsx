@@ -10,7 +10,9 @@ const UserInfoDisplay: React.FC = () => {
       {isLoggedIn && user ? (
         <div>
           <span>환영합니다, {user.nickname}님!</span>
-          <button onClick={logout} style={{ marginLeft: '10px' }}>로그아웃</button>
+          <button onClick={logout} style={{ marginLeft: '10px' }}>
+            로그아웃
+          </button>
         </div>
       ) : (
         <Link to="/login">

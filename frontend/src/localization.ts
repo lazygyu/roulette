@@ -1,8 +1,4 @@
-import {
-  TranslatedLanguages,
-  TranslationKeys,
-  Translations,
-} from './data/languages';
+import { TranslatedLanguages, TranslationKeys, Translations } from './data/languages';
 
 const defaultLocale: TranslatedLanguages = 'en';
 let locale: TranslatedLanguages | undefined;
@@ -40,10 +36,7 @@ function setLocale(newLocale: string) {
 
   const newLocaleLower = newLocale.toLocaleLowerCase();
 
-  locale =
-    newLocaleLower in Translations
-      ? (newLocaleLower as TranslatedLanguages)
-      : defaultLocale;
+  locale = newLocaleLower in Translations ? (newLocaleLower as TranslatedLanguages) : defaultLocale;
   translatePage();
 }
 
