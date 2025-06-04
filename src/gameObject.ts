@@ -3,3 +3,4 @@ export interface GameObject {
   update(deltaTime: number): void;
   render(ctx: CanvasRenderingContext2D, zoom: number): void;
 }
+//asdasdasd
