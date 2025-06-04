@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, BadRequestException } from '@nestjs/common';
 import { Server } from 'socket.io';
 import { GameSessionService } from './game-session.service'; // GameSessionService 임포트
-import { prefixRoomId } from './utils/roomId.util'; // prefixRoomId 유틸리티 임포트
+import { prefixGameRoomId } from './utils/roomId.util'; // prefixRoomId 유틸리티 임포트
 import { SkillType, SkillPosition, SkillExtra } from './types/skill.type';
 import { ImpactSkillEffect } from './types/skill-effect.type'; // ImpactSkillEffect 임포트
 
@@ -82,7 +82,7 @@ export class GameEngineService implements OnModuleDestroy {
 
     this.logger.log(`Starting game loop for room ${roomId}`);
     // Socket.IO 통신을 위한 접두사 붙은 ID 생성
-    const prefixedRoomId = prefixRoomId(roomId);
+    const prefixedRoomId = prefixGameRoomId(roomId);
 
     const interval = setInterval(() => {
       try {
