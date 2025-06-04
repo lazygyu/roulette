@@ -1,4 +1,3 @@
-// import { Marble } from './marble'; // No longer using Marble class instance
 import { MarbleState } from './types/gameTypes'; // Use MarbleState type from gameTypes
 import { StageDef } from './data/maps';
 import { initialZoom, zoomThreshold } from './data/constants';
@@ -76,12 +75,10 @@ export class Camera {
     marbles: MarbleState[], // Changed type to MarbleState[]
     stage: StageDef,
     needToZoom: boolean, // This logic might be removed or changed in roulette.ts
-    targetIndex: number
+    targetIndex: number,
   ) {
     if (marbles.length > 0) {
-      const targetMarble = marbles[targetIndex]
-        ? marbles[targetIndex]
-        : marbles[0];
+      const targetMarble = marbles[targetIndex] ? marbles[targetIndex] : marbles[0];
       // Access x, y directly from MarbleState
       this.setPosition({ x: targetMarble.x, y: targetMarble.y });
       if (needToZoom) {
@@ -115,18 +112,12 @@ export class Camera {
     this.height = height;
   }
 
-  renderScene(
-    ctx: CanvasRenderingContext2D,
-    callback: (ctx: CanvasRenderingContext2D) => void
-  ) {
+  renderScene(ctx: CanvasRenderingContext2D, callback: (ctx: CanvasRenderingContext2D) => void) {
     const zoomFactor = initialZoom * 2 * this._zoom;
     ctx.save();
     ctx.translate(-this.x * this._zoom, -this.y * this._zoom);
     ctx.scale(this.zoom, this.zoom);
-    ctx.translate(
-      ctx.canvas.width / zoomFactor,
-      ctx.canvas.height / zoomFactor
-    );
+    ctx.translate(ctx.canvas.width / zoomFactor, ctx.canvas.height / zoomFactor);
     callback(ctx);
     ctx.restore();
   }
@@ -150,19 +141,19 @@ export class Camera {
     // renderScene에서 translate 오프셋은 (캔버스 픽셀 너비 / zoomFactor) 입니다.
     // 이 오프셋은 initialZoom 스케일이 적용되기 전의 값입니다.
     // worldToScreen은 initialZoom 스케일이 적용된 후의 좌표를 반환해야 합니다.
-    
+
     const renderSceneZoomFactor = initialZoom * 2 * this._zoom;
     // 캔버스 너비/높이를 initialZoom으로 나눈 값이 renderScene 콜백 내에서의 "1 유닛"에 해당합니다.
     // 하지만 renderScene의 translate는 실제 캔버스 픽셀 크기를 사용합니다.
     const offsetX = this.width / renderSceneZoomFactor;
     const offsetY = this.height / renderSceneZoomFactor;
-    
+
     // 최종 화면 좌표 (renderScene 콜백 내부에서 사용되는 좌표)
     // (카메라 기준 줌된 좌표 + 중앙 오프셋)
     // 이 결과는 renderScene 콜백 내부의 좌표계와 일치합니다 (즉, initialZoom이 이미 적용된 것으로 간주).
     const screenX = zoomedX + offsetX;
     const screenY = zoomedY + offsetY;
-    
+
     return {
       x: screenX,
       y: screenY,
@@ -173,7 +164,7 @@ export class Camera {
   public getWorldBounds(): { left: number; right: number; top: number; bottom: number } {
     const halfWidth = this.width / (2 * this._zoom);
     const halfHeight = this.height / (2 * this._zoom);
-    
+
     return {
       left: this._position.x - halfWidth,
       right: this._position.x + halfWidth,
