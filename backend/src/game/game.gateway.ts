@@ -30,6 +30,7 @@ import { UseSkillDto } from './dto/use-skill.dto';
 // 핸들러 임포트
 import { GameConnectionHandler, GameConfigHandler, GameControlHandler, GameSkillHandler } from './handlers';
 import { GlobalWsExceptionFilter } from './filters'; // GlobalWsExceptionFilter 임포트
+import { GameSessionService } from './game-session.service'; // GameSessionService 임포트
 
 @WebSocketGateway({
   cors: {
@@ -52,10 +53,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly configHandler: GameConfigHandler,
     private readonly controlHandler: GameControlHandler,
     private readonly skillHandler: GameSkillHandler,
+    private readonly gameSessionService: GameSessionService, // GameSessionService 주입
   ) {}
 
   afterInit() {
     this.logger.log('Game WebSocket Gateway 초기화 완료');
+    this.gameSessionService.setIoServer(this.server); // GameSessionService에 Server 인스턴스 전달
   }
 
   async handleConnection(client: Socket) {
