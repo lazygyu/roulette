@@ -1,19 +1,18 @@
 import React, { FC } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import '../styles.css';
 import RankingDisplay from '../components/RankingDisplay';
 import PasswordModal from '../components/PasswordModal';
 import GameBar from '../components/GameBar';
 import SettingsPanel from '../components/SettingsPanel';
-import { GameProvider } from '../contexts/GameContext'; // GameContext 임포트
-import { useGamePageLogic } from '../hooks/useGamePageLogic'; // 커스텀 훅 임포트
-import RouletteCanvas from '../components/game/RouletteCanvas'; // 새 컴포넌트 임포트
-import GameFooter from '../components/game/GameFooter'; // 새 컴포넌트 임포트
+import { GameProvider } from '../contexts/GameContext';
+import { useGamePageLogic } from '../hooks/useGamePageLogic';
+import RouletteCanvas from '../components/game/RouletteCanvas';
+import GameFooter from '../components/game/GameFooter';
+import { Skills } from '../types/gameTypes';
 
 const GamePageContent: FC = () => {
   const {
     roomName,
-    gameDetails,
     isManager,
     finalRanking,
     showRankingModal,
@@ -22,56 +21,20 @@ const GamePageContent: FC = () => {
     passwordInput,
     setPasswordInput,
     joinError,
-    winnerSelectionType,
-    winningRankDisplay,
-    availableMaps,
     initializeGame,
     handlePasswordJoin,
-    namesInput,
-    autoRecording,
-    useSkills,
-    mapIndex,
-    onNamesInput,
-    onNamesBlur,
-    onShuffleClick,
-    onStartClick,
-    onSkillChange,
-    onWinningRankChange,
-    onFirstWinnerClick,
-    onLastWinnerClick,
-    onMapChange,
-    onAutoRecordingChange,
-    passwordInputRef,
     selectedSkill,
     handleSkillSelect,
     handleCanvasClick,
-    gameState, // gameState 추가
+    gameState,
+    useSkills,
+    passwordInputRef,
   } = useGamePageLogic();
 
   return (
     <>
-      <GameBar roomName={roomName} isManager={isManager} />
-      <SettingsPanel
-        isManager={isManager}
-        gameDetails={gameDetails}
-        winnerSelectionType={winnerSelectionType}
-        winningRankDisplay={winningRankDisplay}
-        mapIndex={mapIndex}
-        availableMaps={availableMaps}
-        autoRecording={autoRecording}
-        useSkills={useSkills}
-        namesInput={namesInput}
-        onMapChange={onMapChange}
-        onAutoRecordingChange={onAutoRecordingChange}
-        onFirstWinnerClick={onFirstWinnerClick}
-        onLastWinnerClick={onLastWinnerClick}
-        onWinningRankChange={onWinningRankChange}
-        onSkillChange={onSkillChange}
-        onNamesInput={onNamesInput}
-        onNamesBlur={onNamesBlur}
-        onShuffleClick={onShuffleClick}
-        onStartClick={onStartClick}
-      />
+      <GameBar roomName={roomName || ''} isManager={isManager} />
+      <SettingsPanel />
       <GameFooter />
       {gameState?.isRunning && useSkills && (
         <div
@@ -92,7 +55,7 @@ const GamePageContent: FC = () => {
           <select
             id="skill-select"
             value={selectedSkill}
-            onChange={handleSkillSelect}
+            onChange={(e) => handleSkillSelect(e.target.value as Skills)}
             style={{
               padding: '5px',
               borderRadius: '3px',
@@ -101,17 +64,17 @@ const GamePageContent: FC = () => {
               color: 'white',
             }}
           >
-            <option value="None">없음</option>
-            <option value="Impact">Impact</option>
-            <option value="DummyMarble">DummyMarble</option>
+            <option value={Skills.None}>없음</option>
+            <option value={Skills.Impact}>Impact</option>
+            <option value={Skills.DummyMarble}>DummyMarble</option>
           </select>
         </div>
       )}
-      <div onClick={handleCanvasClick} style={{ cursor: selectedSkill !== 'None' ? 'crosshair' : 'default' }}>
+      <div onClick={handleCanvasClick} style={{ cursor: selectedSkill !== Skills.None ? 'crosshair' : 'default' }}>
         <RouletteCanvas initializeGame={initializeGame} />
       </div>
       {showRankingModal && finalRanking && (
-        <RankingDisplay ranking={finalRanking} roomName={roomName} onClose={() => setShowRankingModal(false)} />
+        <RankingDisplay ranking={finalRanking} roomName={roomName || ''} onClose={() => setShowRankingModal(false)} />
       )}
       <PasswordModal
         show={showPasswordModal}

@@ -2,11 +2,13 @@ import { Catch, ArgumentsHost, HttpException, Logger } from '@nestjs/common';
 import { BaseWsExceptionFilter, WsException } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 
-@Catch(WsException, HttpException)
+@Catch(Error, WsException, HttpException)
 export class GlobalWsExceptionFilter extends BaseWsExceptionFilter {
   private readonly logger = new Logger('GlobalWsExceptionFilter');
 
   catch(exception: WsException | HttpException, host: ArgumentsHost) {
+    this.logger.debug('GlobalWsExceptionFilter caught an exception', exception);
+
     const client = host.switchToWs().getClient<Socket>();
     const data = host.switchToWs().getData();
     const user = client.user; // Assuming user is attached to socket
@@ -27,7 +29,8 @@ export class GlobalWsExceptionFilter extends BaseWsExceptionFilter {
       );
     } else if (exception instanceof HttpException) {
       const httpError = exception.getResponse();
-      const message = typeof httpError === 'string' ? httpError : (httpError as any)?.message || 'HTTP Exception via WebSocket';
+      const message =
+        typeof httpError === 'string' ? httpError : (httpError as any)?.message || 'HTTP Exception via WebSocket';
       errorResponse = {
         status: 'error',
         message: message,
@@ -49,7 +52,7 @@ export class GlobalWsExceptionFilter extends BaseWsExceptionFilter {
         (exception as Error).stack,
       );
     }
-    
+
     // Emit an error event back to the specific client
     // The event name 'exception' is a common practice, but can be customized
     client.emit('exception', {

@@ -29,6 +29,7 @@ interface JoinRoomResponse {
 class SocketService {
   private socket: Socket | null = null;
   private currentRoomId: string | null = null;
+  private joinedRooms: Set<string> = new Set();
   private isConnecting: boolean = false; // 연결 시도 중인지 나타내는 상태 추가
   private latestAvailableMaps: MapInfo[] | null = null; // Cache for available maps
 
@@ -88,6 +89,7 @@ class SocketService {
       this.socket.on('disconnect', (reason) => {
         console.log(`Socket disconnected: ${reason}`);
         this.currentRoomId = null;
+        this.joinedRooms.clear();
         // 모든 리스너 배열 초기화
         this.gameStateListeners = [];
         this.availableMapsListeners = [];
@@ -228,6 +230,7 @@ class SocketService {
     const response: JoinRoomResponse = await this.socket.emitWithAck('join_room', { roomId, password });
     if (response.success) {
       this.currentRoomId = roomId;
+      this.joinedRooms.add(roomId);
     }
     return response;
   }
@@ -313,9 +316,7 @@ class SocketService {
 
   // Method to check if the client has successfully joined a specific room
   public getJoinedStatus(roomId: string): boolean {
-    // This is a simplified check. A more robust solution might involve
-    // the server confirming the join status or tracking it more explicitly.
-    return !!(this.socket?.connected && this.currentRoomId === roomId);
+    return this.joinedRooms.has(roomId);
   }
 }
 
