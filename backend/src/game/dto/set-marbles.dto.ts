@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { IsArray, IsInt, IsNotEmpty, IsString, ArrayNotEmpty } from 'class-validator';
 
 export class SetMarblesDto {
@@ -10,6 +10,9 @@ export class SetMarblesDto {
   @IsArray()
   @ArrayNotEmpty()
   @IsString({ each: true })
+  @Transform(({ value }: { value: string[] }) => {
+    return value.map((name) => name.trim()).filter((name) => !!name);
+  })
   @IsNotEmpty({ each: true }) // 각 문자열 요소도 비어있지 않아야 함
   names: string[];
 }
