@@ -12,7 +12,7 @@ export class Marble {
   weight: number = 1;
   skill: Skills = Skills.None;
   isActive: boolean = false;
-  isDummy: boolean = false; // 기본값 false
+  isDummy: boolean = false;
 
   private _skillRate = 0.0005;
   private _coolTime = 5000;
@@ -54,12 +54,12 @@ export class Marble {
     max: number,
     name?: string,
     weight: number = 1,
-    isDummy: boolean = false, // isDummy 파라미터 추가
+    isDummy: boolean = false,
   ) {
     this.name = name || `M${order}`;
     this.weight = weight;
     this.physics = physics;
-    this.isDummy = isDummy; // isDummy 설정
+    this.isDummy = isDummy;
 
     this._maxCoolTime = 1000 + (1 - this.weight) * 4000;
     this._coolTime = this._maxCoolTime * Math.random();
@@ -70,14 +70,13 @@ export class Marble {
     const lineDelta = -Math.max(0, Math.ceil(maxLine - 5));
 
     if (this.isDummy) {
-      this.hue = Math.random() * 360; // 더미 마블은 랜덤 색상
+      this.hue = Math.random() * 360;
     } else {
-      this.hue = (360 / max) * order; // 일반 마블은 기존 로직
+      this.hue = (360 / max) * order;
     }
     this.color = `hsl(${this.hue} 100% 70%)`;
     this.id = order;
 
-    // physics.createMarble 호출 시 isDummy와 초기 속도 관련 정보 전달 필요 (다음 단계에서 physics 수정 후 반영)
     physics.createMarble(
       order,
       10.25 + (order % 10) * 0.6,
@@ -86,6 +85,15 @@ export class Marble {
   }
 
   update(deltaTime: number) {
+    this._updateStuckState(deltaTime);
+    this.lastPosition = { x: this.position.x, y: this.position.y };
+
+    this.skill = Skills.None;
+    if (!this.isActive) return;
+    // this._updateSkillInformation(deltaTime);
+  }
+
+  private _updateStuckState(deltaTime: number) {
     if (
       this.isActive &&
       Vector.lenSq(Vector.sub(this.lastPosition, this.position)) < 0.00001
@@ -99,11 +107,6 @@ export class Marble {
     } else {
       this._stuckTime = 0;
     }
-    this.lastPosition = { x: this.position.x, y: this.position.y };
-
-    this.skill = Skills.None;
-    if (!this.isActive) return;
-    // this._updateSkillInformation(deltaTime);
   }
 
   private _updateSkillInformation(deltaTime: number) {
@@ -118,7 +121,6 @@ export class Marble {
     }
   }
 
-  // 직렬화를 위한 메서드 추가
   toJSON() {
     return {
       id: this.id,
