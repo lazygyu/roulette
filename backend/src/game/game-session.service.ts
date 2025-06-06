@@ -60,47 +60,7 @@ export class GameSessionService {
 
     try {
       // DB 데이터로 게임 상태 설정
-      if (gameData.mapIndex !== null && gameData.mapIndex !== undefined) {
-        room.game.setMap(gameData.mapIndex);
-        this.logger.log(`Room ${roomId}: Map set to index ${gameData.mapIndex} from DB.`);
-      }
-      if (gameData.marbles && gameData.marbles.length > 0) {
-        room.game.setMarbles(gameData.marbles); // setMarbles는 내부적으로 reset을 호출할 수 있으므로 순서 중요
-        this.logger.log(`Room ${roomId}: Marbles set from DB: ${gameData.marbles.join(', ')}.`);
-      }
-      if (gameData.winningRank !== null && gameData.winningRank !== undefined) {
-        room.game.setWinningRank(gameData.winningRank);
-        this.logger.log(`Room ${roomId}: Winning rank set to ${gameData.winningRank} from DB.`);
-      }
-      if (gameData.speed !== null && gameData.speed !== undefined) {
-        room.game.setSpeed(gameData.speed);
-        this.logger.log(`Room ${roomId}: Speed set to ${gameData.speed} from DB.`);
-      }
-
-      switch (gameData.status) {
-        case GameStatus.IN_PROGRESS:
-          room.isRunning = true;
-          // room.game.start(); // IN_PROGRESS 상태일 때 게임을 '시작' 상태로 만듦.
-                             // roulette.ts의 start()는 현재 상태를 초기화하지 않고, isActive 플래그와 물리엔진을 활성화.
-                             // 만약 마블 위치 등 더 상세한 상태 복원이 필요하면 roulette.ts 수정 필요.
-                             // 현재는 설정만 로드하고, 실제 게임 루프는 GameEngineService에서 관리.
-          this.logger.log(`Room ${roomId}: Status set to IN_PROGRESS. isRunning: true.`);
-          break;
-        case GameStatus.WAITING:
-          room.isRunning = false;
-          this.logger.log(`Room ${roomId}: Status set to WAITING. isRunning: false.`);
-          break;
-        case GameStatus.FINISHED:
-          room.isRunning = false;
-          // TODO: FINISHED 상태일 때, gameData.rankings (주석 해제 시)를 사용하여
-          // room.game 객체에 최종 랭킹 정보를 설정하거나, getFinalRankingForAllMarbles가 이를 활용하도록.
-          // 예: room.game.setFinalRankings(gameData.rankings);
-          this.logger.log(`Room ${roomId}: Status set to FINISHED. isRunning: false.`);
-          break;
-        default:
-          room.isRunning = false;
-          this.logger.warn(`Room ${roomId}: Unknown game status '${gameData.status}' from DB. Defaulting to WAITING.`);
-      }
+      this._configureRoomFromData(room, gameData);
       this.logger.log(`Room ${roomId} successfully loaded from DB and configured in memory.`);
       return room;
     } catch (error) {
@@ -109,6 +69,43 @@ export class GameSessionService {
       // 여기서는 일단 null을 반환하여 게이트웨이에서 처리하도록 함.
       this.removeRoom(roomId); // 설정 실패 시 메모리에서 방 제거
       throw new InternalServerErrorException(`Failed to configure game room ${roomId} from database.`);
+    }
+  }
+
+  private _configureRoomFromData(room: GameRoom, gameData: Game) {
+    if (gameData.mapIndex !== null && gameData.mapIndex !== undefined) {
+      room.game.setMap(gameData.mapIndex);
+      this.logger.log(`Room ${room.id}: Map set to index ${gameData.mapIndex} from DB.`);
+    }
+    if (gameData.marbles && gameData.marbles.length > 0) {
+      room.game.setMarbles(gameData.marbles); // setMarbles는 내부적으로 reset을 호출할 수 있으므로 순서 중요
+      this.logger.log(`Room ${room.id}: Marbles set from DB: ${gameData.marbles.join(', ')}.`);
+    }
+    if (gameData.winningRank !== null && gameData.winningRank !== undefined) {
+      room.game.setWinningRank(gameData.winningRank);
+      this.logger.log(`Room ${room.id}: Winning rank set to ${gameData.winningRank} from DB.`);
+    }
+    if (gameData.speed !== null && gameData.speed !== undefined) {
+      room.game.setSpeed(gameData.speed);
+      this.logger.log(`Room ${room.id}: Speed set to ${gameData.speed} from DB.`);
+    }
+
+    switch (gameData.status) {
+      case GameStatus.IN_PROGRESS:
+        room.isRunning = true;
+        this.logger.log(`Room ${room.id}: Status set to IN_PROGRESS. isRunning: true.`);
+        break;
+      case GameStatus.WAITING:
+        room.isRunning = false;
+        this.logger.log(`Room ${room.id}: Status set to WAITING. isRunning: false.`);
+        break;
+      case GameStatus.FINISHED:
+        room.isRunning = false;
+        this.logger.log(`Room ${room.id}: Status set to FINISHED. isRunning: false.`);
+        break;
+      default:
+        room.isRunning = false;
+        this.logger.warn(`Room ${room.id}: Unknown game status '${gameData.status}' from DB. Defaulting to WAITING.`);
     }
   }
 
@@ -228,59 +225,46 @@ export class GameSessionService {
     if (room && room.isRunning) {
       room.isRunning = false; // 메모리 상태 업데이트
 
-      // DB 업데이트 (status를 FINISHED로)
       try {
-        const updatedGame = await this.gamePersistenceService.updateGameStatus(
-          roomId,
-          GameStatus.FINISHED,
-        );
-
-        // Roulette 클래스에서 모든 마블의 최종 랭킹 정보 가져오기
-        const allMarblesFinalRanking = room.game.getFinalRankingForAllMarbles();
-
-        if (allMarblesFinalRanking && allMarblesFinalRanking.length > 0) {
-          const rankingCreateData = allMarblesFinalRanking.map(entry => {
-            // entry.finalRank가 숫자일 수도 있고, 'DNF' 같은 문자열일 수도 있음.
-            // GameRanking 테이블의 rank 컬럼은 Int이므로, 문자열인 경우 적절히 변환하거나
-            // DNF를 나타내는 매우 큰 숫자로 저장할 수 있음. 여기서는 일단 숫자로 가정.
-            // isWinnerGoal은 roulette.ts에서 이미 계산된 값 (설정된 winningRank와 일치 여부)
-            let rankToStore: number;
-            if (typeof entry.finalRank === 'number') {
-              rankToStore = entry.finalRank;
-            } else {
-              // 'DNF' 또는 기타 문자열 순위 처리
-              // 예: 매우 큰 숫자로 저장하여 DNF를 나타냄
-              rankToStore = 9999; // DNF를 나타내는 임의의 큰 수
-            }
-
-            return {
-              gameId: updatedGame.id,
-              marbleName: entry.name,
-              rank: rankToStore,
-              isWinner: entry.isWinnerGoal, // roulette.ts에서 계산된 isWinnerGoal 사용
-            };
-          });
-
-          await this.gamePersistenceService.saveGameRankings(
-            updatedGame.id,
-            rankingCreateData,
-          );
-        }
+        const updatedGame = await this.gamePersistenceService.updateGameStatus(roomId, GameStatus.FINISHED);
+        await this._saveFinalRankings(room, updatedGame.id);
         this.logger.log(`Game in room ${roomId} officially ended and all marbles ranking saved to DB.`);
       } catch (error) {
-        this.logger.error(
-          `Failed to update game status to FINISHED or save all marbles ranking for room ${roomId}:`,
-          error,
-        );
-        // 에러 처리 (예: 로깅, 재시도 로직 등)
+        this.logger.error(`Failed to update game status to FINISHED or save rankings for room ${roomId}:`, error);
       }
-
     } else if (room && !room.isRunning) {
       this.logger.warn(`Attempted to end game in room ${roomId} that was not running.`);
     } else {
       // 방이 없는 경우 NotFoundException을 발생시키거나 경고 로그를 남길 수 있습니다.
       // throw new NotFoundException(`Room with ID ${roomId} not found when trying to end game.`);
       this.logger.warn(`Attempted to end game in non-existent room: ${roomId}`);
+    }
+  }
+
+  private async _saveFinalRankings(room: GameRoom, gameId: number): Promise<void> {
+    const allMarblesFinalRanking = room.game.getFinalRankingForAllMarbles();
+
+    if (!allMarblesFinalRanking || allMarblesFinalRanking.length === 0) {
+      return;
+    }
+
+    const rankingCreateData = allMarblesFinalRanking.map((entry) => {
+      const rankToStore = typeof entry.finalRank === 'number' ? entry.finalRank : 9999; // DNF는 큰 수로 저장
+      return {
+        gameId: gameId,
+        marbleName: entry.name,
+        rank: rankToStore,
+        isWinner: entry.isWinnerGoal,
+      };
+    });
+
+    await this.gamePersistenceService.saveGameRankings(gameId, rankingCreateData);
+  }
+
+  private async _checkGameIsEditable(roomId: number): Promise<void> {
+    const gameData = await this.gamePersistenceService.loadGameData(roomId);
+    if (gameData && (gameData.status === GameStatus.IN_PROGRESS || gameData.status === GameStatus.FINISHED)) {
+      throw new ConflictException(`Game in room ${roomId} is already ${gameData.status}. Cannot change settings.`);
     }
   }
 
@@ -291,11 +275,7 @@ export class GameSessionService {
       throw new NotFoundException(`Room with ID ${roomId} not found.`);
     }
 
-    // DB에서 게임 상태 확인
-    const gameData = await this.gamePersistenceService.loadGameData(roomId);
-    if (gameData && (gameData.status === GameStatus.IN_PROGRESS || gameData.status === GameStatus.FINISHED)) {
-      throw new ConflictException(`Game in room ${roomId} is already ${gameData.status}. Cannot set marbles.`);
-    }
+    await this._checkGameIsEditable(roomId);
 
     // 메모리 내 게임 객체 업데이트
     room.game.setMarbles(names);
@@ -314,11 +294,7 @@ export class GameSessionService {
       throw new NotFoundException(`Room with ID ${roomId} not found.`);
     }
 
-    // DB에서 게임 상태 확인
-    const gameData = await this.gamePersistenceService.loadGameData(roomId);
-    if (gameData && (gameData.status === GameStatus.IN_PROGRESS || gameData.status === GameStatus.FINISHED)) {
-      throw new ConflictException(`Game in room ${roomId} is already ${gameData.status}. Cannot set winning rank.`);
-    }
+    await this._checkGameIsEditable(roomId);
 
     // 메모리 내 게임 객체 업데이트
     room.game.setWinningRank(rank);
@@ -337,11 +313,7 @@ export class GameSessionService {
       throw new NotFoundException(`Room with ID ${roomId} not found.`);
     }
 
-    // DB에서 게임 상태 확인
-    const gameData = await this.gamePersistenceService.loadGameData(roomId);
-    if (gameData && (gameData.status === GameStatus.IN_PROGRESS || gameData.status === GameStatus.FINISHED)) {
-      throw new ConflictException(`Game in room ${roomId} is already ${gameData.status}. Cannot set map.`);
-    }
+    await this._checkGameIsEditable(roomId);
 
     // 메모리 내 게임 객체 업데이트
     room.game.setMap(mapIndex);

@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, BadRequestException } from '@nestjs/common';
 import { Server } from 'socket.io';
-import { GameSessionService } from './game-session.service'; // GameSessionService 임포트
+import { GameRoom, GameSessionService } from './game-session.service'; // GameSessionService 임포트
 import { prefixGameRoomId } from './utils/roomId.util'; // prefixRoomId 유틸리티 임포트
 import { SkillType, SkillPosition, SkillExtra } from './types/skill.type';
 import { ImpactSkillEffect } from './types/skill-effect.type'; // ImpactSkillEffect 임포트
@@ -41,30 +41,33 @@ export class GameEngineService implements OnModuleDestroy {
     // 스킬 타입에 따라 다른 로직을 수행
     switch (skillType) {
       case SkillType.Impact:
-        // Impact 스킬 로직
-        this.logger.log(`Room ${roomId}: Impact skill used at (${skillPosition.x}, ${skillPosition.y}) with radius ${IMPACT_SKILL_RADIUS} and force ${IMPACT_SKILL_FORCE}`);
-        room.game.applyImpact(skillPosition, IMPACT_SKILL_RADIUS, IMPACT_SKILL_FORCE);
-
-        // Impact 스킬 이펙트 정보 추가
-        room.game.addSkillEffect({
-          type: SkillType.Impact,
-          position: skillPosition,
-          radius: IMPACT_SKILL_RADIUS,
-        } as Omit<ImpactSkillEffect, 'id' | 'timestamp'>); // 타입 단언
+        this._applyImpactSkill(room, skillPosition);
         break;
       case SkillType.DummyMarble:
-        // DummyMarble 스킬 로직
-        const dummyMarbleExtra = extra as SkillExtra<SkillType.DummyMarble>; // extra는 현재 비어있음
-        const nickname = userNickname || 'UnknownUser'; // 닉네임이 없으면 기본값 사용
-        this.logger.log(
-          `Room ${roomId}: DummyMarble skill used by ${nickname} at (${skillPosition.x}, ${skillPosition.y}) to create 5 marbles`,
-        );
-        // createDummyMarbles 호출 시 사용자 닉네임 전달
-        room.game.createDummyMarbles(skillPosition, 5, nickname);
+        this._createDummyMarblesSkill(room, skillPosition, userNickname);
         break;
       default:
         throw new BadRequestException(`알 수 없는 스킬 타입: ${skillType}`);
     }
+  }
+
+  private _applyImpactSkill(room: GameRoom, skillPosition: SkillPosition) {
+    this.logger.log(`Room ${room.id}: Impact skill used at (${skillPosition.x}, ${skillPosition.y}) with radius ${IMPACT_SKILL_RADIUS} and force ${IMPACT_SKILL_FORCE}`);
+    room.game.applyImpact(skillPosition, IMPACT_SKILL_RADIUS, IMPACT_SKILL_FORCE);
+
+    room.game.addSkillEffect({
+      type: SkillType.Impact,
+      position: skillPosition,
+      radius: IMPACT_SKILL_RADIUS,
+    } as Omit<ImpactSkillEffect, 'id' | 'timestamp'>);
+  }
+
+  private _createDummyMarblesSkill(room: GameRoom, skillPosition: SkillPosition, userNickname?: string) {
+    const nickname = userNickname || 'UnknownUser';
+    this.logger.log(
+      `Room ${room.id}: DummyMarble skill used by ${nickname} at (${skillPosition.x}, ${skillPosition.y}) to create 5 marbles`,
+    );
+    room.game.createDummyMarbles(skillPosition, 5, nickname);
   }
 
   /**
@@ -95,33 +98,41 @@ export class GameEngineService implements OnModuleDestroy {
   private async _gameLoopTick(roomId: number, server: Server, prefixedRoomId: string) {
     try {
       const room = this.gameSessionService.getRoom(roomId);
-      if (room && room.game) {
-        if (room.isRunning) {
-          room.game.update();
-        }
-
-        const gameState = room.game.getGameState();
-        server.to(prefixedRoomId).emit('game_state', gameState);
-
-        if (!gameState.isRunning && room.isRunning) {
-          this.logger.log(
-            `Game in room ${roomId} has ended according to gameState. Notifying GameSessionService and cleaning up.`,
-          );
-          await this.gameSessionService.endGame(roomId); // await 추가
-          server.to(prefixedRoomId).emit('game_over', {
-            winner: gameState.winner,
-          });
-          this.stopGameLoop(roomId, server); // server 인자 추가
-        }
-      } else {
+      if (!room || !room.game) {
         this.logger.warn(`Room or game not found for room ${roomId}. Stopping loop.`);
-        this.stopGameLoop(roomId, server); // server 인자 추가
+        this.stopGameLoop(roomId, server);
+        return;
       }
+
+      this._updateAndBroadcastState(room, prefixedRoomId, server);
+      await this._checkAndHandleGameEnd(room, prefixedRoomId, server);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
       this.logger.error(`Error in game loop for room ${roomId}: ${errorMessage}`, errorStack);
-      this.stopGameLoop(roomId, server); // server 인자 추가
+      this.stopGameLoop(roomId, server);
+    }
+  }
+
+  private _updateAndBroadcastState(room: GameRoom, prefixedRoomId: string, server: Server) {
+    if (room.isRunning) {
+      room.game.update();
+    }
+    const gameState = room.game.getGameState();
+    server.to(prefixedRoomId).emit('game_state', gameState);
+  }
+
+  private async _checkAndHandleGameEnd(room: GameRoom, prefixedRoomId: string, server: Server) {
+    const gameState = room.game.getGameState();
+    if (!gameState.isRunning && room.isRunning) {
+      this.logger.log(
+        `Game in room ${room.id} has ended. Notifying GameSessionService and cleaning up.`,
+      );
+      await this.gameSessionService.endGame(room.id);
+      server.to(prefixedRoomId).emit('game_over', {
+        winner: gameState.winner,
+      });
+      this.stopGameLoop(room.id, server);
     }
   }
 
@@ -130,7 +141,7 @@ export class GameEngineService implements OnModuleDestroy {
    * @param roomId - 게임 루프를 중지할 방의 숫자 ID
    * @param server - Socket.IO 서버 인스턴스 (선택 사항, 소켓 정리 시 사용)
    */
-  stopGameLoop(roomId: number, server?: Server) { // server 인자 추가 및 선택적
+  stopGameLoop(roomId: number, server?: Server) {
     const interval = this.gameLoops.get(roomId);
     if (interval) {
       clearInterval(interval);
