@@ -11,7 +11,6 @@ import {
 } from 'common';
 import { ServerSkillEffect } from './skillTypes'; // ServerSkillEffect 임포트
 
-// filepath: c:\Users\TAK\Desktop\2025 4-1\Capstone_Design\project\roulette\roulette-app\src\types\gameTypes.ts
 export enum Skills {
   None = 'None',
   Impact = 'Impact',

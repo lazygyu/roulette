@@ -1,4 +1,3 @@
-// filepath: c:\Users\TAK\Desktop\2025 4-1\Capstone_Design\project\roulette\roulette-app\src\services\socketService.ts
 import { io, Socket } from 'socket.io-client';
 import { GameState, MapInfo } from '../types/gameTypes'; // 타입 가져오기
 
