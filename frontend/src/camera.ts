@@ -1,5 +1,5 @@
 import { MarbleState } from './types/gameTypes'; // Use MarbleState type from gameTypes
-import { StageDef } from './data/maps';
+import { StageDef } from 'common';
 import { initialZoom, zoomThreshold } from './data/constants';
 import { VectorLike } from './types/VectorLike';
 

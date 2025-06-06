@@ -1,6 +1,6 @@
 import { initialZoom } from './data/constants';
 import { ParticleManager } from './particleManager';
-import { StageDef, stages } from './data/maps';
+import { StageDef, stages } from 'common';
 import { Camera } from './camera';
 import { RouletteRenderer } from './rouletteRenderer';
 import { GameObject } from './gameObject';

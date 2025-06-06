@@ -46,17 +46,18 @@
     "typescript": "^5.8.3"
   },
   "scripts": {
-    "dev": "concurrently \"yarn frontend:dev\" \"yarn backend:dev\"",
-    "build": "yarn workspace common build && yarn workspace frontend build && yarn workspace backend build",
-    "lint": "yarn workspace frontend lint && yarn workspace backend lint",
-    "frontend:lint": "yarn workspace frontend lint",
-    "frontend:dev": "yarn workspace frontend start",
-    "frontend:build": "yarn workspace frontend build",
-    "backend:dev": "yarn workspace backend start:dev",
-    "backend:build": "yarn workspace backend build",
-    "backend:lint": "yarn workspace backend lint",
+    "dev": "concurrently \"yarn:dev:*\"",
+    "dev:common": "yarn workspace common build --watch",
+    "dev:backend": "yarn workspace backend start:dev",
+    "dev:frontend": "yarn workspace frontend start",
+    "build": "yarn workspace common build && concurrently \"yarn:build:*\"",
+    "build:backend": "yarn workspace backend build",
+    "build:frontend": "yarn workspace frontend build",
+    "lint": "concurrently \"yarn:lint:*\"",
+    "lint:backend": "yarn workspace backend lint",
+    "lint:frontend": "yarn workspace frontend lint",
     "prisma:generate": "yarn workspace backend prisma generate",
-    "postinstall": "yarn workspace common build && yarn workspace backend prisma generate"
+    "postinstall": "yarn workspace common build && yarn prisma:generate"
   },
   "dependencies": {
     "caniuse-lite": "^1.0.30001713"
