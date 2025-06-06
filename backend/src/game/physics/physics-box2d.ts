@@ -197,6 +197,7 @@ export class Box2dPhysics implements IPhysics {
 
     const bodyDef = new this.Box2D.b2BodyDef();
     bodyDef.set_type(this.Box2D.b2_dynamicBody);
+    bodyDef.set_bullet(true); // CCD 활성화
     const initialPos = new this.Box2D.b2Vec2(x, y);
     bodyDef.set_position(initialPos);
     this.destroyObject(initialPos);
