@@ -115,8 +115,8 @@ export class Minimap implements UIObject {
       const shape = entity.shape;
       switch (shape.type) {
         case 'box':
-          const w = shape.width * 2;
-          const h = shape.height * 2;
+          const w = shape.width;
+          const h = shape.height;
           this.ctx.rotate(shape.rotation);
           this.ctx.fillRect(-w / 2, -h / 2, w, h);
           break;
