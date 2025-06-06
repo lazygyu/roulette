@@ -12,6 +12,8 @@
 
     "strict": true,
     "strictPropertyInitialization": false, // Allow uninitialized properties
-  }
+    "composite": true
+  },
+  "references": [{ "path": "../common" }]
   // Include/exclude patterns are often implicit or defined in tsconfig.build.json for NestJS
 }

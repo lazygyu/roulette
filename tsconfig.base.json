@@ -10,6 +10,10 @@
     "strict": true,
     "skipLibCheck": true,
     "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "common/*": ["common/src/*"]
+    },
 
     /* Module settings often differ, specify in workspace tsconfig */
     // "module": "...",

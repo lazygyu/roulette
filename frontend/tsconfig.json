@@ -4,15 +4,16 @@
     /* Frontend specific options */
     "target": "es2017", // Frontend might need a slightly older target for browser compatibility
     "lib": ["dom", "es2017"], // Include DOM library for browser environment
-    "module": "System", // Parcel might require a specific module system
+    "module": "ESNext", // Parcel might require a specific module system
     "moduleResolution": "node",
-    "outFile": "./dist/index.js", // Frontend specific output
-    "jsx": "react-jsx" // JSX 처리 옵션 추가
+    "jsx": "react-jsx", // JSX 처리 옵션 추가
+    "composite": true
 
     /* Override base options if necessary */
     // "strict": false, // Example: If frontend needs less strict checks
   },
   "include": [
     "src"
-  ]
+  ],
+  "references": [{ "path": "../common" }]
 }
