@@ -34,9 +34,9 @@ const GamePageContent: FC = () => {
   return (
     <>
       <GameBar roomName={roomName || ''} isManager={isManager} />
-      <SettingsPanel />
+      {!gameState?.isRunning && <SettingsPanel />}
       <GameFooter />
-      {gameState?.isRunning && useSkills && (
+      {gameState?.isRunning && (
         <div
           style={{
             position: 'absolute',

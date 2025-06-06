@@ -40,10 +40,6 @@ const SettingsPanel: React.FC = () => {
     (gameDetails && gameDetails.status === GameStatus.IN_PROGRESS)
   );
 
-  if (!isManager || (gameDetails && gameDetails.status !== GameStatus.WAITING)) {
-    return null;
-  }
-
   return (
     <div id="settings" className={`settings`}>
       <div className="right">

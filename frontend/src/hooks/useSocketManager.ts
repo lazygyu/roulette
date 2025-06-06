@@ -109,13 +109,27 @@ export const useSocketManager = (roomId: string | undefined, rouletteInstance: R
       if (newState.skillEffects) {
         rouletteInstance.processServerSkillEffects(newState.skillEffects);
       }
+      if (newState.isRunning) {
+        setGameDetails((prevDetails) => {
+          if (prevDetails && prevDetails.status !== GameStatus.IN_PROGRESS) {
+            return { ...prevDetails, status: GameStatus.IN_PROGRESS };
+          }
+          return prevDetails;
+        });
+      }
     });
 
     const unsubscribeMaps = socketService.onAvailableMapsUpdate(setAvailableMaps);
-    
+
     const unsubscribeGameOver = socketService.onGameOver(async () => {
-        const rankingData = await getGameRanking(numericRoomId);
-        setFinalRanking(rankingData.rankings);
+      const rankingData = await getGameRanking(numericRoomId);
+      setFinalRanking(rankingData.rankings);
+      setGameDetails((prevDetails) => {
+        if (prevDetails && prevDetails.status !== GameStatus.FINISHED) {
+          return { ...prevDetails, status: GameStatus.FINISHED };
+        }
+        return prevDetails;
+      });
     });
 
     return () => {
