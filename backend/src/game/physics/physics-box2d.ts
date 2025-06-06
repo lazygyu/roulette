@@ -44,102 +44,22 @@ export class Box2dPhysics implements IPhysics {
     }
   }
 
-  // WebAssembly 바이너리 파일을 안전하게 로드
+  // WebAssembly 바이너리 파일 경로 수정
   private async loadWasmBinary(): Promise<ArrayBuffer> {
     return new Promise((resolve, reject) => {
-      // 가능한 WASM 파일 경로들 (우선순위 순)
-      const possiblePaths = this.getWasmPaths();
-      
-      let lastError: Error | null = null;
-      
-      for (const wasmPath of possiblePaths) {
+      let wasmPath: string = path.resolve(process.cwd(), '..', 'node_modules/box2d-wasm/dist/umd/Box2D.wasm');
+
+      if (fs.existsSync(wasmPath)) {
         try {
-          if (fs.existsSync(wasmPath)) {
-            const stats = fs.statSync(wasmPath);
-            
-            // 파일 크기 검증 (최소 크기 체크)
-            if (stats.size < 1000) {
-              console.warn(`WASM 파일이 너무 작습니다: ${wasmPath} (${stats.size} bytes)`);
-              continue;
-            }
-            
-            const buffer = fs.readFileSync(wasmPath);
-            
-            // WASM 매직 넘버 검증 (0x6D736100)
-            if (!this.isValidWasmFile(buffer)) {
-              console.warn(`유효하지 않은 WASM 파일: ${wasmPath}`);
-              continue;
-            }
-            
-            console.log(`WASM 파일 로드 성공: ${wasmPath}`);
-            resolve(buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength));
-            return;
-          }
+          const buffer = fs.readFileSync(wasmPath);
+          resolve(buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength));
         } catch (error) {
-          console.warn(`WASM 파일 로드 실패 (${wasmPath}):`, error);
-          lastError = error as Error;
+          reject(error);
         }
+      } else {
+        reject(new Error(`WASM 파일을 찾을 수 없습니다. 시도한 경로: ${wasmPath}`));
       }
-      
-      reject(new Error(
-        `WASM 파일을 찾을 수 없습니다.\n` +
-        `시도한 경로들:\n${possiblePaths.map(p => `  - ${p}`).join('\n')}\n` +
-        `마지막 에러: ${lastError?.message || '없음'}`
-      ));
     });
-  }
-
-  // 가능한 WASM 파일 경로들을 반환
-  private getWasmPaths(): string[] {
-    const paths: string[] = [];
-    
-    // 1. 환경 변수에서 지정된 경로
-    if (process.env.BOX2D_WASM_PATH) {
-      paths.push(path.resolve(process.env.BOX2D_WASM_PATH));
-    }
-    
-    // 2. 빌드된 dist 폴더 (프로덕션)
-    paths.push(path.resolve(process.cwd(), 'dist', 'Box2D.wasm'));
-    
-    // 3. require.resolve를 사용한 모듈 경로 해결
-    try {
-      const modulePath = require.resolve('box2d-wasm/dist/umd/Box2D.js');
-      const wasmPath = modulePath.replace(/\.js$/, '.wasm');
-      paths.push(wasmPath);
-    } catch (error) {
-      // require.resolve 실패 시 무시
-    }
-    
-    // 4. 현재 워크스페이스 루트의 node_modules
-    paths.push(path.resolve(process.cwd(), '..', 'node_modules/box2d-wasm/dist/umd/Box2D.wasm'));
-    
-    // 5. 백엔드 패키지의 node_modules
-    paths.push(path.resolve(process.cwd(), 'node_modules/box2d-wasm/dist/umd/Box2D.wasm'));
-    
-    // 6. 글로벌 node_modules (최후의 수단)
-    try {
-      const globalNodeModules = require('child_process')
-        .execSync('npm config get prefix', { encoding: 'utf8' })
-        .trim();
-      paths.push(path.resolve(globalNodeModules, 'lib/node_modules/box2d-wasm/dist/umd/Box2D.wasm'));
-      paths.push(path.resolve(globalNodeModules, 'node_modules/box2d-wasm/dist/umd/Box2D.wasm'));
-    } catch (error) {
-      // 글로벌 경로 해결 실패 시 무시
-    }
-    
-    // 중복 제거
-    return [...new Set(paths)];
-  }
-
-  // WASM 파일 유효성 검사
-  private isValidWasmFile(buffer: Buffer): boolean {
-    if (buffer.length < 8) {
-      return false;
-    }
-    
-    // WASM 매직 넘버 확인: 0x00 0x61 0x73 0x6D (little-endian)
-    const magicNumber = buffer.readUInt32LE(0);
-    return magicNumber === 0x6D736100;
   }
 
   clear(): void {
