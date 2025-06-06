@@ -371,17 +371,19 @@ export class Roulette {
 
   // 게임 종료 후 '일반' 마블의 최종 순위를 반환하는 메서드
   public getFinalRankingForAllMarbles(): Array<{
+    id: number; // id 추가
     name: string;
     finalRank: number | string;
     yPos: number;
     isWinnerGoal: boolean;
   }> {
-    const rankedMarbles: Array<{ name: string; finalRank: number | string; yPos: number; isWinnerGoal: boolean }> = [];
+    const rankedMarbles: Array<{ id: number; name: string; finalRank: number | string; yPos: number; isWinnerGoal: boolean }> = [];
 
     // 1. 골인한 '일반' 마블들 (_winners 배열 사용)
     this._winners.forEach((marble, index) => {
       // isDummy 체크는 불필요 (_winners는 일반 마블만 포함)
       rankedMarbles.push({
+        id: marble.id, // id 추가
         name: marble.name,
         finalRank: index + 1,
         yPos: marble.y,
@@ -398,6 +400,7 @@ export class Roulette {
         // isDummy 체크는 불필요
         const isThisNonGoaledMarbleTheWinner = this._winner ? this._winner.id === marble.id : false;
         rankedMarbles.push({
+          id: marble.id, // id 추가
           name: marble.name,
           finalRank: goalCount + index + 1,
           yPos: marble.y,
@@ -406,37 +409,35 @@ export class Roulette {
       });
 
     if (this._winner) {
-      const winnerInRankedList = rankedMarbles.find((r) => r.name === this._winner!.name);
-      if (winnerInRankedList && !winnerInRankedList.isWinnerGoal) {
-        winnerInRankedList.isWinnerGoal = true;
-        rankedMarbles.forEach((r) => {
-          if (r.name !== this._winner!.name) {
-            r.isWinnerGoal = false;
-          }
-        });
-      } else if (!winnerInRankedList && !this._winner.isDummy) {
-        // 더미가 아닌 승자인데 목록에 없다면 추가
+      let winnerInRankedList = rankedMarbles.find((r) => r.id === this._winner!.id);
+
+      // 승자가 목록에 없으면 추가 (예: 꼴등 승자가 골인하지 않은 경우)
+      if (!winnerInRankedList && !this._winner.isDummy) {
         let rankForWinner = this._winnerRank + 1;
         if (this._winnerRank === this._totalMarbleCount - 1 && !this._winners.find((w) => w.id === this._winner!.id)) {
           rankForWinner = this._totalMarbleCount;
         }
-        rankedMarbles.push({
+        const newWinnerEntry = {
+          id: this._winner.id, // id 추가
           name: this._winner.name,
           finalRank: rankForWinner,
           yPos: this._winner.y,
           isWinnerGoal: true,
-        });
-        rankedMarbles.forEach((r) => {
-          if (r.name !== this._winner!.name) {
-            r.isWinnerGoal = false;
-          }
-        });
-        rankedMarbles.sort((a, b) => {
-          const rankA = typeof a.finalRank === 'number' ? a.finalRank : Infinity;
-          const rankB = typeof b.finalRank === 'number' ? b.finalRank : Infinity;
-          return rankA - rankB;
-        });
+        };
+        rankedMarbles.push(newWinnerEntry);
       }
+
+      // 모든 참가자를 순회하며 승자 플래그를 최종적으로 결정 (id 기준)
+      rankedMarbles.forEach((r) => {
+        r.isWinnerGoal = r.id === this._winner!.id;
+      });
+
+      // 순위 목록을 finalRank 기준으로 재정렬
+      rankedMarbles.sort((a, b) => {
+        const rankA = typeof a.finalRank === 'number' ? a.finalRank : Infinity;
+        const rankB = typeof b.finalRank === 'number' ? b.finalRank : Infinity;
+        return rankA - rankB;
+      });
     }
     // 더미 마블은 순위 리스트에 포함하지 않음
     return rankedMarbles;
