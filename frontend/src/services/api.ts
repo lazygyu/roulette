@@ -60,8 +60,10 @@ export const getRoomGameDetails = async (roomId: number): Promise<GameInfo> => {
 };
 
 // 새로운 함수: 게임 랭킹 정보 가져오기
-export const getGameRanking = async (roomId: number): Promise<{ rankings: RankingEntry[] }> => {
-  const response = await apiClient.get<{ rankings: RankingEntry[] }>(`/rooms/${roomId}/ranking`);
+export const getGameRanking = async (roomId: number, password?: string): Promise<{ rankings: RankingEntry[] }> => {
+  const response = await apiClient.get<{ rankings: RankingEntry[] }>(`/rooms/${roomId}/ranking`, {
+    params: { password },
+  });
   return response.data;
 };
 

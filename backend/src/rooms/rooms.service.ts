@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { Game, GameRanking, Room, User, GameStatus } from '@prisma/client'; // GameStatus 임포트 추가
@@ -95,7 +95,15 @@ export class RoomsService {
     return game;
   }
 
-  async getGameRanking(roomId: number): Promise<GetGameRankingResponseDto> {
+  async getGameRanking(roomId: number, password?: string): Promise<GetGameRankingResponseDto> {
+    const room = await this.getRoom(roomId);
+    if (room.password) {
+      const isPasswordCorrect = await this.verifyRoomPassword(roomId, password);
+      if (!isPasswordCorrect) {
+        throw new ForbiddenException('Incorrect password');
+      }
+    }
+
     const game = await this.prisma.game.findUnique({
       where: { roomId },
       include: {

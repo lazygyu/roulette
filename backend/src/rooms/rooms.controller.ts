@@ -11,6 +11,7 @@ import {
   ForbiddenException,
   NotFoundException,
   SerializeOptions,
+  Query,
 } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
@@ -88,7 +89,10 @@ export class RoomsController {
 
   @Get(':id/ranking')
   @SerializeOptions({ type: GetGameRankingResponseDto }) // 응답 타입은 GetGameRankingResponseDto
-  async getGameRanking(@Param('id', ParseIntPipe) roomId: number): Promise<GetGameRankingResponseDto> {
-    return this.roomsService.getGameRanking(roomId);
+  async getGameRanking(
+    @Param('id', ParseIntPipe) roomId: number,
+    @Query('password') password?: string,
+  ): Promise<GetGameRankingResponseDto> {
+    return this.roomsService.getGameRanking(roomId, password);
   }
 }
