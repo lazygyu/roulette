@@ -30,7 +30,7 @@ export class Box2dPhysics implements IPhysics {
       // WASM 파일 직접 로드
       const wasmBinary = await this.loadWasmBinary();
       this.Box2D = await Box2DFactory({ wasmBinary });
-      
+
       this.gravity = new this.Box2D.b2Vec2(0, 10);
       this.world = new this.Box2D.b2World(this.gravity);
       // Note: this.gravity is created with `new` and might need destruction.
@@ -47,27 +47,24 @@ export class Box2dPhysics implements IPhysics {
   // WebAssembly 바이너리 파일 경로 수정
   private async loadWasmBinary(): Promise<ArrayBuffer> {
     return new Promise((resolve, reject) => {
-      try {
-        // 올바른 wasm 파일 경로 지정
-        const wasmPath = path.resolve(__dirname, '../../../../node_modules/box2d-wasm/dist/umd/Box2D.wasm');
-        // console.log('Loading WASM from:', wasmPath);
-        
-        // 파일 존재 여부 확인
-        if (!fs.existsSync(wasmPath)) {
-          throw new Error(`WASM 파일을 찾을 수 없습니다: ${wasmPath}`);
+      let wasmPath: string = path.resolve(process.cwd(), '..', 'node_modules/box2d-wasm/dist/umd/Box2D.wasm');
+
+      if (fs.existsSync(wasmPath)) {
+        try {
+          const buffer = fs.readFileSync(wasmPath);
+          resolve(buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength));
+        } catch (error) {
+          reject(error);
         }
-        
-        const buffer = fs.readFileSync(wasmPath);
-        resolve(buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength));
-      } catch (error) {
-        reject(error);
+      } else {
+        reject(new Error(`WASM 파일을 찾을 수 없습니다. 시도한 경로: ${wasmPath}`));
       }
     });
   }
 
   clear(): void {
     this.clearEntities(); // Clears map entities
-    this.clearMarbles();  // Clears all marbles
+    this.clearMarbles(); // Clears all marbles
   }
 
   clearMarbles(): void {
@@ -116,7 +113,7 @@ export class Box2dPhysics implements IPhysics {
             halfWidth,
             halfHeight,
             centerVec,
-            entity.shape.rotation // Angle for the box shape
+            entity.shape.rotation, // Angle for the box shape
           );
           this.destroyObject(centerVec);
           fixtureDef.set_shape(shape);
@@ -190,7 +187,13 @@ export class Box2dPhysics implements IPhysics {
     this.entities = [];
   }
 
-  createMarble(id: number, x: number, y: number, isDummy: boolean = false, initialVelocity?: { x: number; y: number }): void {
+  createMarble(
+    id: number,
+    x: number,
+    y: number,
+    isDummy: boolean = false,
+    initialVelocity?: { x: number; y: number },
+  ): void {
     if (!this.world) return;
     const circleShape = new this.Box2D.b2CircleShape();
     circleShape.set_m_radius(0.25);
@@ -214,7 +217,6 @@ export class Box2dPhysics implements IPhysics {
     body.CreateFixture(fixtureDef);
     this.destroyObject(fixtureDef);
     this.destroyObject(circleShape);
-
 
     if (isDummy) {
       body.SetAwake(true);
@@ -302,11 +304,8 @@ export class Box2dPhysics implements IPhysics {
           impulse = new this.Box2D.b2Vec2(force * Math.cos(randomAngle), force * Math.sin(randomAngle));
         } else {
           distVector.Normalize(); // Modifies distVector in-place
-          const power = 1 - (dist / radius);
-          impulse = new this.Box2D.b2Vec2(
-            distVector.get_x() * force * power,
-            distVector.get_y() * force * power,
-          );
+          const power = 1 - dist / radius;
+          impulse = new this.Box2D.b2Vec2(distVector.get_x() * force * power, distVector.get_y() * force * power);
         }
         body.ApplyLinearImpulseToCenter(impulse, true);
         this.destroyObject(impulse);
@@ -341,12 +340,14 @@ export class Box2dPhysics implements IPhysics {
     // Process entities that might expire or be removed due to contact
     for (let i = this.entities.length - 1; i >= 0; i--) {
       const entity = this.entities[i];
-      if (entity.life > 0) { // Assuming life is a countdown or similar mechanism
+      if (entity.life > 0) {
+        // Assuming life is a countdown or similar mechanism
         // Example: Check for contacts if entity should be removed on contact
         let contactEdge = entity.body.GetContactList(); // b2ContactEdge
         let shouldRemove = false;
         while (contactEdge) {
-          if (contactEdge.get_contact().IsTouching()) { // get_contact() returns b2Contact
+          if (contactEdge.get_contact().IsTouching()) {
+            // get_contact() returns b2Contact
             shouldRemove = true;
             break;
           }
