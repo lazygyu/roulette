@@ -12,7 +12,7 @@ import GameActions from './game/settings/GameActions';
 
 const SettingsPanel: React.FC = () => {
   const { isManager, gameDetails, rouletteInstance, availableMaps } = useGame();
-  const { namesInput, setNamesInput, updateParticipants, shuffleNames } = useParticipantManager(
+  const { namesInput, handleNamesChange, shuffleNames } = useParticipantManager(
     gameDetails?.marbles?.join(',') || '',
   );
   const {
@@ -75,8 +75,7 @@ const SettingsPanel: React.FC = () => {
       <div className="left">
         <NamesInput
           namesInput={namesInput}
-          onNamesInput={(e) => setNamesInput(e.currentTarget.value)}
-          onNamesBlur={(e) => updateParticipants(e.currentTarget.value)}
+          onNamesInput={(e) => handleNamesChange(e.currentTarget.value)}
           disabled={gameFinishedOrInProgress}
         />
         <GameActions

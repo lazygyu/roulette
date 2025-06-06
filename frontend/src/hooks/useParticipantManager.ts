@@ -1,12 +1,21 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import socketService from '../services/socketService';
 import { parseName } from '../utils/parseName';
 
 export const useParticipantManager = (initialNames: string) => {
   const [namesInput, setNamesInput] = useState(initialNames);
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-  const sendParticipants = useCallback((rawNames: string) => {
+  useEffect(() => {
+    const savedNames = localStorage.getItem('mbr_names');
+    if (savedNames) {
+      setNamesInput(savedNames);
+    }
+  }, []);
+
+  const handleNamesChange = useCallback((rawNames: string) => {
+    localStorage.setItem('mbr_names', rawNames);
+    setNamesInput(rawNames);
+
     const nameSource = rawNames.split(/[,\r\n]/g).map((v) => v.trim());
     const nameSet = new Set<string>();
     const nameCounts: { [key: string]: number } = {};
@@ -30,27 +39,6 @@ export const useParticipantManager = (initialNames: string) => {
     socketService.setMarbles(namesToSend);
   }, []);
 
-  const updateParticipants = useCallback((rawNames: string) => {
-    localStorage.setItem('mbr_names', rawNames);
-    setNamesInput(rawNames);
-
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
-
-    debounceTimer.current = setTimeout(() => {
-      sendParticipants(rawNames);
-    }, 500);
-  }, [sendParticipants]);
-
-  useEffect(() => {
-    const savedNames = localStorage.getItem('mbr_names');
-    if (savedNames) {
-      setNamesInput(savedNames);
-      sendParticipants(savedNames);
-    }
-  }, [sendParticipants]);
-
   const shuffleNames = useCallback(() => {
     const names = namesInput
       .split(/[,\r\n]/g)
@@ -63,14 +51,12 @@ export const useParticipantManager = (initialNames: string) => {
     }
     
     const shuffledNames = names.join(', ');
-    setNamesInput(shuffledNames);
-    updateParticipants(shuffledNames);
-  }, [namesInput, updateParticipants]);
+    handleNamesChange(shuffledNames);
+  }, [namesInput, handleNamesChange]);
 
   return {
     namesInput,
-    setNamesInput,
-    updateParticipants,
+    handleNamesChange,
     shuffleNames,
   };
 };

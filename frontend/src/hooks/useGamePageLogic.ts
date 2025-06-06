@@ -25,7 +25,7 @@ export const useGamePageLogic = () => {
   const [passwordInput, setPasswordInput] = useState('');
   const passwordInputRef = useRef<HTMLInputElement>(null);
 
-  const { namesInput, setNamesInput, updateParticipants, shuffleNames } = useParticipantManager(
+  const { namesInput, handleNamesChange, shuffleNames } = useParticipantManager(
     gameDetails?.marbles?.join(',') || '',
   );
 
@@ -79,8 +79,7 @@ export const useGamePageLogic = () => {
     autoRecording,
     useSkills,
     mapIndex,
-    onNamesInput: (e: React.FormEvent<HTMLTextAreaElement>) => updateParticipants(e.currentTarget.value),
-    onNamesBlur: (e: React.FocusEvent<HTMLTextAreaElement>) => updateParticipants(e.currentTarget.value),
+    onNamesInput: (e: React.FormEvent<HTMLTextAreaElement>) => handleNamesChange(e.currentTarget.value),
     onShuffleClick: shuffleNames,
     onStartClick: startGame,
     onSkillChange: (e: React.ChangeEvent<HTMLInputElement>) => handleSkillChange(e.target.checked),
