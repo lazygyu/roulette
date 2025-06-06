@@ -6,8 +6,8 @@
     "deleteOutDir": true,
     "assets": [
       {
-        "include": "../node_modules/box2d-wasm/dist/umd/*.wasm",
-        "outDir": "./dist",
+        "include": "../../node_modules/box2d-wasm/dist/umd/*.wasm",
+        "outDir": "./dist/assets",
         "watchAssets": true
       }
     ]

@@ -47,7 +47,7 @@ export class Box2dPhysics implements IPhysics {
   // WebAssembly 바이너리 파일 경로 수정
   private async loadWasmBinary(): Promise<ArrayBuffer> {
     return new Promise((resolve, reject) => {
-      let wasmPath: string = path.resolve(process.cwd(), '..', 'node_modules/box2d-wasm/dist/umd/Box2D.wasm');
+      let wasmPath: string = path.resolve(__dirname, '../../../assets/dist/umd/Box2D.wasm');
 
       if (fs.existsSync(wasmPath)) {
         try {

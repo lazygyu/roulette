@@ -9,7 +9,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "nest build && cp ../node_modules/box2d-wasm/dist/umd/*.wasm ./dist",
+    "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
