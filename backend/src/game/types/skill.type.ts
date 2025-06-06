@@ -1,10 +1,7 @@
-export enum SkillType {
-  Impact = 'Impact',
-  DummyMarble = 'DummyMarble',
-}
-
+import { SkillType, SkillPosition as BaseSkillPosition, SkillExtra } from 'common';
 import { IsNumber } from 'class-validator';
 
+// class-validator 데코레이터가 필요한 DTO용 클래스
 export class SkillPosition {
   @IsNumber()
   x!: number;
@@ -13,9 +10,5 @@ export class SkillPosition {
   y!: number;
 }
 
-interface SkillExtraMapper {
-  [SkillType.Impact]: {};
-  [SkillType.DummyMarble]: {};
-}
-
-export type SkillExtra<T extends SkillType> = SkillExtraMapper[T];
+// common에서 타입들을 re-export
+export { SkillType, SkillExtra };

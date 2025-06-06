@@ -1,4 +1,1 @@
-export interface VectorLike {
-  x: number;
-  y: number;
-}
+export { VectorLike } from 'common';

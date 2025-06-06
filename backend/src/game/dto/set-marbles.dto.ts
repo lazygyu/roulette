@@ -1,7 +1,8 @@
 import { Transform, Type } from 'class-transformer';
 import { IsArray, IsInt, IsNotEmpty, IsString, ArrayNotEmpty } from 'class-validator';
+import { SetMarblesRequest } from 'common';
 
-export class SetMarblesDto {
+export class SetMarblesDto implements SetMarblesRequest {
   @IsInt()
   @IsNotEmpty()
   @Type(() => Number)

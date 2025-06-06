@@ -1,7 +1,8 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsNotEmpty, Min } from 'class-validator';
+import { SetWinningRankRequest } from 'common';
 
-export class SetWinningRankDto {
+export class SetWinningRankDto implements SetWinningRankRequest {
   @IsInt()
   @IsNotEmpty()
   @Type(() => Number)

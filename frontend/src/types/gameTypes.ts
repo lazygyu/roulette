@@ -1,3 +1,16 @@
+import { 
+  EntityShapeTypes, 
+  EntityShapeBase, 
+  EntityBoxShape, 
+  EntityCircleShape, 
+  EntityPolylineShape, 
+  EntityShape, 
+  MapEntityState,
+  GameStatus,
+  UserPublicInfo
+} from 'common';
+import { ServerSkillEffect } from './skillTypes'; // ServerSkillEffect 임포트
+
 // filepath: c:\Users\TAK\Desktop\2025 4-1\Capstone_Design\project\roulette\roulette-app\src\types\gameTypes.ts
 export enum Skills {
   None = 'None',
@@ -19,41 +32,18 @@ export interface MarbleState {
   radius: number; // 백엔드의 marble.size에 해당 (예: 0.5)
 }
 
-export type EntityShapeTypes = 'box' | 'circle' | 'polyline';
-
-export interface EntityShapeBase {
-  type: EntityShapeTypes;
-}
-
-export interface EntityBoxShape extends EntityShapeBase {
-  type: 'box';
-  width: number;
-  height: number;
-  rotation: number; // 맵 정의에 포함된 도형 자체의 회전값
-}
-
-export interface EntityCircleShape extends EntityShapeBase {
-  type: 'circle';
-  radius: number;
-}
-
-export interface EntityPolylineShape extends EntityShapeBase {
-  type: 'polyline';
-  rotation: number; // 맵 정의에 포함된 도형 자체의 회전값
-  points: [number, number][];
-}
-
-export type EntityShape = EntityBoxShape | EntityCircleShape | EntityPolylineShape;
-
-import { ServerSkillEffect } from './skillTypes'; // ServerSkillEffect 임포트
-
-export interface MapEntityState {
-  x: number;
-  y: number;
-  angle: number; // 물리 엔진에서 계산된 엔티티 몸체의 현재 각도
-  shape: EntityShape;
-  life: number; // 백엔드에서 life 속성을 보낸다면 추가
-}
+// common에서 import한 타입들을 re-export
+export { 
+  EntityShapeTypes, 
+  EntityShapeBase, 
+  EntityBoxShape, 
+  EntityCircleShape, 
+  EntityPolylineShape, 
+  EntityShape,
+  MapEntityState,
+  GameStatus,
+  UserPublicInfo
+};
 
 export interface GameState {
   marbles: MarbleState[];
@@ -68,13 +58,6 @@ export interface GameState {
 }
 
 // --- 추가된 타입 ---
-
-// 백엔드의 GameStatus Enum과 동일하게 정의
-export enum GameStatus {
-  WAITING = 'WAITING',
-  IN_PROGRESS = 'IN_PROGRESS',
-  FINISHED = 'FINISHED',
-}
 
 // 백엔드의 GameDto에 대응하는 타입
 export interface GameInfo {
@@ -101,10 +84,6 @@ export interface RankingEntry {
 
 // GET /rooms/:id 응답 전체를 나타내는 타입 (가칭)
 // UserPublicInfoDto 타입 정의 필요 (users/dto/user-public-info.dto.ts 참고)
-export interface UserPublicInfo {
-  id: number;
-  nickname: string;
-}
 export interface RoomInfo {
   id: number;
   name: string;

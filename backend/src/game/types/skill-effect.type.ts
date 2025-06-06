@@ -1,21 +1,4 @@
-import { SkillType, SkillPosition } from './skill.type';
+import { SkillEffectBase, ImpactSkillEffect, DummyMarbleSkillEffect, SkillEffect } from 'common';
 
-export interface SkillEffectBase {
-  id: string;
-  type: SkillType;
-  timestamp: number;
-}
-
-export interface ImpactSkillEffect extends SkillEffectBase {
-  type: SkillType.Impact;
-  position: SkillPosition;
-  radius: number;
-}
-
-// 향후 다른 스킬 이펙트 타입이 추가될 수 있습니다.
-// export interface AnotherSkillEffect extends SkillEffectBase {
-//   type: SkillType.AnotherSkill;
-//   // ... 추가 속성
-// }
-
-export type SkillEffect = ImpactSkillEffect; // | AnotherSkillEffect;
+// common에서 타입들을 re-export
+export { SkillEffectBase, ImpactSkillEffect, DummyMarbleSkillEffect, SkillEffect };
