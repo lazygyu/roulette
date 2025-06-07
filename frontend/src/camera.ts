@@ -83,8 +83,8 @@ export class Camera {
     if (marbles.length > 0) {
       const targetMarble = marbles[targetIndex] ? marbles[targetIndex] : marbles[0];
       this.setPosition({ x: targetMarble.x, y: targetMarble.y });
-      const goalDist = Math.abs(stage.zoomY - this._position.y);
-      this.zoom = Math.max(1, (1 - goalDist / zoomThreshold) * 4);
+      // const goalDist = Math.abs(stage.zoomY - this._position.y);
+      this.zoom = 1; // Math.max(1, (1 - goalDist / zoomThreshold) * 4);
     } else {
       this.setPosition({ x: 0, y: 0 });
       this.zoom = 1;
