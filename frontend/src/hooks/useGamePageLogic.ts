@@ -29,7 +29,7 @@ export const useGamePageLogic = () => {
     gameDetails?.marbles?.join(',') || '',
   );
 
-  const marbleCount = namesInput.split(/[,\r\n]/g).filter((v) => v.trim() !== '').length;
+  const marbleCount = gameState?.totalMarbleCount || 0;
   const {
     mapIndex,
     useSkills,
