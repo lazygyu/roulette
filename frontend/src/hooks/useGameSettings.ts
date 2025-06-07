@@ -6,6 +6,7 @@ import { Roulette } from '../roulette';
 export const useGameSettings = (
   gameDetails: GameInfo | null,
   rouletteInstance: Roulette | null,
+  marbleCount: number,
 ) => {
   const [mapIndex, setMapIndex] = useState<number>(0);
   const [useSkills, setUseSkills] = useState<boolean>(true);
@@ -24,6 +25,14 @@ export const useGameSettings = (
       }
     }
   }, [gameDetails]);
+
+  useEffect(() => {
+    if (winnerSelectionType === 'last') {
+      const newRank = marbleCount > 0 ? marbleCount : 1;
+      setWinningRank(newRank);
+      socketService.setWinningRank(newRank - 1);
+    }
+  }, [marbleCount, winnerSelectionType]);
 
   const handleMapChange = useCallback((index: number) => {
     setMapIndex(index);
@@ -55,12 +64,11 @@ export const useGameSettings = (
   }, []);
 
   const selectLastWinner = useCallback(() => {
-    const total = rouletteInstance?.getCount() ?? 1;
-    const rank = total > 0 ? total : 1;
+    const rank = marbleCount > 0 ? marbleCount : 1;
     setWinningRank(rank);
     setWinnerSelectionType('last');
     socketService.setWinningRank(rank - 1);
-  }, [rouletteInstance]);
+  }, [marbleCount]);
 
   const startGame = useCallback(() => {
     if ((rouletteInstance?.getCount() ?? 0) === 0) {

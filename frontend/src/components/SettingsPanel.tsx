@@ -15,6 +15,7 @@ const SettingsPanel: React.FC = () => {
   const { namesInput, handleNamesChange, shuffleNames } = useParticipantManager(
     gameDetails?.marbles?.join(',') || '',
   );
+  const marbleCount = namesInput.split(/[,\r\n]/g).filter((v) => v.trim() !== '').length;
   const {
     mapIndex,
     useSkills,
@@ -28,7 +29,7 @@ const SettingsPanel: React.FC = () => {
     selectFirstWinner,
     selectLastWinner,
     startGame,
-  } = useGameSettings(gameDetails, rouletteInstance);
+  } = useGameSettings(gameDetails, rouletteInstance, marbleCount);
 
   const settingsDisabled = !!(
     !isManager ||
