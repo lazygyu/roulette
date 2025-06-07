@@ -17,8 +17,8 @@ export const useSocketManager = (roomId: string | undefined, rouletteInstance: R
   const [isManager, setIsManager] = useState(false); // 이 부분은 user 정보가 필요하여 GameContext에서 처리해야 할 수 있습니다.
 
   const handlePasswordJoin = useCallback(async (password: string) => {
-    if (!roomId) {
-      setJoinError('Room ID is missing.');
+    if (!roomId || !rouletteInstance) {
+      setJoinError('Room ID or game instance is missing.');
       return;
     }
     setJoinError(null);
@@ -34,8 +34,19 @@ export const useSocketManager = (roomId: string | undefined, rouletteInstance: R
         await socketService.connect(roomId);
       }
       if (!socketService.getJoinedStatus(roomId)) {
-        await socketService.joinRoom(roomId, password);
+        const joinResponse = await socketService.joinRoom(roomId, password);
+        if (!joinResponse.success) {
+          alert(joinResponse.message || 'Failed to join room.');
+          navigate(-1);
+          return;
+        }
+        if (joinResponse.gameState) {
+          rouletteInstance.updateStateFromServer(joinResponse.gameState);
+        }
       }
+
+      const fetchedGameDetails = await getRoomGameDetails(numericRoomId);
+      setGameDetails(fetchedGameDetails);
     } catch (error: any) {
       // getGameRanking에서 비밀번호가 틀리면 403 Forbidden 에러를 반환합니다.
       if (error.response && error.response.status === 403) {
@@ -45,7 +56,7 @@ export const useSocketManager = (roomId: string | undefined, rouletteInstance: R
         setJoinError('An error occurred while joining the room.');
       }
     }
-  }, [roomId, rouletteInstance]);
+  }, [roomId, rouletteInstance, navigate]);
 
   useEffect(() => {
     if (!roomId || !rouletteInstance) return;
