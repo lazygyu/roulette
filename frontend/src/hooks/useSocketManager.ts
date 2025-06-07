@@ -14,7 +14,7 @@ export const useSocketManager = (roomId: string | undefined, rouletteInstance: R
   const [availableMaps, setAvailableMaps] = useState<MapInfo[]>([]);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
-  const [isManager, setIsManager] = useState(false); // 이 부분은 user 정보가 필요하여 GameContext에서 처리해야 할 수 있습니다.
+  const [isManager, setIsManager] = useState(false);
 
   const handlePasswordJoin = useCallback(async (password: string) => {
     if (!roomId || !rouletteInstance) {
@@ -24,12 +24,10 @@ export const useSocketManager = (roomId: string | undefined, rouletteInstance: R
     setJoinError(null);
     const numericRoomId = parseInt(roomId, 10);
     try {
-      // 랭킹 조회를 통해 비밀번호 검증 및 랭킹 정보 가져오기
       const rankingData = await getGameRanking(numericRoomId, password);
       setFinalRanking(rankingData.rankings);
-      setShowPasswordModal(false); // 비밀번호가 맞았으므로 모달을 닫습니다.
+      setShowPasswordModal(false);
 
-      // 소켓 연결 및 방 입장
       if (!socketService.isConnected() || socketService.getCurrentRoomId() !== roomId) {
         await socketService.connect(roomId);
       }
@@ -48,7 +46,6 @@ export const useSocketManager = (roomId: string | undefined, rouletteInstance: R
       const fetchedGameDetails = await getRoomGameDetails(numericRoomId);
       setGameDetails(fetchedGameDetails);
     } catch (error: any) {
-      // getGameRanking에서 비밀번호가 틀리면 403 Forbidden 에러를 반환합니다.
       if (error.response && error.response.status === 403) {
         setJoinError('Incorrect password.');
       } else {
@@ -70,16 +67,13 @@ export const useSocketManager = (roomId: string | undefined, rouletteInstance: R
 
     const connectAndJoin = async () => {
       try {
-        // 1. Fetch Room Details
         const room = await getRoomDetails(numericRoomId);
         setRoomDetails(room);
 
-        // 2. Connect Socket
         if (!socketService.isConnected() || socketService.getCurrentRoomId() !== roomId) {
           await socketService.connect(roomId);
         }
 
-        // 3. Fetch initial game details and join room
         const fetchedGameDetails = await getRoomGameDetails(numericRoomId);
         setGameDetails(fetchedGameDetails);
 
@@ -90,12 +84,10 @@ export const useSocketManager = (roomId: string | undefined, rouletteInstance: R
             setShowPasswordModal(true);
           }
         } else {
-          // 비밀번호가 없는 방
           if (fetchedGameDetails.status === GameStatus.FINISHED) {
             const rankingData = await getGameRanking(numericRoomId);
             setFinalRanking(rankingData.rankings);
           }
-          // 소켓 연결 및 방 입장
           if (!socketService.isConnected() || socketService.getCurrentRoomId() !== roomId) {
             await socketService.connect(roomId);
           }
@@ -139,7 +131,7 @@ export const useSocketManager = (roomId: string | undefined, rouletteInstance: R
     const unsubscribeMaps = socketService.onAvailableMapsUpdate(setAvailableMaps);
 
     const unsubscribeGameOver = socketService.onGameOver(async () => {
-      const rankingData = await getGameRanking(numericRoomId); // 비밀번호가 없는 경우
+      const rankingData = await getGameRanking(numericRoomId);
       setFinalRanking(rankingData.rankings);
       setGameDetails((prevDetails) => {
         if (prevDetails && prevDetails.status !== GameStatus.FINISHED) {
@@ -168,6 +160,6 @@ export const useSocketManager = (roomId: string | undefined, rouletteInstance: R
     joinError,
     handlePasswordJoin,
     isManager,
-    setIsManager, // Temporarily expose setter
+    setIsManager,
   };
 };

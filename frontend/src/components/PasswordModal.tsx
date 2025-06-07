@@ -6,9 +6,7 @@ interface PasswordModalProps {
   onPasswordInputChange: (value: string) => void;
   onJoin: () => void;
   joinError: string | null;
-  passwordInputRef: React.RefObject<HTMLInputElement | null>; // Adjusted to match what GamePage seems to provide
-  // onClose is not strictly necessary based on current GamePage logic, but good practice for modals
-  // onClose: () => void; 
+  passwordInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 const PasswordModal: React.FC<PasswordModalProps> = ({
@@ -18,7 +16,6 @@ const PasswordModal: React.FC<PasswordModalProps> = ({
   onJoin,
   joinError,
   passwordInputRef,
-  // onClose,
 }) => {
   useEffect(() => {
     if (show && passwordInputRef.current) {
@@ -51,7 +48,7 @@ const PasswordModal: React.FC<PasswordModalProps> = ({
           padding: '20px',
           borderRadius: '8px',
           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-          color: 'black', // Ensuring text is visible on white background
+          color: 'black',
         }}
       >
         <h3>Enter Room Password</h3>

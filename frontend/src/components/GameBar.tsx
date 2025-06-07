@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext'; // Assuming AuthContext provides user info
+import { useAuth } from '../contexts/AuthContext';
 
 interface GameBarProps {
   roomName: string | null;

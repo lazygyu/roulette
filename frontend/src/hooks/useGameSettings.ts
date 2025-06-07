@@ -41,8 +41,6 @@ export const useGameSettings = (
 
   const handleSkillChange = useCallback((enabled: boolean) => {
     setUseSkills(enabled);
-    // Note: We might need a socket event for this if it needs to be synced instantly.
-    // For now, we assume it's part of the "start_game" payload.
   }, []);
 
   const handleAutoRecordingChange = useCallback((enabled: boolean) => {

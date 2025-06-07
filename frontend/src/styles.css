@@ -401,34 +401,31 @@ div.copyright a {
   }
 }
 
-/* Game Top Bar Styles */
 .game-top-bar {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
+  background-color: rgba(0, 0, 0, 0.7);
   color: white;
   padding: 8px 15px;
   display: flex;
-  justify-content: space-between; /* Distribute space between items */
+  justify-content: space-between;
   align-items: center;
-  z-index: 1000; /* Ensure it's above the canvas but below modals/settings if needed */
+  z-index: 1000;
   font-size: 14px;
 }
 
 .game-top-bar .room-name {
   font-weight: bold;
-  margin-right: 10px; /* Space between room name and manager icon */
+  margin-right: 10px;
 }
 
 .game-top-bar .manager-icon {
-  font-size: 1.1em; /* Slightly larger icon */
-  margin-right: auto; /* Push nickname to the right */
-  margin-left: 5px; /* Space from room name */
+  font-size: 1.1em;
+  margin-right: auto;
+  margin-left: 5px;
 }
 
 .game-top-bar .user-nickname {
-  /* Styles for nickname if needed, e.g., */
-  /* font-style: italic; */
 }

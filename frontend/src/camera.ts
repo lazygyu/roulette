@@ -11,8 +11,8 @@ export class Camera {
   private _locked = false;
   private _shakeDuration = 0;
   private _shakeStrength = 10;
-  public width: number = 0; // 캔버스 너비
-  public height: number = 0; // 캔버스 높이
+  public width: number = 0;
+  public height: number = 0;
 
   get zoom() {
     return this._zoom;
@@ -55,12 +55,11 @@ export class Camera {
     targetIndex,
     deltaTime,
   }: {
-    marbles: MarbleState[]; // Changed type to MarbleState[]
+    marbles: MarbleState[];
     stage: StageDef;
     targetIndex: number;
     deltaTime: number;
   }) {
-    // set target position
     if (!this._locked) {
       this._calcTargetPositionAndZoom(marbles, stage, targetIndex);
     }
@@ -70,24 +69,21 @@ export class Camera {
       this._position.x += (Math.random() - 0.5) * this._shakeStrength;
       this._position.y += (Math.random() - 0.5) * this._shakeStrength;
     }
-    // interpolate position
     this._position.x = this._interpolation(this.x, this._targetPosition.x);
     this._position.y = this._interpolation(this.y, this._targetPosition.y);
 
-    // interpolate zoom
     this._zoom = this._interpolation(this._zoom, this._targetZoom);
   }
 
   private _calcTargetPositionAndZoom(
-    marbles: MarbleState[], // Changed type to MarbleState[]
+    marbles: MarbleState[],
     stage: StageDef,
     targetIndex: number,
   ) {
     if (marbles.length > 0) {
       const targetMarble = marbles[targetIndex] ? marbles[targetIndex] : marbles[0];
-      // Access x, y directly from MarbleState
       this.setPosition({ x: targetMarble.x, y: targetMarble.y });
-      const goalDist = Math.abs(stage.zoomY - this._position.y); // _position is internal camera state
+      const goalDist = Math.abs(stage.zoomY - this._position.y);
       this.zoom = Math.max(1, (1 - goalDist / zoomThreshold) * 4);
     } else {
       this.setPosition({ x: 0, y: 0 });
@@ -132,7 +128,6 @@ export class Camera {
     ctx.restore();
   }
 
-  // 월드 좌표계 변환을 위한 유틸리티 메서드들
   public getWorldBounds(): { left: number; right: number; top: number; bottom: number } {
     const halfWidth = this.width / (2 * this._zoom);
     const halfHeight = this.height / (2 * this._zoom);

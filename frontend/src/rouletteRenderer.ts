@@ -11,13 +11,13 @@ import { CoordinateManager } from './utils/coordinate-manager';
 export type RenderParameters = {
   camera: Camera;
   stage: StageDef;
-  entities: MapEntityState[]; // Uses MapEntityState from gameTypes
-  marbles: MarbleState[]; // Uses MarbleState from gameTypes
-  winners: MarbleState[]; // Uses MarbleState from gameTypes
+  entities: MapEntityState[];
+  marbles: MarbleState[];
+  winners: MarbleState[];
   particleManager: ParticleManager;
-  skillEffects: FrontendSkillEffectWrapper[]; // 스킬 이펙트 추가
+  skillEffects: FrontendSkillEffectWrapper[];
   winnerRank: number;
-  winner: MarbleState | null; // Uses MarbleState from gameTypes
+  winner: MarbleState | null;
   size: VectorLike;
 };
 
@@ -57,7 +57,7 @@ export class RouletteRenderer {
       alpha: false,
     }) as CanvasRenderingContext2D;
 
-    container.appendChild(this._canvas); // Use the provided container
+    container.appendChild(this._canvas);
 
     const resizing = (entries?: ResizeObserverEntry[]) => {
       const realSize = entries ? entries[0].contentRect : this._canvas.getBoundingClientRect();
@@ -105,7 +105,7 @@ export class RouletteRenderer {
     renderParameters.camera.renderScene(this.ctx, () => {
       this.renderEntities(renderParameters.entities);
       this.renderMarbles(renderParameters);
-      this.renderSkillEffects(renderParameters.skillEffects, renderParameters.camera, this.ctx); // 스킬 이펙트 렌더링 추가
+      this.renderSkillEffects(renderParameters.skillEffects, renderParameters.camera, this.ctx);
     });
     this.ctx.restore();
 
@@ -123,10 +123,8 @@ export class RouletteRenderer {
   }
 
   private renderEntities(entities: MapEntityState[]) {
-    // console.log(`renderEntities called with ${entities.length} entities.`); // Uncommented log
     this.ctx.save();
     entities.forEach((entity) => {
-      // console.log(`Rendering entity:`, entity); // Uncommented log
       this.ctx.save();
       this.ctx.translate(entity.x, entity.y);
       this.ctx.rotate(entity.angle);
@@ -165,14 +163,12 @@ export class RouletteRenderer {
     this.ctx.restore();
   }
 
-  // 스킬 이펙트 렌더링을 위한 새로운 메서드
   public renderSkillEffects(effects: FrontendSkillEffectWrapper[], camera: Camera, context: CanvasRenderingContext2D) {
     effects.forEach((effectWrapper) => {
       this.renderSingleSkillEffect(effectWrapper, camera, context);
     });
   }
 
-  // 단일 스킬 이펙트 렌더링 (타입별 분기)
   private renderSingleSkillEffect(
     effectWrapper: FrontendSkillEffectWrapper,
     camera: Camera,
@@ -183,16 +179,12 @@ export class RouletteRenderer {
         this.renderImpactEffect(effectWrapper, camera, context);
         break;
       case ServerSkillType.DummyMarble:
-        // DummyMarble 이펙트 렌더링 로직 (필요시 구현)
-        // 예: 작은 파티클 효과나 텍스트 표시 등
         break;
       default:
-        // 알 수 없는 스킬 타입 처리
         break;
     }
   }
 
-  // Impact 스킬 이펙트 렌더링
   private renderImpactEffect(
     effectWrapper: FrontendSkillEffectWrapper,
     camera: Camera,
@@ -202,9 +194,7 @@ export class RouletteRenderer {
     const elapsed = Date.now() - effectWrapper.startTime;
     const progress = Math.min(elapsed / effectWrapper.duration, 1);
 
-    // 시간에 따른 투명도 및 크기 변화
     const opacity = 1 - progress;
-    // 월드 반경을 화면 반경으로 변환 (initialZoom은 renderScene에서 이미 적용되므로, camera.zoom만 곱함)
     const currentRadius = effectData.radius * camera.zoom * (0.5 + progress * 0.5);
 
     if (opacity <= 0 || currentRadius <= 0) {
@@ -213,67 +203,52 @@ export class RouletteRenderer {
 
     context.save();
     context.globalAlpha = opacity;
-    context.strokeStyle = 'rgba(255, 255, 0, 1)'; // 노란색 테두리
-    context.lineWidth = 2 / (camera.zoom * initialZoom); // 줌에 따라 선 굵기 조절
+    context.strokeStyle = 'rgba(255, 255, 0, 1)';
+    context.lineWidth = 2 / (camera.zoom * initialZoom);
 
     context.beginPath();
-    // 월드 좌표를 직접 사용
     context.arc(effectData.position.x, effectData.position.y, currentRadius, 0, Math.PI * 2, false);
     context.stroke();
     context.restore();
   }
 
-  // Updated to render based on MarbleState (Restored full logic + radius fallback)
   private renderMarbles({ marbles, camera, winnerRank, winners }: RenderParameters) {
     const winnerIndex = winnerRank - winners.length;
-    // console.log(`renderMarbles called with ${marbles.length} marbles.`);
 
     marbles.forEach((marbleState, i) => {
-      // console.log(`Rendering marble ${i}:`, marbleState);
-
-      // --- Fallback for missing or invalid radius ---
       const radius = marbleState.radius && marbleState.radius > 0 ? marbleState.radius : 0.25;
       if (!marbleState.radius || marbleState.radius <= 0) {
-        // console.warn(`Marble ${i} (${marbleState.name}) missing or invalid radius (${marbleState.radius}). Using default: ${radius}`);
       }
-      // --- End Fallback ---
 
       this.ctx.save();
-      // Translate to the marble's center position
       this.ctx.translate(marbleState.x, marbleState.y);
 
-      // Basic circle rendering (using potentially fallback radius)
       this.ctx.beginPath();
       this.ctx.arc(0, 0, radius, 0, Math.PI * 2, false);
       this.ctx.fillStyle = marbleState.color;
       this.ctx.fill();
 
-      // Add stroke or effects based on state (e.g., winner highlight)
       if (i === winnerIndex) {
         this.ctx.strokeStyle = 'yellow';
         this.ctx.lineWidth = 0.1;
         this.ctx.stroke();
       }
 
-      // Render name BELOW the circle (using potentially fallback radius for sizing)
-      this.ctx.strokeStyle = 'red'; // Red outline as per target image
-      this.ctx.lineWidth = 0.02; // Thinner outline
+      this.ctx.strokeStyle = 'red';
+      this.ctx.lineWidth = 0.02;
       this.ctx.textAlign = 'center';
-      // Adjust textBaseline and y-offset to draw below the circle
-      this.ctx.textBaseline = 'top'; // Align text top to the drawing point
-      const textYOffset = radius + 0.1; // Position text below the circle (adjust offset as needed)
-      const fontSize = Math.max(0.3, radius * 0.5); // Use radius for font size
+      this.ctx.textBaseline = 'top';
+      const textYOffset = radius + 0.1;
+      const fontSize = Math.max(0.3, radius * 0.5);
       this.ctx.font = `${fontSize}pt sans-serif`;
-      // Draw outline first, then fill, at the adjusted Y position
       this.ctx.strokeText(marbleState.name, 0, textYOffset);
       this.ctx.fillStyle = marbleState.color;
       this.ctx.fillText(marbleState.name, 0, textYOffset);
 
-      // Render image if available (using potentially fallback radius for sizing) - Draw image AT THE CENTER (0, 0)
       const img = this._images[marbleState.name];
       if (img) {
         try {
-          const imgSize = radius * 1.6; // Use radius for image size
+          const imgSize = radius * 1.6;
           this.ctx.drawImage(img, -imgSize / 2, -imgSize / 2, imgSize, imgSize);
         } catch (e) {
           console.error(`Error drawing image for ${marbleState.name}:`, e);
@@ -284,9 +259,8 @@ export class RouletteRenderer {
     });
   }
 
-  // Updated to render based on MarbleState
   private renderWinner({ winner }: RenderParameters) {
-    if (!winner) return; // Winner is now MarbleState | null
+    if (!winner) return;
     this.ctx.save();
     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     this.ctx.fillRect(this._canvas.width / 2, this._canvas.height - 168, this._canvas.width / 2, 168);

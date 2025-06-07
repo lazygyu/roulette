@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom'; // Link 임포트 추가
-import { login as loginApi } from '../services/api'; // loginApi로 이름 변경하여 충돌 방지
-import { useAuth } from '../contexts/AuthContext'; // useAuth import
+import { useNavigate, Link } from 'react-router-dom';
+import { login as loginApi } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 function LoginPage() {
-  const { login: authLogin } = useAuth(); // AuthContext의 login 함수 사용
+  const { login: authLogin } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -17,11 +17,9 @@ function LoginPage() {
     setLoading(true);
 
     try {
-      // API 호출 시 loginApi 사용
       const userData = await loginApi(username, password);
-      // AuthContext의 login 함수 호출하여 상태 업데이트 및 로컬 스토리지 저장
       authLogin(userData);
-      navigate('/'); // 홈페이지로 리디렉션 (예시)
+      navigate('/');
     } catch (err: any) {
       if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);
@@ -63,7 +61,6 @@ function LoginPage() {
           {loading ? '로그인 중...' : '로그인'}
         </button>
       </form>
-      {/* (선택 사항) 회원가입 페이지로 이동하는 링크 */}
       <p>계정이 없으신가요? <Link to="/register">회원가입</Link></p>
     </div>
   );

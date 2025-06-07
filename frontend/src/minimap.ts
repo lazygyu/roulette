@@ -33,10 +33,8 @@ export class Minimap implements UIObject {
   }
 
   update(): void {
-    // nothing to do
   }
 
-  // @bound
   onMouseMove(e?: { x: number; y: number }) {
     if (!e) {
       this.mousePosition = null;
@@ -100,7 +98,7 @@ export class Minimap implements UIObject {
   private drawViewport(params: RenderParameters) {
     this.ctx.save();
     const { camera, size } = params;
-    const zoom = camera.zoom; // initialZoom is already applied in camera's renderScene
+    const zoom = camera.zoom;
     const w = size.x / (zoom * initialZoom * 2);
     const h = size.y / (zoom * initialZoom * 2);
     this.ctx.strokeStyle = 'white';
@@ -150,23 +148,14 @@ export class Minimap implements UIObject {
   }
 
   private drawMarbles(params: RenderParameters) {
-    const { marbles } = params; // marbles is now MarbleState[]
+    const { marbles } = params;
     this.ctx.save();
-    marbles.forEach((marbleState: MarbleState) => { // Use MarbleState type
-      // Draw marble based on state for minimap
+    marbles.forEach((marbleState: MarbleState) => {
       this.ctx.beginPath();
-      // Use a smaller radius for the minimap representation
-      const minimapRadius = Math.max(0.5, marbleState.radius * 0.5); // Adjust multiplier as needed
+      const minimapRadius = Math.max(0.5, marbleState.radius * 0.5);
       this.ctx.arc(marbleState.x, marbleState.y, minimapRadius, 0, Math.PI * 2, false);
       this.ctx.fillStyle = marbleState.color;
       this.ctx.fill();
-      // Optionally add a border or different style for minimap
-      // this.ctx.strokeStyle = 'white';
-      // this.ctx.lineWidth = 0.1;
-      // this.ctx.stroke();
-
-      // Original call removed:
-      // marble.render(this.ctx, 1, false, true);
     });
     this.ctx.restore();
   }

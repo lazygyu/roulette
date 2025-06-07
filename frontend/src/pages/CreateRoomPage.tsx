@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { createRoom } from '../services/api'; // createRoom 함수 임포트
+import { createRoom } from '../services/api';
 
 function CreateRoomPage() {
   const [roomName, setRoomName] = useState('');
@@ -14,7 +14,7 @@ function CreateRoomPage() {
   const handleCreateRoom = async () => {
     if (!isLoggedIn) {
       setError('방을 만들려면 로그인이 필요합니다.');
-      navigate('/login'); // 로그인 페이지로 리다이렉트
+      navigate('/login');
       return;
     }
 
@@ -27,9 +27,9 @@ function CreateRoomPage() {
     setError(null);
 
     try {
-      const roomData = await createRoom(roomName, password || undefined); // 비밀번호가 없으면 undefined 전달
+      const roomData = await createRoom(roomName, password || undefined);
       setIsLoading(false);
-      navigate(`/game/${roomData.id}`); // 생성된 게임 방으로 이동
+      navigate(`/game/${roomData.id}`);
     } catch (err) {
       setIsLoading(false);
       if (err instanceof Error) {
