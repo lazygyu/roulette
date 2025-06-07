@@ -13,6 +13,22 @@ export class GlobalWsExceptionFilter extends BaseWsExceptionFilter {
     const data = host.switchToWs().getData();
     const user = client.user; // Assuming user is attached to socket
 
+    // Extract event name from WebSocket args
+    let eventName = 'unknown_event';
+    try {
+      const args = host.getArgs();
+      // Based on debug logs: args[3] contains the event name
+      if (args && args.length > 3 && typeof args[3] === 'string') {
+        eventName = args[3];
+        this.logger.debug(`Extracted event name: ${eventName}`);
+      } else {
+        this.logger.debug('Event name not found in expected position args[3]');
+      }
+    } catch (error) {
+      // Fallback to unknown_event if extraction fails
+      this.logger.warn('Failed to extract event name from WebSocket args:', error);
+    }
+
     let errorResponse: { status: string; message: string; details?: any };
     let statusCode: number;
 
@@ -25,7 +41,7 @@ export class GlobalWsExceptionFilter extends BaseWsExceptionFilter {
       };
       statusCode = (wsError as any)?.statusCode || 500; // Default to 500 if no specific code
       this.logger.warn(
-        `WsException caught for user ${user?.nickname || client.id} in event ${data?.event || 'unknown_event'}: ${message} (Data: ${JSON.stringify(data)})`,
+        `WsException caught for user ${user?.nickname || client.id} in event ${eventName}: ${message} (Data: ${JSON.stringify(data)})`,
       );
     } else if (exception instanceof HttpException) {
       const httpError = exception.getResponse();
@@ -38,7 +54,7 @@ export class GlobalWsExceptionFilter extends BaseWsExceptionFilter {
       };
       statusCode = exception.getStatus();
       this.logger.warn(
-        `HttpException caught (via WebSocket) for user ${user?.nickname || client.id} in event ${data?.event || 'unknown_event'}: ${message} (Status: ${statusCode}, Data: ${JSON.stringify(data)})`,
+        `HttpException caught (via WebSocket) for user ${user?.nickname || client.id} in event ${eventName}: ${message} (Status: ${statusCode}, Data: ${JSON.stringify(data)})`,
       );
     } else {
       // Fallback for unhandled exceptions
@@ -48,7 +64,7 @@ export class GlobalWsExceptionFilter extends BaseWsExceptionFilter {
       };
       statusCode = 500;
       this.logger.error(
-        `Unhandled exception caught (via WebSocket) for user ${user?.nickname || client.id} in event ${data?.event || 'unknown_event'}: ${exception}`,
+        `Unhandled exception caught (via WebSocket) for user ${user?.nickname || client.id} in event ${eventName}: ${exception}`,
         (exception as Error).stack,
       );
     }
@@ -56,7 +72,7 @@ export class GlobalWsExceptionFilter extends BaseWsExceptionFilter {
     // Emit an error event back to the specific client
     // The event name 'exception' is a common practice, but can be customized
     client.emit('exception', {
-      event: data?.event || 'unknown_event_error', // Include the original event name if available
+      event: eventName, // Use the extracted event name
       data: errorResponse,
       statusCode: statusCode, // Optional: include status code if meaningful for client
     });
