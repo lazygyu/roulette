@@ -45,7 +45,7 @@ export class Roulette extends EventTarget {
 
   private _camera: Camera;
   private _renderer: RouletteRenderer = new RouletteRenderer();
-  private _coordinateManager: CoordinateManager = new CoordinateManager();
+  private _coordinateManager: CoordinateManager;
 
   private _effects: GameObject[] = []; // Keep local visual effects
   private _activeSkillEffects: FrontendSkillEffectWrapper[] = []; // 활성 스킬 이펙트 목록
@@ -124,9 +124,10 @@ export class Roulette extends EventTarget {
     // }
   }
 
-  constructor() {
+  constructor(coordinateManager: CoordinateManager) {
     super();
     this._camera = new Camera(); // 인자 없이 생성
+    this._coordinateManager = coordinateManager;
   }
 
   public async initialize(container: HTMLElement): Promise<void> {

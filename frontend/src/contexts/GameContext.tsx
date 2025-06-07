@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { Roulette } from '../roulette';
+import { CoordinateManager } from '../utils/coordinate-manager';
 import { useAuth } from './AuthContext';
 import { useSocketManager } from '../hooks/useSocketManager';
 import { GameState, RoomInfo, RankingEntry, GameInfo, MapInfo } from '../types/gameTypes';
@@ -50,7 +51,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const initializeGame = useCallback(async (container: HTMLDivElement) => {
     if (!rouletteInstance) {
-      const newRoulette = new Roulette();
+      const coordinateManager = new CoordinateManager();
+      const newRoulette = new Roulette(coordinateManager);
       await newRoulette.initialize(container);
       setRouletteInstance(newRoulette);
     }
