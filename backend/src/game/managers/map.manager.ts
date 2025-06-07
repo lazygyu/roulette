@@ -1,4 +1,4 @@
-import { StageDef, stages } from '../data/maps';
+import { StageDef, stages } from 'common';
 import { IPhysics } from '../IPhysics';
 
 export class MapManager {

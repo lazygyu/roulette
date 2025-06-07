@@ -1,5 +1,5 @@
 import { MapEntityState } from './types/MapEntity.type';
-import type { StageDef } from './data/maps';
+import type { StageDef } from 'common';
 
 export interface IPhysics {
   init(): Promise<void>;
@@ -17,12 +17,11 @@ export interface IPhysics {
 
   removeMarble(id: number): void;
 
-  getMarblePosition(id: number): { x: number; y: number; angle: number; };
+  getMarblePosition(id: number): { x: number; y: number; angle: number };
 
   getEntities(): MapEntityState[];
 
   applyRadialImpulse(position: { x: number; y: number }, radius: number, force: number): void;
-
 
   start(): void;
 

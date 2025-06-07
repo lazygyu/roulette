@@ -1,6 +1,6 @@
 import { Marble } from '../marble';
 import { MarbleManager } from './marble.manager';
-import { StageDef } from '../data/maps';
+import { StageDef } from 'common';
 import { zoomThreshold } from '../data/constants';
 
 export class GameStateManager {
@@ -148,34 +148,37 @@ export class GameStateManager {
 
   public finalizeWinner() {
     if (this._winner) {
-        let rankedMarbles = this.marbleManager.getFinalRanking();
-        let winnerInRankedList = rankedMarbles.find((r) => r.id === this._winner!.id);
+      let rankedMarbles = this.marbleManager.getFinalRanking();
+      let winnerInRankedList = rankedMarbles.find((r) => r.id === this._winner!.id);
 
-        if (!winnerInRankedList && !this._winner.isDummy) {
-            let rankForWinner = this._winnerRank + 1;
-            if (this._winnerRank === this.marbleManager.totalMarbleCount - 1 && !this.marbleManager.winners.find((w) => w.id === this._winner!.id)) {
-                rankForWinner = this.marbleManager.totalMarbleCount;
-            }
-            const newWinnerEntry = {
-                id: this._winner.id,
-                name: this._winner.name,
-                finalRank: rankForWinner,
-                yPos: this._winner.y,
-                isWinnerGoal: true,
-            };
-            rankedMarbles.push(newWinnerEntry);
+      if (!winnerInRankedList && !this._winner.isDummy) {
+        let rankForWinner = this._winnerRank + 1;
+        if (
+          this._winnerRank === this.marbleManager.totalMarbleCount - 1 &&
+          !this.marbleManager.winners.find((w) => w.id === this._winner!.id)
+        ) {
+          rankForWinner = this.marbleManager.totalMarbleCount;
         }
+        const newWinnerEntry = {
+          id: this._winner.id,
+          name: this._winner.name,
+          finalRank: rankForWinner,
+          yPos: this._winner.y,
+          isWinnerGoal: true,
+        };
+        rankedMarbles.push(newWinnerEntry);
+      }
 
-        rankedMarbles.forEach((r) => {
-            r.isWinnerGoal = r.id === this._winner!.id;
-        });
+      rankedMarbles.forEach((r) => {
+        r.isWinnerGoal = r.id === this._winner!.id;
+      });
 
-        rankedMarbles.sort((a, b) => {
-            const rankA = typeof a.finalRank === 'number' ? a.finalRank : Infinity;
-            const rankB = typeof b.finalRank === 'number' ? b.finalRank : Infinity;
-            return rankA - rankB;
-        });
-        return rankedMarbles;
+      rankedMarbles.sort((a, b) => {
+        const rankA = typeof a.finalRank === 'number' ? a.finalRank : Infinity;
+        const rankB = typeof b.finalRank === 'number' ? b.finalRank : Infinity;
+        return rankA - rankB;
+      });
+      return rankedMarbles;
     }
     return this.marbleManager.getFinalRanking();
   }

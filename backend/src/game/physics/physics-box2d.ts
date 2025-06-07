@@ -1,5 +1,5 @@
 import { IPhysics } from '../IPhysics';
-import { StageDef } from '../data/maps';
+import { StageDef } from 'common';
 import { MapEntity, MapEntityState } from '../types/MapEntity.type';
 import * as fs from 'fs';
 import * as path from 'path';
