@@ -1,4 +1,4 @@
-import { initialZoom } from './data/constants';
+import { initialZoom, CAMERA_CENTER_OFFSET_DIVISOR } from './data/constants';
 import { ParticleManager } from './particleManager';
 import { StageDef, stages } from 'common';
 import { Camera } from './camera';
@@ -461,7 +461,7 @@ export class Roulette extends EventTarget {
 
     // renderScene의 변환 과정을 역으로 적용
     // renderScene에서: ctx.translate(ctx.canvas.width / zoomFactor, ctx.canvas.height / zoomFactor);
-    const zoomFactor = initialZoom * 2 * this._camera.zoom;
+    const zoomFactor = initialZoom * CAMERA_CENTER_OFFSET_DIVISOR * this._camera.zoom;
     const centerOffsetX = canvas.width / zoomFactor;
     const centerOffsetY = canvas.height / zoomFactor;
 

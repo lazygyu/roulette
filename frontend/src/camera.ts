@@ -1,6 +1,6 @@
 import { MarbleState } from './types/gameTypes'; // Use MarbleState type from gameTypes
 import { StageDef } from 'common';
-import { initialZoom, zoomThreshold } from './data/constants';
+import { initialZoom, zoomThreshold, CAMERA_CENTER_OFFSET_DIVISOR } from './data/constants';
 import { VectorLike } from './types/VectorLike';
 
 export class Camera {
@@ -113,7 +113,7 @@ export class Camera {
   }
 
   renderScene(ctx: CanvasRenderingContext2D, callback: (ctx: CanvasRenderingContext2D) => void) {
-    const zoomFactor = initialZoom * 2 * this._zoom;
+    const zoomFactor = initialZoom * CAMERA_CENTER_OFFSET_DIVISOR * this._zoom;
     ctx.save();
     ctx.translate(-this.x * this._zoom, -this.y * this._zoom);
     ctx.scale(this.zoom, this.zoom);
@@ -142,7 +142,7 @@ export class Camera {
     // 이 오프셋은 initialZoom 스케일이 적용되기 전의 값입니다.
     // worldToScreen은 initialZoom 스케일이 적용된 후의 좌표를 반환해야 합니다.
 
-    const renderSceneZoomFactor = initialZoom * 2 * this._zoom;
+    const renderSceneZoomFactor = initialZoom * CAMERA_CENTER_OFFSET_DIVISOR * this._zoom;
     // 캔버스 너비/높이를 initialZoom으로 나눈 값이 renderScene 콜백 내에서의 "1 유닛"에 해당합니다.
     // 하지만 renderScene의 translate는 실제 캔버스 픽셀 크기를 사용합니다.
     const offsetX = this.width / renderSceneZoomFactor;
