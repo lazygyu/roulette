@@ -2,6 +2,17 @@ import { Catch, ArgumentsHost, HttpException, Logger } from '@nestjs/common';
 import { BaseWsExceptionFilter, WsException } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 
+interface ErrorResponse {
+  status: string;
+  message: string;
+  details?: any;
+}
+
+interface ProcessedError {
+  response: ErrorResponse;
+  statusCode: number;
+}
+
 @Catch(Error, WsException, HttpException)
 export class GlobalWsExceptionFilter extends BaseWsExceptionFilter {
   private readonly logger = new Logger('GlobalWsExceptionFilter');
@@ -11,74 +22,94 @@ export class GlobalWsExceptionFilter extends BaseWsExceptionFilter {
 
     const client = host.switchToWs().getClient<Socket>();
     const data = host.switchToWs().getData();
-    const user = client.user; // Assuming user is attached to socket
+    const eventName = this.extractEventName(host);
+    const { response, statusCode } = this.processException(exception);
+    
+    this.logException(exception, client, eventName, response.message, statusCode, data);
+    this.emitErrorToClient(client, eventName, response, statusCode);
+  }
 
-    // Extract event name from WebSocket args
-    let eventName = 'unknown_event';
+  private extractEventName(host: ArgumentsHost): string {
     try {
       const args = host.getArgs();
-      // Based on debug logs: args[3] contains the event name
       if (args && args.length > 3 && typeof args[3] === 'string') {
-        eventName = args[3];
-        this.logger.debug(`Extracted event name: ${eventName}`);
-      } else {
-        this.logger.debug('Event name not found in expected position args[3]');
+        return args[3];
       }
     } catch (error) {
-      // Fallback to unknown_event if extraction fails
       this.logger.warn('Failed to extract event name from WebSocket args:', error);
     }
+    return 'unknown_event';
+  }
 
-    let errorResponse: { status: string; message: string; details?: any };
-    let statusCode: number;
-
+  private processException(exception: WsException | HttpException): ProcessedError {
     if (exception instanceof WsException) {
-      const wsError = exception.getError();
-      const message = typeof wsError === 'string' ? wsError : (wsError as any)?.message || 'WebSocket Error';
-      errorResponse = {
-        status: 'error',
-        message: message,
-      };
-      statusCode = (wsError as any)?.statusCode || 500; // Default to 500 if no specific code
-      this.logger.warn(
-        `WsException caught for user ${user?.nickname || client.id} in event ${eventName}: ${message} (Data: ${JSON.stringify(data)})`,
-      );
+      return this.processWsException(exception);
     } else if (exception instanceof HttpException) {
-      const httpError = exception.getResponse();
-      const message =
-        typeof httpError === 'string' ? httpError : (httpError as any)?.message || 'HTTP Exception via WebSocket';
-      errorResponse = {
-        status: 'error',
-        message: message,
-        details: typeof httpError === 'object' ? httpError : undefined,
-      };
-      statusCode = exception.getStatus();
-      this.logger.warn(
-        `HttpException caught (via WebSocket) for user ${user?.nickname || client.id} in event ${eventName}: ${message} (Status: ${statusCode}, Data: ${JSON.stringify(data)})`,
-      );
+      return this.processHttpException(exception);
     } else {
-      // Fallback for unhandled exceptions
-      errorResponse = {
+      return this.processUnhandledException(exception);
+    }
+  }
+
+  private processWsException(exception: WsException): ProcessedError {
+    const wsError = exception.getError();
+    const message = typeof wsError === 'string' ? wsError : (wsError as any)?.message || 'WebSocket Error';
+    
+    return {
+      response: { status: 'error', message },
+      statusCode: (wsError as any)?.statusCode || 500,
+    };
+  }
+
+  private processHttpException(exception: HttpException): ProcessedError {
+    const httpError = exception.getResponse();
+    const message = typeof httpError === 'string' ? httpError : (httpError as any)?.message || 'HTTP Exception via WebSocket';
+    
+    return {
+      response: {
+        status: 'error',
+        message,
+        details: typeof httpError === 'object' ? httpError : undefined,
+      },
+      statusCode: exception.getStatus(),
+    };
+  }
+
+  private processUnhandledException(exception: any): ProcessedError {
+    return {
+      response: {
         status: 'error',
         message: 'Internal server error via WebSocket',
-      };
-      statusCode = 500;
-      this.logger.error(
-        `Unhandled exception caught (via WebSocket) for user ${user?.nickname || client.id} in event ${eventName}: ${exception}`,
-        (exception as Error).stack,
-      );
+      },
+      statusCode: 500,
+    };
+  }
+
+  private logException(
+    exception: any,
+    client: Socket,
+    eventName: string,
+    message: string,
+    statusCode: number,
+    data: any,
+  ): void {
+    const userInfo = client.user?.nickname || client.id;
+    const dataStr = JSON.stringify(data);
+
+    if (exception instanceof WsException) {
+      this.logger.warn(`WsException caught for user ${userInfo} in event ${eventName}: ${message} (Data: ${dataStr})`);
+    } else if (exception instanceof HttpException) {
+      this.logger.warn(`HttpException caught (via WebSocket) for user ${userInfo} in event ${eventName}: ${message} (Status: ${statusCode}, Data: ${dataStr})`);
+    } else {
+      this.logger.error(`Unhandled exception caught (via WebSocket) for user ${userInfo} in event ${eventName}: ${exception}`, (exception as Error).stack);
     }
+  }
 
-    // Emit an error event back to the specific client
-    // The event name 'exception' is a common practice, but can be customized
+  private emitErrorToClient(client: Socket, eventName: string, errorResponse: ErrorResponse, statusCode: number): void {
     client.emit('exception', {
-      event: eventName, // Use the extracted event name
+      event: eventName,
       data: errorResponse,
-      statusCode: statusCode, // Optional: include status code if meaningful for client
+      statusCode,
     });
-
-    // Optionally, you might want to call the base filter if needed,
-    // or ensure the connection isn't prematurely closed depending on the error.
-    // super.catch(exception, host); // If you want to retain some base behavior
   }
 }
