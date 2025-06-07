@@ -27,6 +27,7 @@ export class RouletteRenderer {
   private _canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
   public sizeFactor = 1;
+  public onResize: ((width: number, height: number) => void) | null = null;
 
   private _images: { [key: string]: HTMLImageElement } = {};
 
@@ -67,6 +68,9 @@ export class RouletteRenderer {
       this._canvas.width = width;
       this._canvas.height = height;
       this.sizeFactor = width / realSize.width;
+      if (this.onResize) {
+        this.onResize(width, height);
+      }
     };
 
     const resizeObserver = new ResizeObserver(resizing);

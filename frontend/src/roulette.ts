@@ -135,7 +135,10 @@ export class Roulette extends EventTarget {
       throw new Error('Container element is required for Roulette initialization.');
     }
     await this._renderer.init(container);
-    this._camera.setSize(this._renderer.width, this._renderer.height); // 렌더러 초기화 후 카메라 크기 설정
+    this._renderer.onResize = (width, height) => {
+      this._camera.setSize(width, height);
+    };
+    this._camera.setSize(this._renderer.width, this._renderer.height); // 초기 크기 설정
     await this._init(); // _init no longer initializes physics
     this._isReady = true; // Indicates renderer and roulette logic are ready
     this._update(); // Start the render loop
