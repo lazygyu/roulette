@@ -84,7 +84,7 @@ export class Camera {
 
       if (numberOfUnpassedMarbles <= 5) {
         const goalDist = Math.abs(stage.zoomY - this._position.y);
-        this.zoom = Math.min(1.2, Math.max(1, (1 - goalDist / zoomThreshold) * 2));
+        this.zoom = Math.min(1.4, Math.max(1, (1 - goalDist / zoomThreshold) * 4));
       } else {
         this.zoom = 1;
       }
