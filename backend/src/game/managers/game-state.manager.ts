@@ -128,9 +128,9 @@ export class GameStateManager {
         const targetMarbleForZoom = currentMarbles[remainingTargetRank];
         if (targetMarbleForZoom) {
           const distToZoomY = Math.abs(stage.zoomY - targetMarbleForZoom.y);
-          // if (distToZoomY < zoomThreshold && targetMarbleForZoom.y > stage.zoomY - zoomThreshold * 1.2) {
-          //   return Math.max(0.2, distToZoomY / zoomThreshold);
-          // }
+          if (distToZoomY < zoomThreshold && targetMarbleForZoom.y > stage.zoomY - zoomThreshold * 1.2) {
+            return Math.max(0.6, distToZoomY / zoomThreshold);
+          }
         }
       }
     }
