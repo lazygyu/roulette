@@ -6,17 +6,18 @@ export const useParticipantManager = (initialNames: string) => {
   const [namesInput, setNamesInput] = useState(initialNames);
 
   useEffect(() => {
-    const savedNames = localStorage.getItem('mbr_names');
-    if (savedNames) {
-      setNamesInput(savedNames);
+    if (initialNames) {
+      setNamesInput(initialNames);
+    } else {
+      const savedNames = localStorage.getItem('mbr_names');
+      if (savedNames) {
+        setNamesInput(savedNames);
+      }
     }
-  }, []);
+  }, [initialNames]);
 
-  const handleNamesChange = useCallback((rawNames: string) => {
-    localStorage.setItem('mbr_names', rawNames);
-    setNamesInput(rawNames);
-
-    const nameSource = rawNames.split(/[,\r\n]/g).map((v) => v.trim());
+  useEffect(() => {
+    const nameSource = namesInput.split(/[,\r\n]/g).map((v) => v.trim());
     const nameSet = new Set<string>();
     const nameCounts: { [key: string]: number } = {};
 
@@ -37,6 +38,11 @@ export const useParticipantManager = (initialNames: string) => {
     });
 
     socketService.setMarbles(namesToSend);
+  }, [namesInput]);
+
+  const handleNamesChange = useCallback((rawNames: string) => {
+    localStorage.setItem('mbr_names', rawNames);
+    setNamesInput(rawNames);
   }, []);
 
   const shuffleNames = useCallback(() => {
