@@ -1,7 +1,8 @@
 import { MarbleState } from './types/gameTypes'; // Use MarbleState type from gameTypes
 import { StageDef } from 'common';
-import { initialZoom, zoomThreshold, CAMERA_CENTER_OFFSET_DIVISOR } from './data/constants';
+import { initialZoom, zoomThreshold } from './data/constants';
 import { VectorLike } from './types/VectorLike';
+import { CoordinateTransform } from './utils/coordinateTransform';
 
 export class Camera {
   private _position: VectorLike = { x: 0, y: 0 };
@@ -11,6 +12,7 @@ export class Camera {
   private _locked = false;
   public width: number = 0; // 캔버스 너비
   public height: number = 0; // 캔버스 높이
+  private _coordinateTransform: CoordinateTransform;
 
   get zoom() {
     return this._zoom;
@@ -105,19 +107,21 @@ export class Camera {
   constructor(width: number = 0, height: number = 0) {
     this.width = width;
     this.height = height;
+    this._coordinateTransform = new CoordinateTransform(initialZoom, width, height);
   }
 
   setSize(width: number, height: number) {
     this.width = width;
     this.height = height;
+    this._coordinateTransform = this._coordinateTransform.updateCanvasSize(width, height);
   }
 
   renderScene(ctx: CanvasRenderingContext2D, callback: (ctx: CanvasRenderingContext2D) => void) {
-    const zoomFactor = initialZoom * CAMERA_CENTER_OFFSET_DIVISOR * this._zoom;
+    const centerOffset = this._coordinateTransform.getCenterOffset(this._zoom);
     ctx.save();
     ctx.translate(-this.x * this._zoom, -this.y * this._zoom);
     ctx.scale(this.zoom, this.zoom);
-    ctx.translate(ctx.canvas.width / zoomFactor, ctx.canvas.height / zoomFactor);
+    ctx.translate(centerOffset.x, centerOffset.y);
     callback(ctx);
     ctx.restore();
   }
@@ -135,24 +139,12 @@ export class Camera {
     const zoomedX = xRelativeToCamera * this._zoom;
     const zoomedY = yRelativeToCamera * this._zoom;
 
-    // 3. 캔버스 중앙 오프셋 적용
-    // this.width와 this.height는 RouletteRenderer.init에서 설정된 캔버스의 실제 픽셀 크기입니다.
-    // renderScene의 zoomFactor는 initialZoom * 2 * this._zoom 입니다.
-    // renderScene에서 translate 오프셋은 (캔버스 픽셀 너비 / zoomFactor) 입니다.
-    // 이 오프셋은 initialZoom 스케일이 적용되기 전의 값입니다.
-    // worldToScreen은 initialZoom 스케일이 적용된 후의 좌표를 반환해야 합니다.
-
-    const renderSceneZoomFactor = initialZoom * CAMERA_CENTER_OFFSET_DIVISOR * this._zoom;
-    // 캔버스 너비/높이를 initialZoom으로 나눈 값이 renderScene 콜백 내에서의 "1 유닛"에 해당합니다.
-    // 하지만 renderScene의 translate는 실제 캔버스 픽셀 크기를 사용합니다.
-    const offsetX = this.width / renderSceneZoomFactor;
-    const offsetY = this.height / renderSceneZoomFactor;
+    // 3. 캔버스 중앙 오프셋 적용 (CoordinateTransform 사용)
+    const centerOffset = this._coordinateTransform.getCenterOffset(this._zoom);
 
     // 최종 화면 좌표 (renderScene 콜백 내부에서 사용되는 좌표)
-    // (카메라 기준 줌된 좌표 + 중앙 오프셋)
-    // 이 결과는 renderScene 콜백 내부의 좌표계와 일치합니다 (즉, initialZoom이 이미 적용된 것으로 간주).
-    const screenX = zoomedX + offsetX;
-    const screenY = zoomedY + offsetY;
+    const screenX = zoomedX + centerOffset.x;
+    const screenY = zoomedY + centerOffset.y;
 
     return {
       x: screenX,

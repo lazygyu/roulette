@@ -4,9 +4,6 @@ export const canvasHeight = 900;
 export const zoomThreshold = 5;
 export const STUCK_DELAY = 5000;
 
-// Camera rendering constants
-export const CAMERA_CENTER_OFFSET_DIVISOR = 2; // Used to calculate proper center offset for screen positioning
-
 export enum Skills {
   None,
   Impact,
