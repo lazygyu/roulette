@@ -60,4 +60,25 @@ export class CoordinateTransform {
   updateCanvasSize(width: number, height: number): CoordinateTransform {
     return new CoordinateTransform(this.baseZoom, width, height);
   }
+
+  /**
+   * 현재 캔버스 너비 반환
+   */
+  get width(): number {
+    return this.canvasWidth;
+  }
+
+  /**
+   * 현재 캔버스 높이 반환
+   */
+  get height(): number {
+    return this.canvasHeight;
+  }
+
+  /**
+   * 캔버스 크기가 주어진 크기와 일치하는지 확인
+   */
+  isSameSize(width: number, height: number): boolean {
+    return this.canvasWidth === width && this.canvasHeight === height;
+  }
 }

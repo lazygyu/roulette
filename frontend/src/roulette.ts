@@ -283,6 +283,9 @@ export class Roulette extends EventTarget {
           this._renderer.canvas.height
         );
       }
+      
+      // Camera의 CoordinateTransform도 동기화
+      this._camera.setSize(this._renderer.canvas.width, this._renderer.canvas.height);
     }
   }
 
@@ -476,7 +479,12 @@ export class Roulette extends EventTarget {
     const normalizedY = canvasY / initialZoom;
 
     // renderScene의 변환 과정을 역으로 적용
-    // CoordinateTransform을 사용하여 중앙 오프셋 계산
+    // 현재 캔버스 크기와 CoordinateTransform이 동기화되었는지 확인
+    if (!this._coordinateTransform.isSameSize(canvas.width, canvas.height)) {
+      console.warn('CoordinateTransform과 캔버스 크기가 동기화되지 않음. 업데이트 중...');
+      this._updateCanvasInfo();
+    }
+    
     const centerOffset = this._coordinateTransform.getCenterOffset(this._camera.zoom);
 
     // renderScene에서: ctx.scale(this.zoom, this.zoom);
@@ -496,6 +504,11 @@ export class Roulette extends EventTarget {
       world: { x: worldX, y: worldY },
       camera: { x: this._camera.x, y: this._camera.y, zoom: this._camera.zoom },
       centerOffset,
+      canvasSize: { width: canvas.width, height: canvas.height },
+      coordinateTransformSize: { 
+        width: this._coordinateTransform.width, 
+        height: this._coordinateTransform.height 
+      }
     });
 
     return { x: worldX, y: worldY };
