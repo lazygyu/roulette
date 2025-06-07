@@ -3,7 +3,6 @@ import { ParticleManager } from './particleManager';
 import { StageDef, stages } from 'common';
 import { Camera } from './camera';
 import { RouletteRenderer } from './rouletteRenderer';
-import { bound } from './utils/bound.decorator';
 import { UIObject } from './UIObject';
 import { RankRenderer } from './rankRenderer';
 import { Minimap } from './minimap';
@@ -149,11 +148,11 @@ export class Roulette extends EventTarget {
   private addUiObject(obj: UIObject) {
     this._uiObjects.push(obj);
     if (obj.onWheel) {
-      this._renderer.canvas.addEventListener('wheel', obj.onWheel);
+      this._renderer.canvas.addEventListener('wheel', (e) => obj.onWheel?.(e));
     }
   }
 
-  @bound
+  // @bound
   private _update() {
     if (!this._lastTime) this._lastTime = Date.now();
     const currentTime = Date.now();
@@ -213,11 +212,11 @@ export class Roulette extends EventTarget {
       // }
     }
 
-    const minimap = this._uiObjects.find(obj => obj instanceof Minimap) as Minimap;
+    const minimap = this._uiObjects.find((obj) => obj instanceof Minimap) as Minimap;
     this._coordinateManager.update(this._camera, this._renderer.canvas, minimap);
 
     this._render();
-    window.requestAnimationFrame(this._update);
+    window.requestAnimationFrame(() => this._update());
   }
 
   // private _updateMarbles(deltaTime: number) { ... } // REMOVED - State comes from server

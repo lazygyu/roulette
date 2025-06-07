@@ -2,7 +2,6 @@ import { CoordinateManager } from './utils/coordinate-manager';
 import { RenderParameters } from './rouletteRenderer';
 import { DefaultEntityColor, initialZoom } from './data/constants';
 import { UIObject } from './UIObject';
-import { bound } from './utils/bound.decorator';
 import { Rect } from './types/rect.type';
 import { VectorLike } from './types/VectorLike';
 import { MapEntityState, MarbleState } from './types/gameTypes'; // Import types from gameTypes
@@ -37,7 +36,7 @@ export class Minimap implements UIObject {
     // nothing to do
   }
 
-  @bound
+  // @bound
   onMouseMove(e?: { x: number; y: number }) {
     if (!e) {
       this.mousePosition = null;
