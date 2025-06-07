@@ -212,8 +212,8 @@ export class Box2dPhysics implements IPhysics {
     const fixtureDef = new this.Box2D.b2FixtureDef();
     fixtureDef.set_shape(circleShape);
     fixtureDef.set_density(1 + Math.random()); // 무게는 기존처럼 랜덤하게 설정
-    fixtureDef.set_restitution(0.3); // Add some restitution
-    fixtureDef.set_friction(0.5); // Add some friction
+    fixtureDef.set_restitution(0.1); // 통통 튀는 느낌을 줄이기 위해 반발 계수 감소
+    fixtureDef.set_friction(0.7); // 통통 튀는 느낌을 줄이기 위해 마찰 계수 증가
     body.CreateFixture(fixtureDef);
     this.destroyObject(fixtureDef);
     this.destroyObject(circleShape);
