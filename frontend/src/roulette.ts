@@ -36,7 +36,6 @@ export class Roulette extends EventTarget {
 
   private _updateInterval = 10; // Keep for potential timing use? Or remove? Remove for now.
   private _timeScale = 1; // No longer calculated locally
-  private _speed = 1; // Keep for local particle/effect speed? Or controlled by server? Assume local for now.
 
   // private _winners: Marble[] = []; // Replaced by MarbleState version
   private _particleManager = new ParticleManager();
@@ -159,7 +158,7 @@ export class Roulette extends EventTarget {
     if (!this._lastTime) this._lastTime = Date.now();
     const currentTime = Date.now();
 
-    this._elapsed += (currentTime - this._lastTime) * this._speed;
+    this._elapsed += currentTime - this._lastTime;
     if (this._elapsed > 100) {
       this._elapsed %= 100;
     }
