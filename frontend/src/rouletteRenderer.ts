@@ -3,7 +3,6 @@ import { Camera } from './camera';
 import { StageDef } from 'common';
 import { MarbleState, MapEntityState } from './types/gameTypes'; // Use types from gameTypes
 import { ParticleManager } from './particleManager';
-import { GameObject } from './gameObject';
 import { UIObject } from './UIObject';
 import { VectorLike } from './types/VectorLike';
 import { ServerSkillType, FrontendSkillEffectWrapper, ImpactSkillEffectFromServer } from './types/skillTypes'; // 스킬 이펙트 관련 타입 임포트
@@ -16,7 +15,6 @@ export type RenderParameters = {
   marbles: MarbleState[]; // Uses MarbleState from gameTypes
   winners: MarbleState[]; // Uses MarbleState from gameTypes
   particleManager: ParticleManager;
-  effects: GameObject[];
   skillEffects: FrontendSkillEffectWrapper[]; // 스킬 이펙트 추가
   winnerRank: number;
   winner: MarbleState | null; // Uses MarbleState from gameTypes
@@ -106,7 +104,6 @@ export class RouletteRenderer {
     this.ctx.lineWidth = 3 / (renderParameters.camera.zoom + initialZoom);
     renderParameters.camera.renderScene(this.ctx, () => {
       this.renderEntities(renderParameters.entities);
-      this.renderEffects(renderParameters);
       this.renderMarbles(renderParameters);
       this.renderSkillEffects(renderParameters.skillEffects, renderParameters.camera, this.ctx); // 스킬 이펙트 렌더링 추가
     });
@@ -166,10 +163,6 @@ export class RouletteRenderer {
       this.ctx.restore();
     });
     this.ctx.restore();
-  }
-
-  private renderEffects({ effects, camera }: RenderParameters) {
-    effects.forEach((effect) => effect.render(this.ctx, camera.zoom * initialZoom));
   }
 
   // 스킬 이펙트 렌더링을 위한 새로운 메서드

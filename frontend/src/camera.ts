@@ -9,6 +9,8 @@ export class Camera {
   private _zoom: number = 1;
   private _targetZoom: number = 1;
   private _locked = false;
+  private _shakeDuration = 0;
+  private _shakeStrength = 10;
   public width: number = 0; // 캔버스 너비
   public height: number = 0; // 캔버스 높이
 
@@ -50,19 +52,24 @@ export class Camera {
   update({
     marbles,
     stage,
-    needToZoom,
     targetIndex,
+    deltaTime,
   }: {
     marbles: MarbleState[]; // Changed type to MarbleState[]
     stage: StageDef;
-    needToZoom: boolean; // This logic might be removed or changed in roulette.ts
     targetIndex: number;
+    deltaTime: number;
   }) {
     // set target position
     if (!this._locked) {
-      this._calcTargetPositionAndZoom(marbles, stage, needToZoom, targetIndex);
+      this._calcTargetPositionAndZoom(marbles, stage, targetIndex);
     }
 
+    if (this._shakeDuration > 0) {
+      this._shakeDuration -= deltaTime;
+      this._position.x += (Math.random() - 0.5) * this._shakeStrength;
+      this._position.y += (Math.random() - 0.5) * this._shakeStrength;
+    }
     // interpolate position
     this._position.x = this._interpolation(this.x, this._targetPosition.x);
     this._position.y = this._interpolation(this.y, this._targetPosition.y);
@@ -74,19 +81,14 @@ export class Camera {
   private _calcTargetPositionAndZoom(
     marbles: MarbleState[], // Changed type to MarbleState[]
     stage: StageDef,
-    needToZoom: boolean, // This logic might be removed or changed in roulette.ts
     targetIndex: number,
   ) {
     if (marbles.length > 0) {
       const targetMarble = marbles[targetIndex] ? marbles[targetIndex] : marbles[0];
       // Access x, y directly from MarbleState
       this.setPosition({ x: targetMarble.x, y: targetMarble.y });
-      if (needToZoom) {
-        const goalDist = Math.abs(stage.zoomY - this._position.y); // _position is internal camera state
-        this.zoom = Math.max(1, (1 - goalDist / zoomThreshold) * 4);
-      } else {
-        this.zoom = 1;
-      }
+      const goalDist = Math.abs(stage.zoomY - this._position.y); // _position is internal camera state
+      this.zoom = Math.max(1, (1 - goalDist / zoomThreshold) * 4);
     } else {
       this.setPosition({ x: 0, y: 0 });
       this.zoom = 1;
@@ -110,6 +112,10 @@ export class Camera {
   setSize(width: number, height: number) {
     this.width = width;
     this.height = height;
+  }
+
+  shake(duration: number) {
+    this._shakeDuration = duration;
   }
 
   renderScene(ctx: CanvasRenderingContext2D, callback: (ctx: CanvasRenderingContext2D) => void) {

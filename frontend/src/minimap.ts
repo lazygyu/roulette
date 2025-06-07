@@ -10,6 +10,7 @@ import { MapEntityState, MarbleState } from './types/gameTypes'; // Import types
 export class Minimap implements UIObject {
   private ctx!: CanvasRenderingContext2D;
   private lastParams: RenderParameters | null = null;
+  private coordinateManager: CoordinateManager | null = null;
 
   private _onViewportChangeHandler: ((pos?: VectorLike) => void) | null = null;
   private boundingBox: Rect;
@@ -50,23 +51,21 @@ export class Minimap implements UIObject {
       x: e.x,
       y: e.y,
     };
-    if (this._onViewportChangeHandler) {
-      // To-Do: This should be converted via coordinateManager
-      // For now, we keep the old logic.
-      this._onViewportChangeHandler({
-        x: this.mousePosition.x / 4,
-        y: this.mousePosition.y / 4,
-      });
+    if (this._onViewportChangeHandler && this.coordinateManager) {
+      this._onViewportChangeHandler(
+        this.coordinateManager.minimapToWorld(this.mousePosition as VectorLike)
+      );
     }
   }
 
   render(
     ctx: CanvasRenderingContext2D,
     params: RenderParameters,
-    _coordinateManager: CoordinateManager,
+    coordinateManager: CoordinateManager,
     _width: number,
     _height: number
   ) {
+    this.coordinateManager = coordinateManager;
     if (!ctx) return;
     const { stage } = params;
     if (!stage) return;
