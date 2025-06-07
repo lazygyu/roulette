@@ -24,6 +24,7 @@ export class RankRenderer implements UIObject {
   render(
     ctx: CanvasRenderingContext2D,
     { winners, marbles, winnerRank }: RenderParameters,
+    _coordinateManager: any, // coordinateManager is not used in this renderer
     width: number,
     height: number
   ) {

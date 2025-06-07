@@ -1,3 +1,4 @@
+import { CoordinateManager } from './utils/coordinate-manager';
 import { RenderParameters } from './rouletteRenderer';
 import { DefaultEntityColor, initialZoom } from './data/constants';
 import { UIObject } from './UIObject';
@@ -50,6 +51,8 @@ export class Minimap implements UIObject {
       y: e.y,
     };
     if (this._onViewportChangeHandler) {
+      // To-Do: This should be converted via coordinateManager
+      // For now, we keep the old logic.
       this._onViewportChangeHandler({
         x: this.mousePosition.x / 4,
         y: this.mousePosition.y / 4,
@@ -57,7 +60,13 @@ export class Minimap implements UIObject {
     }
   }
 
-  render(ctx: CanvasRenderingContext2D, params: RenderParameters) {
+  render(
+    ctx: CanvasRenderingContext2D,
+    params: RenderParameters,
+    _coordinateManager: CoordinateManager,
+    _width: number,
+    _height: number
+  ) {
     if (!ctx) return;
     const { stage } = params;
     if (!stage) return;
@@ -93,12 +102,12 @@ export class Minimap implements UIObject {
   private drawViewport(params: RenderParameters) {
     this.ctx.save();
     const { camera, size } = params;
-    const zoom = camera.zoom * initialZoom;
-    const w = size.x / zoom;
-    const h = size.y / zoom;
+    const zoom = camera.zoom; // initialZoom is already applied in camera's renderScene
+    const w = size.x / (zoom * initialZoom * 2);
+    const h = size.y / (zoom * initialZoom * 2);
     this.ctx.strokeStyle = 'white';
     this.ctx.lineWidth = 1 / zoom;
-    this.ctx.strokeRect(camera.x - w / 2, camera.y - h / 2, w, h);
+    this.ctx.strokeRect(camera.x - w, camera.y - h, w * 2, h * 2);
     this.ctx.restore();
   }
 

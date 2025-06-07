@@ -1,3 +1,4 @@
+import { CoordinateManager } from './utils/coordinate-manager';
 import { RenderParameters } from './rouletteRenderer';
 import { Rect } from './types/rect.type';
 
@@ -6,6 +7,7 @@ export interface UIObject {
   render(
     ctx: CanvasRenderingContext2D,
     params: RenderParameters,
+    coordinateManager: CoordinateManager,
     width: number,
     height: number
   ): void;

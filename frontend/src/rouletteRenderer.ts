@@ -7,6 +7,7 @@ import { GameObject } from './gameObject';
 import { UIObject } from './UIObject';
 import { VectorLike } from './types/VectorLike';
 import { ServerSkillType, FrontendSkillEffectWrapper, ImpactSkillEffectFromServer } from './types/skillTypes'; // 스킬 이펙트 관련 타입 임포트
+import { CoordinateManager } from './utils/coordinate-manager';
 
 export type RenderParameters = {
   camera: Camera;
@@ -85,7 +86,11 @@ export class RouletteRenderer {
     });
   }
 
-  render(renderParameters: RenderParameters, uiObjects: UIObject[]) {
+  render(
+    renderParameters: RenderParameters,
+    uiObjects: UIObject[],
+    coordinateManager: CoordinateManager
+  ) {
     this.ctx.fillStyle = 'black';
     this.ctx.fillRect(0, 0, this._canvas.width, this._canvas.height);
 
@@ -103,7 +108,15 @@ export class RouletteRenderer {
     });
     this.ctx.restore();
 
-    uiObjects.forEach((obj) => obj.render(this.ctx, renderParameters, this._canvas.width, this._canvas.height));
+    uiObjects.forEach((obj) =>
+      obj.render(
+        this.ctx,
+        renderParameters,
+        coordinateManager,
+        this._canvas.width,
+        this._canvas.height
+      )
+    );
     renderParameters.particleManager.render(this.ctx);
     this.renderWinner(renderParameters);
   }

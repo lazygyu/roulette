@@ -25,7 +25,9 @@ export const useSkillHandler = (
         return;
       }
 
-      const skillPosition = rouletteInstance.screenToWorld(event.clientX, event.clientY, canvas);
+      const skillPosition = rouletteInstance
+        .getCoordinateManager()
+        .screenToWorld({ x: event.clientX, y: event.clientY });
       let extra: any = {};
 
       switch (selectedSkill) {

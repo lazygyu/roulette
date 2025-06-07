@@ -16,7 +16,7 @@ import {
   FrontendSkillEffectWrapper,
   ImpactSkillEffectFromServer,
 } from './types/skillTypes'; // 스킬 이펙트 관련 타입 임포트
-import { CoordinateTransform } from './utils/coordinateTransform';
+import { CoordinateManager } from './utils/coordinate-manager';
 
 export class Roulette extends EventTarget {
   // Store state received from server
@@ -45,7 +45,7 @@ export class Roulette extends EventTarget {
 
   private _camera: Camera;
   private _renderer: RouletteRenderer = new RouletteRenderer();
-  private _coordinateTransform: CoordinateTransform | null = null; // 좌표 변환 유틸리티
+  private _coordinateManager: CoordinateManager = new CoordinateManager();
 
   private _effects: GameObject[] = []; // Keep local visual effects
   private _activeSkillEffects: FrontendSkillEffectWrapper[] = []; // 활성 스킬 이펙트 목록
@@ -58,10 +58,6 @@ export class Roulette extends EventTarget {
 
   private _autoRecording: boolean = false; // Keep local options for now
   private _recorder!: VideoRecorder; // Keep recorder
-
-  // 좌표 변환을 위한 추가 상태 정보
-  private _currentCanvasRect: DOMRect | null = null;
-  private _currentCanvasScaling: { scaleX: number; scaleY: number } | null = null;
 
   private _isReady: boolean = false; // Keep ready flag, might indicate renderer readiness
   get isReady() {
@@ -140,7 +136,6 @@ export class Roulette extends EventTarget {
     }
     await this._renderer.init(container);
     this._camera.setSize(this._renderer.width, this._renderer.height); // 렌더러 초기화 후 카메라 크기 설정
-    this._coordinateTransform = new CoordinateTransform(initialZoom, this._renderer.width, this._renderer.height); // CoordinateTransform 인스턴스 생성
     await this._init(); // _init no longer initializes physics
     this._isReady = true; // Indicates renderer and roulette logic are ready
     this._update(); // Start the render loop
@@ -217,6 +212,9 @@ export class Roulette extends EventTarget {
       // }
     }
 
+    const minimap = this._uiObjects.find(obj => obj instanceof Minimap) as Minimap;
+    this._coordinateManager.update(this._camera, this._renderer.canvas, minimap);
+
     this._render();
     window.requestAnimationFrame(this._update);
   }
@@ -241,9 +239,6 @@ export class Roulette extends EventTarget {
   private _render() {
     if (!this._stage) return; // Keep stage check
 
-    // 캔버스 상태 업데이트 (좌표 변환을 위해)
-    this._updateCanvasInfo();
-
     // Pass server state to renderer
     const renderParams = {
       camera: this._camera,
@@ -264,29 +259,7 @@ export class Roulette extends EventTarget {
     }
 
     // Assuming RouletteRenderer is updated to handle MarbleState[] and MapEntityState[]
-    this._renderer.render(renderParams, this._uiObjects);
-  }
-
-  // 캔버스 정보 업데이트 메서드
-  private _updateCanvasInfo() {
-    if (this._renderer.canvas) {
-      this._currentCanvasRect = this._renderer.canvas.getBoundingClientRect();
-      this._currentCanvasScaling = {
-        scaleX: this._renderer.canvas.width / this._currentCanvasRect.width,
-        scaleY: this._renderer.canvas.height / this._currentCanvasRect.height,
-      };
-      
-      // 캔버스 크기가 변경되면 CoordinateTransform도 업데이트
-      if (this._coordinateTransform) {
-        this._coordinateTransform = this._coordinateTransform.updateCanvasSize(
-          this._renderer.canvas.width,
-          this._renderer.canvas.height
-        );
-      }
-      
-      // Camera의 CoordinateTransform도 동기화
-      this._camera.setSize(this._renderer.canvas.width, this._renderer.canvas.height);
-    }
+    this._renderer.render(renderParams, this._uiObjects, this._coordinateManager);
   }
 
   private async _init() {
@@ -452,65 +425,7 @@ export class Roulette extends EventTarget {
     }
   }
 
-  public screenToWorld(clientX: number, clientY: number, canvas: HTMLCanvasElement): { x: number; y: number } {
-    // 현재 캔버스 정보가 없으면 업데이트
-    if (!this._currentCanvasRect || !this._currentCanvasScaling) {
-      this._updateCanvasInfo();
-    }
-
-    // CoordinateTransform이 초기화되지 않았으면 임시로 생성
-    if (!this._coordinateTransform) {
-      this._coordinateTransform = new CoordinateTransform(initialZoom, canvas.width, canvas.height);
-    }
-
-    // 캐시된 정보 사용
-    const rect = this._currentCanvasRect || canvas.getBoundingClientRect();
-    const scaling = this._currentCanvasScaling || {
-      scaleX: canvas.width / rect.width,
-      scaleY: canvas.height / rect.height,
-    };
-
-    // 브라우저 좌표를 캔버스 좌표로 변환
-    const canvasX = (clientX - rect.left) * scaling.scaleX;
-    const canvasY = (clientY - rect.top) * scaling.scaleY;
-
-    // 캔버스 좌표를 초기줌 좌표계로 변환 (renderScene에서 사용하는 좌표계)
-    const normalizedX = canvasX / initialZoom;
-    const normalizedY = canvasY / initialZoom;
-
-    // renderScene의 변환 과정을 역으로 적용
-    // 현재 캔버스 크기와 CoordinateTransform이 동기화되었는지 확인
-    if (!this._coordinateTransform.isSameSize(canvas.width, canvas.height)) {
-      console.warn('CoordinateTransform과 캔버스 크기가 동기화되지 않음. 업데이트 중...');
-      this._updateCanvasInfo();
-    }
-    
-    const centerOffset = this._coordinateTransform.getCenterOffset(this._camera.zoom);
-
-    // renderScene에서: ctx.scale(this.zoom, this.zoom);
-    const scaledX = (normalizedX - centerOffset.x) / this._camera.zoom;
-    const scaledY = (normalizedY - centerOffset.y) / this._camera.zoom;
-
-    // renderScene에서: ctx.translate(-this.x * this._zoom, -this.y * this._zoom);
-    const worldX = scaledX + this._camera.x;
-    const worldY = scaledY + this._camera.y;
-
-    // 디버깅 로그 (개발 중에만 사용)
-    console.log('좌표 변환 정보:', {
-      client: { x: clientX, y: clientY },
-      canvas: { x: canvasX, y: canvasY },
-      normalized: { x: normalizedX, y: normalizedY },
-      scaled: { x: scaledX, y: scaledY },
-      world: { x: worldX, y: worldY },
-      camera: { x: this._camera.x, y: this._camera.y, zoom: this._camera.zoom },
-      centerOffset,
-      canvasSize: { width: canvas.width, height: canvas.height },
-      coordinateTransformSize: { 
-        width: this._coordinateTransform.width, 
-        height: this._coordinateTransform.height 
-      }
-    });
-
-    return { x: worldX, y: worldY };
+  public getCoordinateManager(): CoordinateManager {
+    return this._coordinateManager;
   }
 }
