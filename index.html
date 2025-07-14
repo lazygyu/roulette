@@ -123,6 +123,7 @@
         &.shuffle {
           mask-image: url('assets/images/shuffle.svg');
         }
+
         &.megaphone {
           mask-image: url('assets/images/megaphone.svg');
         }
@@ -154,6 +155,7 @@
           align-items: center;
           justify-content: stretch;
           gap: 2px;
+
           div.sep {
             flex-grow: 1;
           }
@@ -303,6 +305,7 @@
         border-bottom: 1px solid #333;
         display: flex;
         align-items: center;
+
         &:before {
           content: '';
           display: inline-block;
@@ -424,6 +427,32 @@
           flex-grow: 1;
         }
 
+      }
+
+    }
+
+    div.toast {
+      position: fixed;
+      transform: translate(-50%, 0);
+      padding: 8px;
+      border-radius: 4px;
+      background: #ccc;
+      overflow: hidden;
+      bottom: 10px;
+      left: 50%;
+      z-index: 1000;
+      animation: .2s linear fade-in, .2s linear 1s reverse fade-in;
+    }
+
+    @keyframes fade-in {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, 100%);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translate(-50%, 0);
       }
     }
   </style>
@@ -612,6 +641,9 @@
     window.roullete.addEventListener('shakeAvailableChanged', (e) => {
       document.querySelector('#inGame').classList.toggle('hide', !e.detail);
     });
+    window.roullete.addEventListener('message', (e) => {
+      simpleToast(e.detail);
+    });
 
     document.querySelector('#btnShuffle').click();
 
@@ -648,12 +680,12 @@
     const closeNotice = () => {
       document.querySelector('#notice').style.display = 'none';
       localStorage.setItem(noticeKey, currentNotice.toString());
-    }
+    };
 
     const openNotice = () => {
       console.log('openNotice');
       document.querySelector('#notice').style.display = 'flex';
-    }
+    };
 
     document.querySelector('#closeNotice').addEventListener('click', () => {
       closeNotice();
@@ -661,7 +693,17 @@
 
     document.querySelector('#btnNotice').addEventListener('click', () => {
       openNotice();
-    })
+    });
+
+    function simpleToast(msg) {
+      const toast = document.createElement('div');
+      toast.classList.add('toast');
+      toast.innerHTML = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        document.body.removeChild(toast);
+      }, 1200);
+    }
 
     const checkNotice = () => {
       const lastViewed = localStorage.getItem(noticeKey);
@@ -745,13 +787,15 @@
     <p>이 프로그램은 무료이며 사용에 아무런 제한이 없습니다.</p>
     <p>이 프로그램의 사용이나 프로그램을 이용한 영상 제작, 방송 등에 원작자는 아무런 제재를 가하거나 이의를 제기하지 않습니다. 자유롭게 사용하셔도 됩니다.</p>
     <p>다만 저작권자를 사칭하는 것은 저작권법을 위반하는 범죄입니다.</p>
-    <p>저작권자를 사칭하여 권리 침해를 주장하는 경우를 보거나 겪으시는 분은 <a href="mailto:lazygyu+legal@gmail.com" target="_blank">lazygyu+legal@gmail.com</a> 으로 제보 부탁드립니다.</p>
+    <p>저작권자를 사칭하여 권리 침해를 주장하는 경우를 보거나 겪으시는 분은 <a href="mailto:lazygyu+legal@gmail.com" target="_blank">lazygyu+legal@gmail.com</a>
+      으로 제보 부탁드립니다.</p>
     <p>감사합니다.</p>
   </div>
   <div class="notice-action">
     <button id="closeNotice" data-trans>Close</button>
   </div>
 </div>
-<div class="copyright">&copy; 2025.<a href="https://lazygyu.net" target="_blank">lazygyu</a> <span data-trans>This program is freeware and may be used freely anywhere, including in broadcasts and videos.</span></div>
+<div class="copyright">&copy; 2025.<a href="https://lazygyu.net" target="_blank">lazygyu</a> <span data-trans>This program is freeware and may be used freely anywhere, including in broadcasts and videos.</span>
+</div>
 </body>
 </html>

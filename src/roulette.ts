@@ -75,6 +75,12 @@ export class Roulette extends EventTarget {
     if (obj.onWheel) {
       this._renderer.canvas.addEventListener('wheel', obj.onWheel);
     }
+    if (obj.onMessage) {
+      obj.onMessage((msg) => {
+        console.log('onMessage', msg);
+        this.dispatchEvent(new CustomEvent('message', { detail: msg }));
+      });
+    }
   }
 
   @bound
@@ -284,8 +290,6 @@ export class Roulette extends EventTarget {
         this._renderer.canvas.addEventListener(ev.toLowerCase(), this.mouseHandler.bind(this, ev));
       },
     );
-    this._renderer.canvas.addEventListener('mousemove', (e) => {
-    });
   }
 
   private _loadMap() {

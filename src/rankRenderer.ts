@@ -1,7 +1,8 @@
 import { RenderParameters } from './rouletteRenderer';
-import { UIObject } from './UIObject';
+import { MouseEventArgs, UIObject } from './UIObject';
 import { bound } from './utils/bound.decorator';
 import { Rect } from './types/rect.type';
+import { Marble } from './marble';
 
 export class RankRenderer implements UIObject {
   private _currentY = 0;
@@ -10,6 +11,10 @@ export class RankRenderer implements UIObject {
   private _userMoved = 0;
   private _currentWinner = -1;
   private maxY = 0;
+  private winners: Marble[] = [];
+  private marbles: Marble[] = [];
+  private winnerRank: number = -1;
+  private messageHandler?: (msg: string) => void;
 
   constructor() {
   }
@@ -21,6 +26,32 @@ export class RankRenderer implements UIObject {
       this._targetY = this.maxY;
     }
     this._userMoved = 2000;
+  }
+
+  @bound
+  onDblClick(e?: MouseEventArgs) {
+    if (e) {
+      if (navigator.clipboard) {
+        const tsv: string[] = [];
+        let rank = 0;
+        tsv.push(...[...this.winners, ...this.marbles].map((m) => {
+          rank++;
+          return [rank.toString(), m.name, rank === this.winnerRank ? '☆' : ''].join('\t');
+        }));
+
+        tsv.unshift(['Rank', 'Name', 'Winner'].join('\t'));
+
+        navigator.clipboard.writeText(tsv.join('\n')).then(() => {
+          if (this.messageHandler) {
+            this.messageHandler('The result has been copied');
+          }
+        });
+      }
+    }
+  }
+
+  onMessage(func: (msg: string) => void) {
+    this.messageHandler = func;
   }
 
   render(
@@ -36,6 +67,10 @@ export class RankRenderer implements UIObject {
       (marbles.length + winners.length) * this.fontHeight + this.fontHeight,
     );
     this._currentWinner = winners.length;
+
+    this.winners = winners;
+    this.marbles = marbles;
+    this.winnerRank = winnerRank;
 
     ctx.save();
     ctx.textAlign = 'right';

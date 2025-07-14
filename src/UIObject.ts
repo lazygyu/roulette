@@ -24,4 +24,6 @@ export interface UIObject {
   onMouseUp?(e?: MouseEventArgs): void;
 
   onDblClick?(e?: MouseEventArgs): void;
+
+  onMessage?(func: (msg: string) => void): void;
 }
