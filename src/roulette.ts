@@ -15,6 +15,7 @@ import { Minimap } from './minimap';
 import { VideoRecorder } from './utils/videoRecorder';
 import { IPhysics } from './IPhysics';
 import { Box2dPhysics } from './physics-box2d';
+import { MouseEventHandlerName, MouseEventName } from './types/mouseEvents.type';
 
 export class Roulette extends EventTarget {
   private _marbles: Marble[] = [];
@@ -251,27 +252,39 @@ export class Roulette extends EventTarget {
     this._loadMap();
   }
 
+  @bound
+  private mouseHandler(eventName: MouseEventName, e: MouseEvent) {
+    const handlerName = `on${eventName}` as MouseEventHandlerName;
+
+    const sizeFactor = this._renderer.sizeFactor;
+    const pos = { x: e.offsetX * sizeFactor, y: e.offsetY * sizeFactor };
+    this._uiObjects.forEach((obj) => {
+      if (!obj[handlerName]) return;
+      const bounds = obj.getBoundingBox();
+      if (!bounds) {
+        obj[handlerName]({ ...pos, button: e.button });
+      } else if (
+        bounds &&
+        pos.x >= bounds.x &&
+        pos.y >= bounds.y &&
+        pos.x <= bounds.x + bounds.w &&
+        pos.y <= bounds.y + bounds.h
+      ) {
+        obj[handlerName]({ x: pos.x - bounds.x, y: pos.y - bounds.y, button: e.button });
+      } else {
+        obj[handlerName](undefined);
+      }
+    });
+  }
+
   private attachEvent() {
+    ['MouseMove', 'MouseUp', 'MouseDown', 'DblClick'].forEach(
+      (ev) => {
+        // @ts-ignore
+        this._renderer.canvas.addEventListener(ev.toLowerCase(), this.mouseHandler.bind(this, ev));
+      },
+    );
     this._renderer.canvas.addEventListener('mousemove', (e) => {
-      const sizeFactor = this._renderer.sizeFactor;
-      const pos = { x: e.offsetX * sizeFactor, y: e.offsetY * sizeFactor };
-      this._uiObjects.forEach((obj) => {
-        if (!obj.onMouseMove) return;
-        const bounds = obj.getBoundingBox();
-        if (!bounds) {
-          obj.onMouseMove({ ...pos });
-        } else if (
-          bounds &&
-          pos.x >= bounds.x &&
-          pos.y >= bounds.y &&
-          pos.x <= bounds.x + bounds.w &&
-          pos.y <= bounds.y + bounds.h
-        ) {
-          obj.onMouseMove({ x: pos.x - bounds.x, y: pos.y - bounds.y });
-        } else {
-          obj.onMouseMove(undefined);
-        }
-      });
     });
   }
 
