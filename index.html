@@ -699,6 +699,12 @@
       const toast = document.createElement('div');
       toast.classList.add('toast');
       toast.innerHTML = msg;
+
+      if (window.translateElement) {
+        console.log('try to translate');
+        window.translateElement(toast);
+      }
+
       document.body.appendChild(toast);
       setTimeout(() => {
         document.body.removeChild(toast);
