@@ -72,19 +72,27 @@ export class RouletteRenderer {
     resizing();
   }
 
+  private async _loadImage(url: string): Promise<HTMLImageElement> {
+    return new Promise((rs) => {
+      const img = new Image();
+      img.addEventListener('load', () => {
+        rs(img);
+      });
+      img.src = url;
+    });
+  }
+
   private async _load(): Promise<void> {
     const loadPromises =
-      [{ name: '챔루', img: '/assets/images/chamru.png' },
-        { name: '쿠빈', img: '/assets/images/kubin.png' },
-      ].map((imgDef): Promise<void> =>
-        new Promise((rs) => {
-          const imageUrl = new URL(imgDef.img, import.meta.url);
-          this._images[imgDef.name] = new Image();
-          this._images[imgDef.name].src = imageUrl.toString();
-          this._images[imgDef.name].addEventListener('load', () => {
-            rs();
-          });
-        }));
+      [
+        { name: '챔루', imgUrl: '../assets/images/chamru.png' },
+        { name: '쿠빈', imgUrl: '../assets/images/kubin.png' },
+      ].map(({ name, imgUrl }) => {
+        return (async () => {
+          this._images[name] = await this._loadImage(imgUrl);
+        })();
+      });
+
     await Promise.all(loadPromises);
   }
 

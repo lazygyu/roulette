@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "license": "MIT",
   "devDependencies": {
-    "@parcel/packager-raw-url": "^2.13.3",
-    "@parcel/transformer-sass": "^2.13.3",
-    "@parcel/transformer-webmanifest": "^2.13.3",
+    "@parcel/packager-raw-url": "2.15.4",
+    "@parcel/transformer-webmanifest": "2.15.4",
     "eslint": "^9.15.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
     "parcel": "^2.13.3",
+    "parcel-reporter-static-files-copy": "^1.5.3",
     "path-browserify": "^1.0.0",
     "prettier": "^3.3.3",
     "process": "^0.11.10",
@@ -24,5 +24,9 @@
   },
   "dependencies": {
     "box2d-wasm": "^7.0.0"
+  },
+  "staticFiles": {
+    "staticPath": "assets/images",
+    "staticOutPath": "assets/images"
   }
 }
