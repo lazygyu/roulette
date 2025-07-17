@@ -1,4 +1,4 @@
-import {canvasHeight, canvasWidth, DefaultBloomColor, DefaultEntityColor, initialZoom} from './data/constants';
+import { canvasHeight, canvasWidth, DefaultBloomColor, DefaultEntityColor, initialZoom } from './data/constants';
 import { Camera } from './camera';
 import { StageDef } from './data/maps';
 import { Marble } from './marble';
@@ -73,14 +73,19 @@ export class RouletteRenderer {
   }
 
   private async _load(): Promise<void> {
-    return new Promise((rs) => {
-      const imageUrl = new URL('/assets/images/chamru.png', import.meta.url);
-      this._images['챔루'] = new Image();
-      this._images['챔루'].src = imageUrl.toString();
-      this._images['챔루'].addEventListener('load', () => {
-        rs();
-      });
-    });
+    const loadPromises =
+      [{ name: '챔루', img: '/assets/images/chamru.png' },
+        { name: '쿠빈', img: '/assets/images/kubin.png' },
+      ].map((imgDef): Promise<void> =>
+        new Promise((rs) => {
+          const imageUrl = new URL(imgDef.img, import.meta.url);
+          this._images[imgDef.name] = new Image();
+          this._images[imgDef.name].src = imageUrl.toString();
+          this._images[imgDef.name].addEventListener('load', () => {
+            rs();
+          });
+        }));
+    await Promise.all(loadPromises);
   }
 
   render(renderParameters: RenderParameters, uiObjects: UIObject[]) {
@@ -128,7 +133,7 @@ export class RouletteRenderer {
           if (shape.points.length > 0) {
             this.ctx.beginPath();
             this.ctx.moveTo(shape.points[0][0], shape.points[0][1]);
-            for(let i = 1; i < shape.points.length; i++) {
+            for (let i = 1; i < shape.points.length; i++) {
               this.ctx.lineTo(shape.points[i][0], shape.points[i][1]);
             }
             this.ctx.stroke();
