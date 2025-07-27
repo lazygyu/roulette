@@ -36,7 +36,7 @@ export class RankRenderer implements UIObject {
         let rank = 0;
         tsv.push(...[...this.winners, ...this.marbles].map((m) => {
           rank++;
-          return [rank.toString(), m.name, rank === this.winnerRank ? '☆' : ''].join('\t');
+          return [rank.toString(), m.name, rank - 1 === this.winnerRank ? '☆' : ''].join('\t');
         }));
 
         tsv.unshift(['Rank', 'Name', 'Winner'].join('\t'));
