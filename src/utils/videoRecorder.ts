@@ -24,13 +24,13 @@ export class VideoRecorder {
         this.chunks.push(e.data);
       };
       this.mediaRecorder.onstop = () => {
-        const blob = new Blob(this.chunks, { type: 'video/webm' });
+        const blob = new Blob(this.chunks, { type: 'video/mp4' });
         const videoUrl = URL.createObjectURL(blob);
         const downloadLink = document.createElement('a');
         const d = new Date();
 
         downloadLink.href = videoUrl;
-        downloadLink.download = `marble_roulette_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.webm`;
+        downloadLink.download = `marble_roulette_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.mp4`;
         downloadLink.click();
         downloadLink.remove();
         URL.revokeObjectURL(videoUrl);

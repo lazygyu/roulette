@@ -85,11 +85,12 @@ export class RouletteRenderer {
   private async _load(): Promise<void> {
     const loadPromises =
       [
-        { name: '챔루', imgUrl: '/roulette/assets/images/chamru.png' },
-        { name: '쿠빈', imgUrl: '/roulette/assets/images/kubin.png' },
+        { name: '챔루', imgUrl: new URL('../assets/images/chamru.png', import.meta.url) },
+        { name: '쿠빈', imgUrl: new URL('../assets/images/kubin.png', import.meta.url) },
       ].map(({ name, imgUrl }) => {
         return (async () => {
-          this._images[name] = await this._loadImage(imgUrl);
+          console.dir(imgUrl);
+          this._images[name] = await this._loadImage(imgUrl.toString());
         })();
       });
 

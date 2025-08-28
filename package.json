@@ -24,9 +24,5 @@
   },
   "dependencies": {
     "box2d-wasm": "^7.0.0"
-  },
-  "staticFiles": {
-    "staticPath": "assets/images",
-    "staticOutPath": "assets/images"
   }
 }
