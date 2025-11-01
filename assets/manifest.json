@@ -40,5 +40,9 @@
     }
   ],
   "start_url": "https://lazygyu.github.io/roulette/",
+  "display_override": [
+    "fullscreen",
+    "minimal-ui"
+  ],
   "display": "standalone"
 }
