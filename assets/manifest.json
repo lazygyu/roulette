@@ -39,6 +39,6 @@
       "density": "4.0"
     }
   ],
-  "startUrl": "/roulette/",
+  "startUrl": "https://lazygyu.github.io/roulette/",
   "display": "standalone"
 }
