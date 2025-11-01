@@ -1,5 +1,6 @@
 {
   "name": "App",
+  "id": "lazygyu.marble-roulette",
   "icons": [
     {
       "src": "./android-icon-36x36.png",
