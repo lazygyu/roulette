@@ -9,6 +9,6 @@ registerServiceWorker();
 const roulette = new Roulette();
 
 // eslint-disable-next-line
-(window as any).roullete = roulette;
+(window as any).roulette = roulette;
 // eslint-disable-next-line
 (window as any).options = options;

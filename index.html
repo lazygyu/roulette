@@ -491,7 +491,7 @@
 
   function getReady() {
     const names = getNames();
-    window.roullete.setMarbles(names);
+    window.roulette.setMarbles(names);
     ready = names.length > 0;
     localStorage.setItem('mbr_names', names.join(','));
     switch (winnerType) {
@@ -499,7 +499,7 @@
         setWinnerRank(1);
         break;
       case 'last':
-        const total = window.roullete.getCount();
+        const total = window.roulette.getCount();
         setWinnerRank(total);
         break;
     }
@@ -508,7 +508,7 @@
   function setWinnerRank(rank) {
     document.querySelector('#in_winningRank').value = rank;
     window.options.winningRank = rank - 1;
-    window.roullete.setWinningRank(window.options.winningRank);
+    window.roulette.setWinningRank(window.options.winningRank);
 
     if (winnerType === 'first') {
       document.querySelector('.btn-first-winner').classList.toggle('active', true);
@@ -534,7 +534,7 @@
   });
 
   function initialize() {
-    if (!window.roullete || !window.roullete.isReady) {
+    if (!window.roulette || !window.roulette.isReady) {
       console.log('does not loaded yet');
       setTimeout(initialize, 100);
       return;
@@ -589,21 +589,21 @@
       gtag && gtag('event', 'start', {
         'event_category': 'roulette',
         'event_label': 'start',
-        'value': window.roullete.getCount(),
+        'value': window.roulette.getCount(),
       });
-      window.roullete.start();
+      window.roulette.start();
       document.querySelector('#settings').classList.add('hide');
       document.querySelector('#donate').classList.add('hide');
     });
 
     document.querySelector('#chkAutoRecording').addEventListener('change', (e) => {
       window.options.autoRecording = e.target.matches(':checked');
-      window.roullete.setAutoRecording(window.options.autoRecording);
+      window.roulette.setAutoRecording(window.options.autoRecording);
     });
 
     document.querySelector('#chkSkill').addEventListener('change', (e) => {
       window.options.useSkills = e.target.matches(':checked');
-      window.roullete.setWinningRank(window.options.winningRank);
+      window.roulette.setWinningRank(window.options.winningRank);
     });
 
     document.querySelector('#in_winningRank').addEventListener('change', (e) => {
@@ -613,7 +613,7 @@
     });
 
     document.querySelector('.btn-last-winner').addEventListener('click', () => {
-      const total = window.roullete.getCount();
+      const total = window.roulette.getCount();
       winnerType = 'last';
       setWinnerRank(total);
     });
@@ -623,7 +623,7 @@
     });
 
     document.querySelector('#btnShake').addEventListener('click', () => {
-      window.roullete.shake();
+      window.roulette.shake();
       gtag('event', 'shake', {
         'event_category': 'roulette',
         'event_label': 'shake',
@@ -631,23 +631,23 @@
       });
     });
 
-    window.roullete.addEventListener('goal', () => {
+    window.roulette.addEventListener('goal', () => {
       ready = false;
       setTimeout(() => {
         document.querySelector('#settings').classList.remove('hide');
         document.querySelector('#donate').classList.remove('hide');
       }, 3000);
     });
-    window.roullete.addEventListener('shakeAvailableChanged', (e) => {
+    window.roulette.addEventListener('shakeAvailableChanged', (e) => {
       document.querySelector('#inGame').classList.toggle('hide', !e.detail);
     });
-    window.roullete.addEventListener('message', (e) => {
+    window.roulette.addEventListener('message', (e) => {
       simpleToast(e.detail);
     });
 
     document.querySelector('#btnShuffle').click();
 
-    const maps = window.roullete.getMaps();
+    const maps = window.roulette.getMaps();
     const mapSelector = document.querySelector('#sltMap');
     maps.forEach((map) => {
       const option = document.createElement('option');
@@ -659,7 +659,7 @@
     });
     mapSelector.addEventListener('change', (e) => {
       const index = e.target.value;
-      window.roullete.setMap(index);
+      window.roulette.setMap(index);
     });
 
     const checkDonateButtonLoaded = () => {
