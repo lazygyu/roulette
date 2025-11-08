@@ -1,8 +1,9 @@
 export function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
+      const swUrl = `${window.location.origin}/service-worker.js`;
       navigator.serviceWorker
-        .register(new URL('service-worker.js', import.meta.url))
+        .register(swUrl)
         .then((reg) => console.log('service worker registered', reg.scope))
         .catch((err) => console.error('service worker registration failed', err));
     });

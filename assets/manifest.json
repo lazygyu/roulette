@@ -40,7 +40,7 @@
       "density": "4.0"
     }
   ],
-  "start_url": ".",
+  "start_url": "https://lazygyu.github.io/roulette",
   "display_override": [
     "fullscreen",
     "minimal-ui"
