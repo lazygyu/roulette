@@ -292,9 +292,12 @@ export class Roulette extends EventTarget {
     ['MouseMove', 'MouseUp', 'MouseDown', 'DblClick'].forEach(
       (ev) => {
         // @ts-ignore
-        this._renderer.canvas.addEventListener(ev.toLowerCase(), this.mouseHandler.bind(this, ev));
+        this._renderer.canvas.addEventListener(ev.toLowerCase().replace('mouse', 'pointer'), this.mouseHandler.bind(this, ev));
       },
     );
+    this._renderer.canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+    });
   }
 
   private _loadMap() {
