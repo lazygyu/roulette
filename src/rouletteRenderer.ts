@@ -93,10 +93,13 @@ export class RouletteRenderer {
         { name: '주누피', imgUrl: new URL('../assets/images/junyoop.png', import.meta.url) },
       ].map(({ name, imgUrl }) => {
         return (async () => {
-          console.dir(imgUrl);
           this._images[name] = await this._loadImage(imgUrl.toString());
         })();
       });
+
+    loadPromises.push((async () => {
+      await this._loadImage(new URL('../assets/images/ff.svg', import.meta.url).toString());
+    })());
 
     await Promise.all(loadPromises);
   }
