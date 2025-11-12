@@ -306,7 +306,7 @@ export class Roulette extends EventTarget {
     }
 
     this.physics.createStage(this._stage);
-    this._camera.initializePosition(this._stage);
+    this._camera.initializePosition();
   }
 
   public clearMarbles() {
@@ -450,6 +450,6 @@ export class Roulette extends EventTarget {
     const names = this._marbles.map((marble) => marble.name);
     this._stage = stages[index];
     this.setMarbles(names);
-    this._camera.initializePosition(this._stage);
+    this._camera.initializePosition();
   }
 }

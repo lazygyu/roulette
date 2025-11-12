@@ -50,7 +50,7 @@ export class Camera {
     this._shouldFollowMarbles = true;
   }
 
-  initializePosition(stage: StageDef) {
+  initializePosition() {
     const centerX = 12.95;
     const initialY = 2;
 
