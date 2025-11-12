@@ -129,7 +129,7 @@ export class Marble {
     const viewPortHh = (viewPort.h / viewPort.zoom / 2);
     const viewPortLeft = viewPort.x - viewPortHw;
     const viewPortRight = viewPort.x + viewPortHw;
-    const viewPortTop = viewPort.y - viewPortHh;
+    const viewPortTop = viewPort.y - viewPortHh - (this.size / 2);
     const viewPortBottom = viewPort.y + viewPortHh;
     if (!isMinimap && (this.x < viewPortLeft || this.x > viewPortRight || this.y < viewPortTop || this.y > viewPortBottom)) {
       return;
