@@ -306,6 +306,7 @@ export class Roulette extends EventTarget {
     }
 
     this.physics.createStage(this._stage);
+    this._camera.initializePosition(this._stage);
   }
 
   public clearMarbles() {
@@ -321,6 +322,8 @@ export class Roulette extends EventTarget {
     if (this._winnerRank >= this._marbles.length) {
       this._winnerRank = this._marbles.length - 1;
     }
+    this._camera.startFollowingMarbles();
+    
     if (this._autoRecording) {
       this._recorder.start().then(() => {
         this.physics.start();
@@ -447,5 +450,6 @@ export class Roulette extends EventTarget {
     const names = this._marbles.map((marble) => marble.name);
     this._stage = stages[index];
     this.setMarbles(names);
+    this._camera.initializePosition(this._stage);
   }
 }

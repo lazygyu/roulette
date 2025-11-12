@@ -9,6 +9,7 @@ export class Camera {
   private _zoom: number = 1;
   private _targetZoom: number = 1;
   private _locked = false;
+  private _shouldFollowMarbles = false;
 
   get zoom() {
     return this._zoom;
@@ -45,6 +46,19 @@ export class Camera {
     this._locked = v;
   }
 
+  startFollowingMarbles() {
+    this._shouldFollowMarbles = true;
+  }
+
+  initializePosition(stage: StageDef) {
+    const centerX = 12.95;
+    const initialY = 2;
+
+    this._position = { x: centerX, y: initialY };
+    this._targetPosition = { x: centerX, y: initialY };
+    this._shouldFollowMarbles = false;
+  }
+
   update({
     marbles,
     stage,
@@ -75,6 +89,10 @@ export class Camera {
     needToZoom: boolean,
     targetIndex: number
   ) {
+    if (!this._shouldFollowMarbles) {
+      return;
+    }
+
     if (marbles.length > 0) {
       const targetMarble = marbles[targetIndex]
         ? marbles[targetIndex]
