@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5899C1DJM0"></script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5899C1DJM0"></script>
+
+  <title>Marble Roulette</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="apple-touch-icon" sizes="57x57" href="assets/apple-icon-57x57.png">
   <link rel="apple-touch-icon" sizes="60x60" href="assets/apple-icon-60x60.png">
   <link rel="apple-touch-icon" sizes="72x72" href="assets/apple-icon-72x72.png">
@@ -19,471 +21,19 @@
   <link rel="icon" type="image/png" sizes="96x96" href="assets/favicon-96x96.png">
   <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
   <link rel="manifest" href="assets/manifest.json">
+
   <meta name="msapplication-TileColor" content="#ffffff">
   <meta name="msapplication-TileImage" content="assets/ms-icon-144x144.png">
   <meta name="theme-color" content="#ffffff">
-  <title>Marble Roulette</title>
+
   <meta name="description" content="A lucky draw by dropping marbles, made by lazygyu">
   <meta property="og:url" content="https://lazygyu.github.io/roulette/">
   <meta property="og:title" content="Marble Roulette">
   <meta property="og:description" content="A lucky draw by dropping marbles, made by lazygyu">
   <meta property="og:site_name" content="lazygyu.github.io">
   <meta property="og:type" content="website">
-  <style lang="scss">
-    * {
-      box-sizing: border-box;
-    }
 
-    canvas {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    div.copyright {
-      position: fixed;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      color: white;
-      font-size: 12px;
-      z-index: 999;
-      width: 90%;
-      text-align: center;
-    }
-
-    div.copyright a {
-      color: white;
-    }
-
-    #settings {
-      position: fixed;
-      bottom: 1rem;
-      left: 1rem;
-      background: #666;
-      border-radius: 10px;
-      padding: 10px;
-      z-index: 999;
-      min-width: 50%;
-
-      display: flex;
-      visibility: visible;
-      opacity: 1;
-      transition: visibility 0s, opacity 1s linear;
-
-      &.hide {
-        opacity: 0;
-        visibility: hidden;
-      }
-
-      h3 {
-        padding: 0;
-        margin: 0;
-        font-size: 12pt;
-        color: #fefefe;
-      }
-
-      textarea {
-        width: 100%;
-        min-height: 5rem;
-        border: none;
-        background: #999;
-        font-size: 14pt;
-      }
-
-      button {
-        color: #fefefe;
-        background: #222;
-        border: none;
-        border-radius: 5px;
-        padding: 5px 10px;
-        position: relative;
-        overflow: hidden;
-
-        &:active:after {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-        }
-      }
-
-      .icon {
-        background: currentColor;
-        mask-repeat: no-repeat;
-        mask-position: center center;
-        mask-size: contain;
-        display: inline-block;
-        width: 25px;
-        height: 25px;
-        vertical-align: middle;
-
-        &.play {
-          mask-image: url('assets/images/play.svg');
-        }
-
-        &.shuffle {
-          mask-image: url('assets/images/shuffle.svg');
-        }
-
-        &.megaphone {
-          mask-image: url('assets/images/megaphone.svg');
-        }
-
-        &.record {
-          mask-image: url('assets/images/record.svg');
-        }
-
-        &.map {
-          mask-image: url('assets/images/map.svg');
-        }
-
-        &.trophy {
-          mask-image: url('assets/images/trophy.svg');
-        }
-
-        &.bomb {
-          mask-image: url('assets/images/bomb.svg');
-        }
-      }
-
-      div.left {
-        flex-grow: 1;
-        flex-shrink: 1;
-        order: 1;
-
-        .actions {
-          display: flex;
-          align-items: center;
-          justify-content: stretch;
-          gap: 2px;
-
-          div.sep {
-            flex-grow: 1;
-          }
-        }
-      }
-
-      div.right {
-        order: 2;
-        flex-grow: 0;
-        flex-shrink: 0;
-
-        div.row {
-          display: flex;
-          align-items: center;
-          height: 35px;
-
-          label {
-            width: 150px;
-            flex-grow: 0;
-            flex-shrink: 0;
-            padding-left: 1rem;
-            color: white;
-          }
-        }
-      }
-
-      select {
-        height: 25px;
-        width: 100%;
-        border-radius: 5px;
-        background: #999;
-      }
-
-      input[type=checkbox] {
-        width: 0;
-        height: 25px;
-        position: relative;
-        vertical-align: middle;
-
-        &:before {
-          position: absolute;
-          content: '';
-          display: inline-block;
-          width: 50px;
-          height: 25px;
-          border-radius: 25px;
-          background: #999;
-          top: 0;
-          left: 0;
-        }
-
-        &:after {
-          position: absolute;
-          top: 0;
-          left: 0;
-          content: '';
-          border-radius: 25px;
-          width: 25px;
-          height: 25px;
-          background: #ccc;
-          transition: transform .2s;
-        }
-
-        &:checked:after {
-          transform: translateX(100%);
-          background: white;
-        }
-
-        &:checked:before {
-          content: '';
-          background: #00baff;
-        }
-      }
-
-      .btn-group {
-        display: flex;
-        justify-content: stretch;
-
-        & > * {
-          box-sizing: border-box;
-          flex-grow: 0;
-          flex-shrink: 0;
-          overflow: hidden;
-          height: 25px;
-          width: 33%;
-          border-radius: 0;
-          background: #999;
-          border: none;
-          padding: 0;
-          color: #fefefe;
-
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          &:first-child {
-            border-radius: 10px 0 0 10px;
-          }
-
-          &:last-child {
-            border-radius: 0 10px 10px 0;
-          }
-
-          &.active:before {
-            content: '';
-            width: 15px;
-            height: 15px;
-            display: inline-block;
-            vertical-align: middle;
-            mask-image: url('assets/images/check.svg');
-            mask-repeat: no-repeat;
-            background: white;
-          }
-
-          &.active {
-            background: #333;
-          }
-        }
-
-        input[type=number] {
-          box-sizing: border-box;
-          text-align: center;
-        }
-      }
-    }
-
-    #notice {
-      display: none;
-      position: fixed;
-      overflow: hidden;
-      top: 50%;
-      left: 50%;
-      width: 500px;
-      max-width: 90%;
-      transform: translate(-50%, -50%);
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 30px;
-      z-index: 1001;
-      padding: 10px 10px;
-      color: #333;
-      flex-direction: column;
-
-      h1 {
-        background-color: #ffdd00;
-        margin: -10px -10px 0 -10px;
-        padding: 10px 5px 10px .5em;
-        border-bottom: 1px solid #333;
-        display: flex;
-        align-items: center;
-
-        &:before {
-          content: '';
-          display: inline-block;
-          width: 1em;
-          height: 1em;
-          background-image: url('assets/images/megaphone.svg');
-          background-size: contain;
-          margin-right: 0.2em;
-        }
-      }
-
-      div.notice-body {
-        padding: 0 .5em;
-      }
-
-      div.notice-action {
-        display: flex;
-        justify-content: end;
-
-        button {
-          color: #fefefe;
-          background: #222;
-          border: none;
-          border-radius: 20px;
-          padding: 5px 10px;
-          position: relative;
-          overflow: hidden;
-          width: 50%;
-          height: 50px;
-
-          &:active:after {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-          }
-        }
-      }
-    }
-
-    #donate {
-      position: fixed;
-      bottom: calc(160px + 1.5rem);
-      left: 1rem;
-      z-index: 999;
-      visibility: visible;
-      opacity: 1;
-      transition: visibility 0s, opacity 1s linear;
-
-      &.hide {
-        opacity: 0;
-        visibility: hidden;
-      }
-    }
-
-    @media screen and (max-width: 750px) {
-      #donate {
-        bottom: 2rem;
-      }
-
-      #settings {
-        bottom: calc(2.5rem + 60px);
-        display: block;
-        min-width: 0;
-        max-width: 100%;
-        width: calc(100% - 2rem);
-        overflow: hidden;
-        opacity: 1;
-        visibility: visible;
-        transition: visibility 0s, opacity 1s linear;
-
-        &.hide {
-          opacity: 0;
-          visibility: hidden;
-        }
-
-        div.right div.row {
-          height: auto;
-          display: block;
-          border-bottom: 1px solid #555;
-          padding: .5rem 0;
-
-          label {
-            width: 100%;
-            margin-bottom: .5rem;
-            padding-left: 0;
-            display: block;
-          }
-
-          .icon {
-            width: 15px;
-            height: 15px;
-          }
-        }
-      }
-
-
-      #notice {
-        position: fixed;
-        box-sizing: border-box;
-        top: 0;
-        left: 0;
-        width: 100%;
-        max-width: 100%;
-        height: 100%;
-        transform: none;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 4px;
-        z-index: 1001;
-        padding: 5px 10px;
-        color: #333;
-        display: none;
-        flex-direction: column;
-
-        div.notice-body {
-          flex-grow: 1;
-        }
-
-      }
-
-    }
-
-    div.toast {
-      position: fixed;
-      transform: translate(-50%, 0);
-      padding: 8px;
-      border-radius: 4px;
-      background: #ccc;
-      overflow: hidden;
-      bottom: 10px;
-      left: 50%;
-      z-index: 1000;
-      animation: .2s linear fade-in, .2s linear 1s reverse fade-in;
-    }
-
-    @keyframes fade-in {
-      0% {
-        opacity: 0;
-        transform: translate(-50%, 100%);
-      }
-
-      100% {
-        opacity: 1;
-        transform: translate(-50%, 0);
-      }
-    }
-
-    .link_donation {
-      display: flex;
-      padding: 1em;
-      width: 100%;
-      align-items: center;
-      justify-content: center;
-      background: repeating-linear-gradient(
-        45deg,
-        #ffaa00,
-        #ffaa00 20px,
-        #222222 20px,
-        #222222 40px
-      );
-      color: white;
-      font-size: 1.5em;
-      font-weight: bold;
-      border-radius: .5em;
-      margin-bottom: 1em;
-      text-decoration: none;
-      text-shadow: -2px 0px black, 0px 2px black, 2px 0px black, 0px -2px black;
-    }
-  </style>
+  <link rel='stylesheet' href='assets/style.scss' />
 </head>
 <body>
 <script type="module" src="./src/index.ts"></script>
@@ -748,8 +298,6 @@
     };
 
     checkNotice();
-
-
   }
 </script>
 <div id="settings" class="settings">
@@ -823,7 +371,8 @@
       끼쳐드렸습니다.</p>
     <p>이런 사정을 알고 <a href='https://www.youtube.com/@%EA%BD%89%EB%B3%80%ED%98%B8%EC%82%AC' target='_blank'>꽉변호사</a>님께서 법적
       조치에 도움을 주겠다고 연락을 주셨습니다.</p>
-    <p>법적 절차에 필요한 비용을 모금을 통해 충당할 예정이고, 혹시 사용 후 남은 금액이 있다면 전액 사회적 약자를 위한 공익 소송을 담당하고 있는 <a href='https://www.legalaid.or.kr/' target='_blank'>대한변협법률구조재단</a>에
+    <p>법적 절차에 필요한 비용을 모금을 통해 충당할 예정이고, 혹시 사용 후 남은 금액이 있다면 전액 사회적 약자를 위한 공익 소송을 담당하고 있는 <a
+      href='https://www.legalaid.or.kr/' target='_blank'>대한변협법률구조재단</a>에
       기부됩니다.</p>
     <p>이 프로그램 뿐 아니라 이러한 저작권 문제로 고통받는 다른 분들께도 좋은 선례가 될 수 있도록 도와주세요!<br />
     </p>
@@ -835,7 +384,7 @@
     <button id="closeNotice" data-trans>Close</button>
   </div>
 </div>
-<div class="copyright">&copy; 2025.<a href="https://lazygyu.net" target="_blank">lazygyu</a> <span data-trans>This program is freeware and may be used freely anywhere, including in broadcasts and videos.</span>
+<div class="copyright">&copy; 2022-2025.<a href="https://lazygyu.net" target="_blank">lazygyu</a> <span data-trans>This program is freeware and may be used freely anywhere, including in broadcasts and videos.</span>
 </div>
 </body>
 </html>
