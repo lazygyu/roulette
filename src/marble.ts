@@ -122,15 +122,25 @@ export class Marble {
     zoom: number,
     outline: boolean,
     isMinimap: boolean = false,
-    skin?: CanvasImageSource,
+    skin: CanvasImageSource | undefined,
+    viewPort: { x: number, y: number, w: number, h: number, zoom: number },
   ) {
-    ctx.save();
+    const viewPortHw = (viewPort.w / viewPort.zoom / 2);
+    const viewPortHh = (viewPort.h / viewPort.zoom / 2);
+    const viewPortLeft = viewPort.x - viewPortHw;
+    const viewPortRight = viewPort.x + viewPortHw;
+    const viewPortTop = viewPort.y - viewPortHh;
+    const viewPortBottom = viewPort.y + viewPortHh;
+    if (!isMinimap && (this.x < viewPortLeft || this.x > viewPortRight || this.y < viewPortTop || this.y > viewPortBottom)) {
+      return;
+    }
+    const transform = ctx.getTransform();
     if (isMinimap) {
       this._renderMinimap(ctx);
     } else {
       this._renderNormal(ctx, zoom, outline, skin);
     }
-    ctx.restore();
+    ctx.setTransform(transform);
   }
 
   private _renderMinimap(ctx: CanvasRenderingContext2D) {
@@ -156,20 +166,22 @@ export class Marble {
     outline: boolean,
     skin?: CanvasImageSource,
   ) {
-    ctx.fillStyle = `hsl(${this.hue} 100% ${70 + 25 * Math.min(1, this.impact / 500)}%`;
+    const hs = this.size / 2;
+
     if (this._stuckTime > 0) {
       ctx.fillStyle = `hsl(${this.hue} 100% ${70 + 25 * Math.min(1, this._stuckTime / STUCK_DELAY)}%`;
+    } else {
+      ctx.fillStyle = `hsl(${this.hue} 100% ${70 + 25 * Math.min(1, this.impact / 500)}%`;
     }
 
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = zoom / 2;
+    // ctx.shadowColor = this.color;
+    // ctx.shadowBlur = zoom / 2;
     if (skin) {
-      const hs = this.size / 2;
-      ctx.save();
       ctx.translate(this.x, this.y);
       ctx.rotate(this.angle);
       ctx.drawImage(skin, -hs, -hs, hs * 2, hs * 2);
-      ctx.restore();
+      ctx.rotate(-this.angle);
+      ctx.translate(-this.x, -this.y);
     } else {
       this._drawMarbleBody(ctx, false);
     }
@@ -189,27 +201,21 @@ export class Marble {
   }
 
   private _drawName(ctx: CanvasRenderingContext2D, zoom: number) {
-    ctx.save();
-    ctx.translate(this.x, this.y + 0.25);
-    ctx.scale(1 / zoom, 1 / zoom);
-    ctx.font = `12pt sans-serif`;
+    ctx.font = `${12 / zoom}pt sans-serif`;
     ctx.strokeStyle = 'black';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 / zoom;
     ctx.fillStyle = this.color;
     ctx.shadowBlur = 0;
-    ctx.strokeText(this.name, 0, 0);
-    ctx.fillText(this.name, 0, 0);
-    ctx.restore();
+    ctx.strokeText(this.name, this.x, this.y + 0.25);
+    ctx.fillText(this.name, this.x, this.y + 0.25);
   }
 
   private _drawOutline(ctx: CanvasRenderingContext2D, lineWidth: number) {
-    ctx.save();
     ctx.beginPath();
     ctx.strokeStyle = 'white';
     ctx.lineWidth = lineWidth;
     ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.restore();
   }
 
   private _renderCooltime(ctx: CanvasRenderingContext2D, zoom: number) {
@@ -222,20 +228,6 @@ export class Marble {
       this.size / 2 + 2 / zoom,
       rad(270),
       rad(270 + (360 * this._coolTime) / this._maxCoolTime),
-    );
-    ctx.stroke();
-  }
-
-  private _renderStuck(ctx: CanvasRenderingContext2D, zoom: number) {
-    ctx.strokeStyle = 'green';
-    ctx.lineWidth = 1 / zoom;
-    ctx.beginPath();
-    ctx.arc(
-      this.x,
-      this.y,
-      this.size / 2 + 3 / zoom,
-      rad(270),
-      rad(270 + 360 * (1 - this._stuckTime / STUCK_DELAY)),
     );
     ctx.stroke();
   }

@@ -129,7 +129,7 @@ export class Minimap implements UIObject {
           if (shape.points.length > 0) {
             this.ctx.beginPath();
             this.ctx.moveTo(shape.points[0][0], shape.points[0][1]);
-            for(let i = 1; i < shape.points.length; i++) {
+            for (let i = 1; i < shape.points.length; i++) {
               this.ctx.lineTo(shape.points[i][0], shape.points[i][1]);
             }
             this.ctx.stroke();
@@ -144,8 +144,15 @@ export class Minimap implements UIObject {
 
   private drawMarbles(params: RenderParameters) {
     const { marbles } = params;
+    const viewPort = {
+      x: params.camera.x,
+      y: params.camera.y,
+      w: params.size.x,
+      h: params.size.y,
+      zoom: params.camera.zoom * initialZoom,
+    };
     marbles.forEach((marble) => {
-      marble.render(this.ctx, 1, false, true);
+      marble.render(this.ctx, 1, false, true, undefined, viewPort);
     });
   }
 }

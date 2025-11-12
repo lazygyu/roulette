@@ -136,7 +136,7 @@ export class RouletteRenderer {
   private renderEntities(entities: MapEntityState[]) {
     this.ctx.save();
     entities.forEach((entity) => {
-      this.ctx.save();
+      const transform = this.ctx.getTransform();
       this.ctx.translate(entity.x, entity.y);
       this.ctx.rotate(entity.angle);
       this.ctx.fillStyle = entity.shape.color ?? DefaultEntityColor[entity.shape.type];
@@ -169,7 +169,7 @@ export class RouletteRenderer {
           break;
       }
 
-      this.ctx.restore();
+      this.ctx.setTransform(transform);
     });
     this.ctx.restore();
   }
@@ -185,9 +185,11 @@ export class RouletteRenderer {
                           camera,
                           winnerRank,
                           winners,
+                          size,
                         }: RenderParameters) {
     const winnerIndex = winnerRank - winners.length;
 
+    const viewPort = { x: camera.x, y: camera.y, w: size.x, h: size.y, zoom: camera.zoom * initialZoom };
     marbles.forEach((marble, i) => {
       marble.render(
         this.ctx,
@@ -195,6 +197,7 @@ export class RouletteRenderer {
         i === winnerIndex,
         false,
         this._images[marble.name] || undefined,
+        viewPort,
       );
     });
   }
