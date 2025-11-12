@@ -4,6 +4,7 @@
   "license": "MIT",
   "devDependencies": {
     "@parcel/packager-raw-url": "2.16.1",
+    "@parcel/transformer-sass": "2.16.1",
     "@parcel/transformer-webmanifest": "2.16.1",
     "eslint": "^9.15.0",
     "eslint-config-prettier": "^9.1.0",
