@@ -105,7 +105,6 @@ export class Camera {
         this.zoom = 1;
       }
     } else {
-      this.setPosition({ x: 0, y: 0 });
       this.zoom = 1;
     }
   }
