@@ -1,5 +1,7 @@
 # Changelog
 
+- 2025-11-13:
+    - Optimized the rendering process.
 - 2025-11-10:
     - Now it can be fast forwarded by mouse down or touch down the centural area of the canvas.
 - 2025-11-01:
