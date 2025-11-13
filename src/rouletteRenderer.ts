@@ -1,4 +1,4 @@
-import { canvasHeight, canvasWidth, DefaultBloomColor, DefaultEntityColor, initialZoom } from './data/constants';
+import { canvasHeight, canvasWidth, initialZoom, Themes } from './data/constants';
 import { Camera } from './camera';
 import { StageDef } from './data/maps';
 import { Marble } from './marble';
@@ -7,6 +7,7 @@ import { GameObject } from './gameObject';
 import { UIObject } from './UIObject';
 import { VectorLike } from './types/VectorLike';
 import { MapEntityState } from './types/MapEntity.type';
+import { ColorTheme } from './types/ColorTheme';
 
 export type RenderParameters = {
   camera: Camera;
@@ -19,6 +20,7 @@ export type RenderParameters = {
   winnerRank: number;
   winner: Marble | null;
   size: VectorLike;
+  theme: ColorTheme;
 };
 
 export class RouletteRenderer {
@@ -27,6 +29,7 @@ export class RouletteRenderer {
   public sizeFactor = 1;
 
   private _images: { [key: string]: HTMLImageElement } = {};
+  private _theme: ColorTheme = Themes.dark;
 
   constructor() {
   }
@@ -41,6 +44,10 @@ export class RouletteRenderer {
 
   get canvas() {
     return this._canvas;
+  }
+
+  set theme(value: ColorTheme) {
+    this._theme = value;
   }
 
   async init() {
@@ -105,7 +112,8 @@ export class RouletteRenderer {
   }
 
   render(renderParameters: RenderParameters, uiObjects: UIObject[]) {
-    this.ctx.fillStyle = 'black';
+    this._theme = renderParameters.theme;
+    this.ctx.fillStyle = this._theme.background;
     this.ctx.fillRect(0, 0, this._canvas.width, this._canvas.height);
 
     this.ctx.save();
@@ -139,10 +147,10 @@ export class RouletteRenderer {
       const transform = this.ctx.getTransform();
       this.ctx.translate(entity.x, entity.y);
       this.ctx.rotate(entity.angle);
-      this.ctx.fillStyle = entity.shape.color ?? DefaultEntityColor[entity.shape.type];
-      this.ctx.strokeStyle = entity.shape.color ?? DefaultEntityColor[entity.shape.type];
-      this.ctx.shadowBlur = 15;
-      this.ctx.shadowColor = entity.shape.bloomColor ?? entity.shape.color ?? DefaultBloomColor[entity.shape.type];
+      this.ctx.fillStyle = entity.shape.color ?? this._theme.entity[entity.shape.type].fill;
+      this.ctx.strokeStyle = entity.shape.color ?? this._theme.entity[entity.shape.type].outline;
+      this.ctx.shadowBlur = this._theme.entity[entity.shape.type].bloomRadius;
+      this.ctx.shadowColor = entity.shape.bloomColor ?? entity.shape.color ?? this._theme.entity[entity.shape.type].bloom;
       const shape = entity.shape;
       switch (shape.type) {
         case 'polyline':
@@ -176,7 +184,7 @@ export class RouletteRenderer {
 
   private renderEffects({ effects, camera }: RenderParameters) {
     effects.forEach((effect) =>
-      effect.render(this.ctx, camera.zoom * initialZoom),
+      effect.render(this.ctx, camera.zoom * initialZoom, this._theme),
     );
   }
 
@@ -198,30 +206,49 @@ export class RouletteRenderer {
         false,
         this._images[marble.name] || undefined,
         viewPort,
+        this._theme,
       );
     });
   }
 
-  private renderWinner({ winner }: RenderParameters) {
+  private renderWinner({ winner, theme }: RenderParameters) {
     if (!winner) return;
     this.ctx.save();
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    this.ctx.fillStyle = theme.winnerBackground;
     this.ctx.fillRect(
       this._canvas.width / 2,
       this._canvas.height - 168,
       this._canvas.width / 2,
       168,
     );
-    this.ctx.fillStyle = 'white';
+    this.ctx.fillStyle = theme.winnerText;
+    this.ctx.strokeStyle = theme.winnerOutline;
+
     this.ctx.font = 'bold 48px sans-serif';
     this.ctx.textAlign = 'right';
+    this.ctx.lineWidth = 4;
+    if (theme.winnerOutline) {
+      this.ctx.strokeText(
+        'Winner',
+        this._canvas.width - 10,
+        this._canvas.height - 120,
+      );
+    }
+
     this.ctx.fillText(
       'Winner',
       this._canvas.width - 10,
       this._canvas.height - 120,
     );
     this.ctx.font = 'bold 72px sans-serif';
-    this.ctx.fillStyle = winner.color;
+    this.ctx.fillStyle = `hsl(${winner.hue} 100% ${theme.marbleLightness}`;
+    if (theme.winnerOutline) {
+      this.ctx.strokeText(
+        winner.name,
+        this._canvas.width - 10,
+        this._canvas.height - 55,
+      );
+    }
     this.ctx.fillText(
       winner.name,
       this._canvas.width - 10,
