@@ -1,9 +1,10 @@
-import { Skills, STUCK_DELAY } from './data/constants';
+import { Skills, STUCK_DELAY, Themes } from './data/constants';
 import { rad } from './utils/utils';
 import options from './options';
 import { VectorLike } from './types/VectorLike';
 import { Vector } from './utils/Vector';
 import { IPhysics } from './IPhysics';
+import { ColorTheme } from './types/ColorTheme';
 
 export class Marble {
   type = 'marble' as const;
@@ -21,6 +22,7 @@ export class Marble {
   private _maxCoolTime = 5000;
   private _stuckTime = 0;
   private lastPosition: VectorLike = { x: 0, y: 0 };
+  private theme: ColorTheme = Themes.dark;
 
   private physics: IPhysics;
 
@@ -124,7 +126,9 @@ export class Marble {
     isMinimap: boolean = false,
     skin: CanvasImageSource | undefined,
     viewPort: { x: number, y: number, w: number, h: number, zoom: number },
+    theme: ColorTheme,
   ) {
+    this.theme = theme;
     const viewPortHw = (viewPort.w / viewPort.zoom / 2);
     const viewPortHh = (viewPort.h / viewPort.zoom / 2);
     const viewPortLeft = viewPort.x - viewPortHw;
@@ -168,11 +172,7 @@ export class Marble {
   ) {
     const hs = this.size / 2;
 
-    if (this._stuckTime > 0) {
-      ctx.fillStyle = `hsl(${this.hue} 100% ${70 + 25 * Math.min(1, this._stuckTime / STUCK_DELAY)}%`;
-    } else {
-      ctx.fillStyle = `hsl(${this.hue} 100% ${70 + 25 * Math.min(1, this.impact / 500)}%`;
-    }
+    ctx.fillStyle = `hsl(${this.hue} 100% ${this.theme.marbleLightness + 25 * Math.min(1, this.impact / 500)}%`;
 
     // ctx.shadowColor = this.color;
     // ctx.shadowBlur = zoom / 2;
@@ -212,14 +212,14 @@ export class Marble {
 
   private _drawOutline(ctx: CanvasRenderingContext2D, lineWidth: number) {
     ctx.beginPath();
-    ctx.strokeStyle = 'white';
+    ctx.strokeStyle = this.theme.marbleWinningBorder;
     ctx.lineWidth = lineWidth;
     ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
     ctx.stroke();
   }
 
   private _renderCooltime(ctx: CanvasRenderingContext2D, zoom: number) {
-    ctx.strokeStyle = 'red';
+    ctx.strokeStyle = this.theme.coolTimeIndicator;
     ctx.lineWidth = 1 / zoom;
     ctx.beginPath();
     ctx.arc(

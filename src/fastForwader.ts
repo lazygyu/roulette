@@ -39,7 +39,7 @@ export class FastForwader implements UIObject {
       ctx.save();
       ctx.strokeStyle = 'white';
       ctx.globalAlpha = 0.5;
-      ctx.drawImage(this.icon, centerX - 25, centerY - 25, 25, 25);
+      ctx.drawImage(this.icon, centerX - 100, centerY - 100, 200, 200);
       ctx.restore();
     }
 

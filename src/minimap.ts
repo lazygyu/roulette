@@ -1,10 +1,11 @@
 import { RenderParameters } from './rouletteRenderer';
-import { DefaultEntityColor, initialZoom } from './data/constants';
+import { initialZoom } from './data/constants';
 import { UIObject } from './UIObject';
 import { bound } from './utils/bound.decorator';
 import { Rect } from './types/rect.type';
 import { VectorLike } from './types/VectorLike';
 import { MapEntityState } from './types/MapEntity.type';
+import { ColorTheme } from './types/ColorTheme';
 
 export class Minimap implements UIObject {
   private ctx!: CanvasRenderingContext2D;
@@ -67,13 +68,13 @@ export class Minimap implements UIObject {
 
     this.ctx = ctx;
     ctx.save();
-    ctx.fillStyle = '#333';
+    ctx.fillStyle = params.theme.minimapBackground;
     ctx.translate(10, 10);
     ctx.scale(4, 4);
     ctx.fillRect(0, 0, 26, stage.goalY);
 
     this.ctx.lineWidth = 3 / (params.camera.zoom + initialZoom);
-    this.drawEntities(params.entities);
+    this.drawEntities(params.entities, params.theme);
     this.drawMarbles(params);
     this.drawViewport(params);
 
@@ -96,18 +97,18 @@ export class Minimap implements UIObject {
     const zoom = camera.zoom * initialZoom;
     const w = size.x / zoom;
     const h = size.y / zoom;
-    this.ctx.strokeStyle = 'white';
+    this.ctx.strokeStyle = params.theme.minimapViewport;
     this.ctx.lineWidth = 1 / zoom;
     this.ctx.strokeRect(camera.x - w / 2, camera.y - h / 2, w, h);
     this.ctx.restore();
   }
 
-  private drawEntities(entities: MapEntityState[]) {
+  private drawEntities(entities: MapEntityState[], theme: ColorTheme) {
     this.ctx.save();
     entities.forEach((entity) => {
       this.ctx.save();
-      this.ctx.fillStyle = entity.shape.color ?? DefaultEntityColor[entity.shape.type];
-      this.ctx.strokeStyle = entity.shape.color ?? DefaultEntityColor[entity.shape.type];
+      this.ctx.fillStyle = entity.shape.color ?? theme.entity[entity.shape.type].fill;
+      this.ctx.strokeStyle = entity.shape.color ?? theme.entity[entity.shape.type].outline;
       this.ctx.translate(entity.x, entity.y);
       this.ctx.rotate(entity.angle);
 
@@ -152,7 +153,7 @@ export class Minimap implements UIObject {
       zoom: params.camera.zoom * initialZoom,
     };
     marbles.forEach((marble) => {
-      marble.render(this.ctx, 1, false, true, undefined, viewPort);
+      marble.render(this.ctx, 1, false, true, undefined, viewPort, params.theme);
     });
   }
 }

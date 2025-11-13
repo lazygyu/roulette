@@ -1,5 +1,5 @@
 import { Marble } from './marble';
-import { initialZoom, Skills, zoomThreshold } from './data/constants';
+import { initialZoom, Skills, Themes, zoomThreshold } from './data/constants';
 import { ParticleManager } from './particleManager';
 import { StageDef, stages } from './data/maps';
 import { parseName } from './utils/utils';
@@ -17,14 +17,13 @@ import { IPhysics } from './IPhysics';
 import { Box2dPhysics } from './physics-box2d';
 import { MouseEventHandlerName, MouseEventName } from './types/mouseEvents.type';
 import { FastForwader } from './fastForwader';
+import { ColorTheme } from './types/ColorTheme';
 
 export class Roulette extends EventTarget {
   private _marbles: Marble[] = [];
 
   private _lastTime: number = 0;
   private _elapsed: number = 0;
-  private _noMoveDuration: number = 0;
-  private _shakeAvailable: boolean = false;
 
   private _updateInterval = 10;
   private _timeScale = 1;
@@ -54,6 +53,7 @@ export class Roulette extends EventTarget {
 
   private _isReady: boolean = false;
   private fastForwarder!: FastForwader;
+  private _theme: ColorTheme = Themes.dark;
 
   get isReady() {
     return this._isReady;
@@ -122,16 +122,6 @@ export class Roulette extends EventTarget {
             ? this._winnerRank - this._winners.length
             : 0,
       });
-
-      if (
-        this._isRunning &&
-        this._marbles.length > 0 &&
-        this._noMoveDuration > 3000
-      ) {
-        this._changeShakeAvailable(true);
-      } else {
-        this._changeShakeAvailable(false);
-      }
     }
 
     this._render();
@@ -235,6 +225,7 @@ export class Roulette extends EventTarget {
       winnerRank: this._winnerRank,
       winner: this._winner,
       size: { x: this._renderer.width, y: this._renderer.height },
+      theme: this._theme,
     };
     this._renderer.render(renderParams, this._uiObjects);
   }
@@ -323,7 +314,7 @@ export class Roulette extends EventTarget {
       this._winnerRank = this._marbles.length - 1;
     }
     this._camera.startFollowingMarbles();
-    
+
     if (this._autoRecording) {
       this._recorder.start().then(() => {
         this.physics.start();
@@ -340,6 +331,10 @@ export class Roulette extends EventTarget {
       throw new Error('Speed multiplier must larger than 0');
     }
     this._speed = value;
+  }
+
+  public setTheme(themeName: keyof typeof Themes) {
+    this._theme = Themes[themeName];
   }
 
   public getSpeed() {
@@ -419,19 +414,6 @@ export class Roulette extends EventTarget {
 
   public getCount() {
     return this._marbles.length;
-  }
-
-  private _changeShakeAvailable(v: boolean) {
-    if (this._shakeAvailable !== v) {
-      this._shakeAvailable = v;
-      this.dispatchEvent(
-        new CustomEvent('shakeAvailableChanged', { detail: v }),
-      );
-    }
-  }
-
-  public shake() {
-    if (!this._shakeAvailable) return;
   }
 
   public getMaps() {

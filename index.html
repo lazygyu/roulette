@@ -191,6 +191,12 @@
       window.roulette.setWinningRank(window.options.winningRank);
     });
 
+    document.querySelector('#chkDarkMode').addEventListener('change', (e) => {
+      window.options.darkMode = e.target.matches(':checked');
+      window.roulette.setTheme(window.options.darkMode ? 'dark' : 'light');
+      document.documentElement.classList.toggle('light', !window.options.darkMode);
+    });
+
     document.querySelector('#in_winningRank').addEventListener('change', (e) => {
       const v = parseInt(e.target.value, 10);
       winnerType = 'custom';
@@ -207,15 +213,6 @@
       setWinnerRank(1);
     });
 
-    document.querySelector('#btnShake').addEventListener('click', () => {
-      window.roulette.shake();
-      gtag('event', 'shake', {
-        'event_category': 'roulette',
-        'event_label': 'shake',
-        'value': 1,
-      });
-    });
-
     window.roulette.addEventListener('goal', () => {
       ready = false;
       setTimeout(() => {
@@ -223,9 +220,7 @@
         document.querySelector('#donate').classList.remove('hide');
       }, 3000);
     });
-    window.roulette.addEventListener('shakeAvailableChanged', (e) => {
-      document.querySelector('#inGame').classList.toggle('hide', !e.detail);
-    });
+
     window.roulette.addEventListener('message', (e) => {
       simpleToast(e.detail);
     });
@@ -310,14 +305,14 @@
 <div id="settings" class="settings">
   <div class="right">
     <div class="row">
-      <label>
+      <label for='sltMap'>
         <i class="icon map"></i>
         <span data-trans>Map</span>
       </label>
       <select id="sltMap"></select>
     </div>
     <div class="row">
-      <label>
+      <label for='chkAutoRecording'>
         <i class="icon record"></i>
         <span data-trans>Recording</span>
       </label>
@@ -335,11 +330,16 @@
       </div>
     </div>
     <div class="row">
-      <label>
+      <label for='chkSkill'>
         <i class="icon bomb"></i>
         <span data-trans>Using skills</span>
       </label>
       <input type="checkbox" id="chkSkill" checked />
+      <div class='theme'>
+        <i class='icon sun'></i>
+        <input type='checkbox' id='chkDarkMode' checked />
+        <i class='icon moon'></i>
+      </div>
     </div>
   </div>
   <div class="left">
@@ -366,9 +366,6 @@
           data-name="bmc-button" data-slug="lazygyu" data-color="#FFDD00" data-emoji=""
           data-font="Comic" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000"
           data-coffee-color="#ffffff"></script>
-</div>
-<div id="inGame" class="settings hide">
-  <button id="btnShake" data-trans>Shake!</button>
 </div>
 <div id="notice">
   <h1>Notice</h1>

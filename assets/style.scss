@@ -1,3 +1,11 @@
+:root {
+  --copyright-color: white;
+}
+
+:root.light {
+  --copyright-color: black;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -14,7 +22,7 @@ div.copyright {
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  color: white;
+  color: var(--copyright-color);
   font-size: 12px;
   z-index: 999;
   width: 90%;
@@ -22,7 +30,7 @@ div.copyright {
 }
 
 div.copyright a {
-  color: white;
+  color: var(--copyright-color);
 }
 
 #settings {
@@ -80,6 +88,14 @@ div.copyright a {
     }
   }
 
+  div.theme {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    color: white;
+    justify-content: flex-end;
+  }
+
   .icon {
     background: currentColor;
     mask-repeat: no-repeat;
@@ -116,6 +132,14 @@ div.copyright a {
 
     &.bomb {
       mask-image: url('images/bomb.svg');
+    }
+
+    &.sun {
+      mask-image: url('images/sun.svg');
+    }
+
+    &.moon {
+      mask-image: url('images/moon.svg');
     }
   }
 
@@ -164,7 +188,9 @@ div.copyright a {
   }
 
   input[type=checkbox] {
-    width: 0;
+    width: 50px;
+    display: inline-block;
+    padding-right: 63px;
     height: 25px;
     position: relative;
     vertical-align: middle;
