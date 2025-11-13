@@ -119,9 +119,16 @@
     }
     console.log('initializing start');
 
-    const savedNames = localStorage.getItem('mbr_names');
-    if (savedNames) {
-      document.querySelector('#in_names').value = savedNames;
+    const urlParams = new URLSearchParams(window.location.search);
+    const namesFromUrl = urlParams.get('names');
+
+    if (namesFromUrl) {
+      document.querySelector('#in_names').value = namesFromUrl.replace(/,/g, '\n');
+    } else {
+      const savedNames = localStorage.getItem('mbr_names');
+      if (savedNames) {
+        document.querySelector('#in_names').value = savedNames;
+      }
     }
     document.querySelector('#in_names').addEventListener('input', () => {
       getReady();
