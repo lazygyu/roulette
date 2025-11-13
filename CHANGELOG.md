@@ -1,5 +1,7 @@
 # Changelog
 
+- 2025-11-14:
+    - Add supporting for light theme.
 - 2025-11-13:
     - Optimized the rendering process.
 - 2025-11-10:
