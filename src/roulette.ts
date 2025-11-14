@@ -2,7 +2,7 @@ import { Marble } from './marble';
 import { initialZoom, Skills, Themes, zoomThreshold } from './data/constants';
 import { ParticleManager } from './particleManager';
 import { StageDef, stages } from './data/maps';
-import { parseName } from './utils/utils';
+import { parseName, shuffle } from './utils/utils';
 import { Camera } from './camera';
 import { RouletteRenderer } from './rouletteRenderer';
 import { SkillEffect } from './skillEffect';
@@ -377,10 +377,11 @@ export class Roulette extends EventTarget {
       }
     });
 
-    const orders = Array(totalCount)
-      .fill(0)
-      .map((_, i) => i)
-      .sort(() => Math.random() - 0.5);
+    const orders = shuffle(
+      Array(totalCount)
+        .fill(0)
+        .map((_, i) => i),
+    );
     members.forEach((member) => {
       if (member) {
         for (let j = 0; j < member.count; j++) {
