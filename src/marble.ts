@@ -201,13 +201,16 @@ export class Marble {
   }
 
   private _drawName(ctx: CanvasRenderingContext2D, zoom: number) {
-    ctx.font = `${12 / zoom}pt sans-serif`;
+    // ctx.font = `${12 / zoom}pt sans-serif`;
+    ctx.font = `12pt sans-serif`;
     ctx.strokeStyle = 'black';
-    ctx.lineWidth = 2 / zoom;
+    ctx.lineWidth = 2;
     ctx.fillStyle = this.color;
     ctx.shadowBlur = 0;
-    ctx.strokeText(this.name, this.x, this.y + 0.25);
-    ctx.fillText(this.name, this.x, this.y + 0.25);
+    ctx.translate(this.x, this.y + 0.25);
+    ctx.scale(1 / zoom, 1 / zoom);
+    ctx.strokeText(this.name, 0, 0);
+    ctx.fillText(this.name, 0, 0);
   }
 
   private _drawOutline(ctx: CanvasRenderingContext2D, lineWidth: number) {
