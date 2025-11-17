@@ -98,6 +98,7 @@ export class RouletteRenderer {
         { name: '꽉변호사', imgUrl: new URL('../assets/images/kkwak.png', import.meta.url) },
         { name: '꽉 변호사', imgUrl: new URL('../assets/images/kkwak.png', import.meta.url) },
         { name: '주누피', imgUrl: new URL('../assets/images/junyoop.png', import.meta.url) },
+        { name: '왈도쿤', imgUrl: new URL('../assets/images/waldokun.png', import.meta.url) },
       ].map(({ name, imgUrl }) => {
         return (async () => {
           this._images[name] = await this._loadImage(imgUrl.toString());
