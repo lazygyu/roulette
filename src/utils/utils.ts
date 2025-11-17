@@ -27,7 +27,8 @@ export function pad(v: number) {
   return v.toString().padStart(2, '0');
 }
 
-export function shuffle<T>(array: T[]): T[] {
+export function shuffle<T>(originalArray: T[]): T[] {
+    const array = originalArray.slice();
   let currentIndex = array.length;
   let randomIndex;
 
