@@ -191,7 +191,7 @@ export class Marble {
     this._drawName(ctx, zoom);
 
     if (outline) {
-      this._drawOutline(ctx, 2 / zoom);
+      this._drawOutline(ctx, 2);
     }
 
     if (options.useSkills) {
@@ -223,7 +223,7 @@ export class Marble {
 
   private _renderCooltime(ctx: CanvasRenderingContext2D, zoom: number) {
     ctx.strokeStyle = this.theme.coolTimeIndicator;
-    ctx.lineWidth = 1 / zoom;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(
       this.x,
