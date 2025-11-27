@@ -5,6 +5,7 @@ import { VectorLike } from './types/VectorLike';
 import { Vector } from './utils/Vector';
 import { IPhysics } from './IPhysics';
 import { ColorTheme } from './types/ColorTheme';
+import { transformGuard } from './utils/transformGuard';
 
 export class Marble {
   type = 'marble' as const;
@@ -177,11 +178,11 @@ export class Marble {
     // ctx.shadowColor = this.color;
     // ctx.shadowBlur = zoom / 2;
     if (skin) {
-      ctx.translate(this.x, this.y);
-      ctx.rotate(this.angle);
-      ctx.drawImage(skin, -hs, -hs, hs * 2, hs * 2);
-      ctx.rotate(-this.angle);
-      ctx.translate(-this.x, -this.y);
+      transformGuard(ctx, () => {
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+        ctx.drawImage(skin, -hs, -hs, hs * 2, hs * 2);
+      });
     } else {
       this._drawMarbleBody(ctx, false);
     }
@@ -191,26 +192,26 @@ export class Marble {
     this._drawName(ctx, zoom);
 
     if (outline) {
-      this._drawOutline(ctx, 2);
+      this._drawOutline(ctx, 2 / zoom);
     }
 
     if (options.useSkills) {
-      this._renderCooltime(ctx, zoom);
+      this._renderCoolTime(ctx, zoom);
     }
-    // this._renderStuck(ctx, zoom); // for debug
   }
 
   private _drawName(ctx: CanvasRenderingContext2D, zoom: number) {
-    // ctx.font = `${12 / zoom}pt sans-serif`;
-    ctx.font = `12pt sans-serif`;
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = 2;
-    ctx.fillStyle = this.color;
-    ctx.shadowBlur = 0;
-    ctx.translate(this.x, this.y + 0.25);
-    ctx.scale(1 / zoom, 1 / zoom);
-    ctx.strokeText(this.name, 0, 0);
-    ctx.fillText(this.name, 0, 0);
+    transformGuard(ctx, () => {
+      ctx.font = `12pt sans-serif`;
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 2;
+      ctx.fillStyle = this.color;
+      ctx.shadowBlur = 0;
+      ctx.translate(this.x, this.y + 0.25);
+      ctx.scale(1 / zoom, 1 / zoom);
+      ctx.strokeText(this.name, 0, 0);
+      ctx.fillText(this.name, 0, 0);
+    });
   }
 
   private _drawOutline(ctx: CanvasRenderingContext2D, lineWidth: number) {
@@ -221,9 +222,9 @@ export class Marble {
     ctx.stroke();
   }
 
-  private _renderCooltime(ctx: CanvasRenderingContext2D, zoom: number) {
+  private _renderCoolTime(ctx: CanvasRenderingContext2D, zoom: number) {
     ctx.strokeStyle = this.theme.coolTimeIndicator;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1 / zoom;
     ctx.beginPath();
     ctx.arc(
       this.x,
