@@ -21,6 +21,8 @@
   "scripts": {
     "lint": "eslint --fix src/**/*.ts",
     "dev": "parcel index.html --port 1235",
+    "dev:recap": "parcel recap_2025.html --port 1235",
+    "build:recap": "parcel build recap_2025.html --public-url /tmp/recap2025/",
     "build": "parcel build index.html --public-url /roulette/ && node scripts/build-sw.js"
   },
   "dependencies": {

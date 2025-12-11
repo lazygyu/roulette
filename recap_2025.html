@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <title>Marble Roulette 2025 Recap</title>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollSmoother.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollTrigger.min.js"></script>
+  <script src='https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/MotionPathPlugin.min.js'></script>
+  <link rel='stylesheet' href='/assets/2025_recap/style.scss' />
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css"
+  />
+</head>
+<body>
+<div id='smooth-wrapper'>
+  <div id='smooth-content'>
+    <div id='main-marble'></div>
+    <article>
+      <header>
+        <video class='header-bg' muted autoplay loop src='/assets/2025_recap/header-bg.mp4'></video>
+        <div>
+          <div class='logo'></div>
+          <h1>2<span id='marbleStart'>0</span>25 마블 룰렛 결산</h1>
+          <p>올 한 해 마블 룰렛의 기록</p>
+        </div>
+      </header>
+      <div class='content'>
+      <section id='people'>
+        <div>
+          <h2>약 <span data-increase-target='1430000'>0</span>명<sup>*</sup></h2>
+          <h3>룰렛을 돌린 사람</h3>
+          <p>대한민국 국민의 2.7%</p>
+          <span id='people-marble'></span>
+        </div>
+        <video muted autoplay src='/assets/2025_recap/people.mp4' playsinline></video>
+      </section>
+      <section id='count'>
+        <canvas id='clock'></canvas>
+        <div>
+          <h2>약 <span data-increase-target='8840000'>0</span>회<sup>*</sup></h2>
+          <h3>룰렛을 돌린 횟수</h3>
+          <p>약 3초에 한 번씩 누군가가 룰렛을 돌리고 있어요!</p>
+        </div>
+      </section>
+      <section id='marble-count'>
+        <div>
+          <h2>약 <span data-increase-target='1200000000' data-duration='3000'>0</span>개 <sup>*</sup></h2>
+          <h3>올해 굴러내려간 구슬 개수</h3>
+          <p>이집트의 대피라미드 9개 부피를 채우고도 남아요!<sup>**</sup></p>
+          <p class='typing pyramid'>◢╲◢╲◢╲◢╲◢╲◢╲◢╲◢╲◢╲</p>
+          <p class='pyramid'>𓀽𓀛𓀘𓀛𓀦𓁀𓀜𓀟𓀌𓀍𓀉𓀧𓀨𓀩𓁉</p>
+        </div>
+      </section>
+      <section id='coffee-people'>
+        <img src='assets/2025_recap/buymeacoffee.gif' />
+        <div>
+          <h2><span data-increase-target='32'>0</span>명<sup>*</sup></h2>
+          <h3>커피 사준 사람 수</h3>
+          <p>감사합니다!</p>
+          <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="lazygyu" data-color="#FFDD00" data-emoji=""  data-font="Lato" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
+        </div>
+      </section>
+      <section id='countries'>
+        <div>
+          <h2><span data-increase-target='147'>0</span>개국<sup>*</sup></h2>
+          <h3>룰렛을 사용한 나라</h3>
+        </div>
+      </section>
+      <section id='hours'>
+        <div>
+          <h2><span data-increase-target='12'>0</span>시- <span data-increase-target='13'>0</span>시<sup>*</sup></h2>
+          <h3>가장 많이 사용하는 시간대</h3>
+        </div>
+      </section>
+      <section id='date'>
+        <div>
+          <h2><span data-increase-target='11'>0</span>월 <span data-increase-target='11'>0</span>일<sup>*</sup></h2>
+          <h3>가장 룰렛을 많이 돌린 날</h3>
+        </div>
+      </section>
+      <p class='info'>
+        <ul>
+          <li>* 모든 데이터는 2025년 1월 1일 - 2025년 12월 10일 기준</li>
+          <li>** 일반적인 유리구슬과 동일한 직경이라고 가정(16mm)</li>
+        </ul>
+      </p>
+      </div>
+    </article>
+  </div>
+</div>
+
+<script type='module' src='src/misc/recap.ts'>
+</script>
+</body>
+</html>
