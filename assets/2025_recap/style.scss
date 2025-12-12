@@ -9,12 +9,20 @@
   font-size: 16pt;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 html, body {
   margin: 0;
   padding: 0;
   background: black;
   color: #00ffff;
   font-family: Galmuri11, sans-serif;
+  width: 100vw;
+  overflow-x: hidden;
+  min-height: 100%;
+
 }
 
 h1, h2, h3, h4, h5 {
@@ -23,30 +31,41 @@ h1, h2, h3, h4, h5 {
   padding: 0;
 }
 
-article {
-  position: relative;
-  margin: 0 auto;
 
-  div.content {
-    margin: 0 auto;
-    max-width: 1280px;
-    display: flex;
-    flex-direction: column;
-  }
-}
-
-header {
+section#title-page {
+  width: 100%;
   height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   position: relative;
   overflow: hidden;
+  z-index: 100;
 
-  & > div {
-    background: rgba(0, 0, 0, 0.5);
+
+  video.header-bg {
     position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+
+    transform: translate(-50%, -50%);
+    z-index: 1;
+  }
+
+  &:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.92);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  div.content {
+    position: relative;
+    z-index: 2;
     top: 0;
     left: 0;
     width: 100%;
@@ -54,199 +73,128 @@ header {
     display: flex;
     flex-direction: column;
     align-items: center;
-  }
-
-  video {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    z-index: 0;
-    transform: translate(-50%, -50%);
-  }
-
-  h1 {
-    font-size: 2rem;
-    color: #ffdd00;
-  }
-
-  div.logo {
-    height: 50%;
-    width: 100%;
-    mask-image: url('/assets/2025_recap/marble-roulette-title.svg');
-    mask-position: center center;
-    mask-repeat: no-repeat;
-    background-color: #004444;
-    background-image: radial-gradient(
-                    circle at center,
-                    #FFFFFF 0%,
-                    rgba(0, 255, 255, 0.5) 20%,
-                    rgba(0, 255, 255, 0) 50%
-    );
-    background-size: 200% 200%;
-    animation: moveGlow 3s infinite alternate;
-  }
-}
-
-section {
-  border: solid 2px #00ffff;
-  border-radius: 1rem;
-  padding: 1rem;
-  margin: 1rem;
-  width: 80%;
-  background-color: rgba(0, 0, 0, 0.8);
-  --appear-speed: 0.4s;
-
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-
-
-  &:nth-child(2n) {
-    align-self: flex-end;
-
-  }
-
-  h2 {
-    font-size: 3rem;
-  }
-
-  transition: opacity var(--appear-speed) ease-out, transform var(--appear-speed) ease-out;
-  opacity: 1;
-  transform: translateY(3rem);
-
-  &.active {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  & > div {
-    margin-left: 2rem;
-    display: flex;
-    flex-direction: column;
     justify-content: center;
-  }
 
-  p.pyramid {
-    align-self: center;
-    color: #ffdd00;
-    font-family: DNFBitBitv2, sans-serif;
-
-    & +& {
-      padding-top: 0;
-      margin-top: 0;
-    }
-  }
-}
-
-@keyframes moveGlow {
-  0% {
-    background-position: 0% 50%;
-  }
-  100% {
-    background-position: 100% 50%;
-  }
-}
-
-#count {
-  canvas {
-    width: 400px;
-    height: 400px;
-    image-rendering: pixelated;
-  }
-}
-
-#bg {
-  width: 100vw;
-  height: 100vh;
-  position: fixed;
-  top: 0;
-  left: 0;
-}
-
-@media screen and (max-width: 800px) {
-  article {
-    width: 100vw;
-    min-width: 400px;
-    display: flex;
-    align-items: center;
-
-    header {
-      div.logo {
-        width: 90%;
-      }
-
-      h1 {
-        font-size: 1.5rem;
-      }
-    }
-
-    h2 {
+    h1 {
       font-size: 1.5rem;
     }
 
-    section {
-      overflow: hidden;
-      flex-direction: column;
+    h2 {
+      line-height: 4rem;
+      text-align: center;
+      font-size: 4rem;
 
-      &:nth-child(2n) {
-        align-self: unset;
-      }
 
-      video, canvas, img {
-        width: unset !important;
-        height: unset !important;
-        object-fit: contain;
-      }
+      $all-shadows: ();
 
-      & > div {
-        margin-left: unset;
+      @for $i from 1 through 9 {
+        $current-shadows: (
+                -#{$i}px 0px 1px #ffffff,
+                #{$i}px 0px 1px #ffffff,
+                0px -#{$i}px 1px #ffffff,
+                0px #{$i}px 1px #ffffff,
+        );
+
+        $all-shadows: join($all-shadows, $current-shadows);
       }
+      $all-shadows: join($all-shadows, (0px 0px 30px #00ffff,));
+      text-shadow: $all-shadows;
+      color: black;
+    }
+
+    p {
+      font-weight: bold;
+      color: white;
+    }
+
+  }
+}
+
+div.square {
+  position: absolute;
+  top: 70%;
+  left: 50%;
+  width: 100px;
+  height: 100px;
+  border: 4px solid #00ffff;
+  transform: translate(-50%, 0);
+}
+
+section#people-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  z-index: 90;
+
+  & > div.text {
+    min-width: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  video {
+    object-fit: contain;
+  }
+
+  h3 {
+    color: white;
+  }
+
+  h2 {
+    font-size: 2rem;
+  }
+}
+
+@media screen and (max-width: 800px) {
+  section#people-page {
+    flex-direction: column-reverse;
+    justify-content: center;
+
+    & > div.text {
+      margin-top: 1rem;
     }
   }
 }
 
-p.typing {
-  overflow: hidden;
-  animation: typewriter 2s steps(18) 1s infinite alternate both,
-  blinkCursor 200ms steps(18) infinite normal;
-  white-space: nowrap;
-  border-right: solid 1px transparent;
+
+div#main-marble {
+  position: absolute;
+  opacity: 0;
+  width: 25px;
+  height: 25px;
+  background: #FF3333;
+  border-radius: 50%;
+  z-index: 999;
 }
 
-#main-marble {
-  width: 100px;
-  height: 100px;
-  background-color: #ff0000;
-  border-radius: 50px;
-  box-shadow: 0 0 20px #ff0000;
-  z-index: 9999;
-}
+div.filter {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  opacity: 1;
+  background: /* 1. 수평선 (Horizontal Lines) */
+          repeating-linear-gradient(
+                          to bottom, /* 아래 방향으로 반복 */
+                          transparent,
+                          transparent 1px, /* 8px까지는 투명 */
+                          #000 2px, /* 9px에서 1px 두께의 검은 선 */
+                          transparent 3px
+          ),
+            /* 2. 수직선 (Vertical Lines) */
+          repeating-linear-gradient(
+                          to right, /* 오른쪽 방향으로 반복 */
+                          transparent,
+                          transparent 1px, /* 8px까지는 투명 */
+                          #000 2px, /* 9px에서 1px 두께의 검은 선 */
+                          transparent 3px
+          );
 
-@keyframes typewriter {
-  0% {
-    width: 0;
-  }
-  100% {
-    width: 18em;
-  }
-}
-
-@keyframes blinkCursor {
-  0% {
-    border-right-color: transparent;
-  }
-  100% {
-    border-right-color: #00ffff;
-  }
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0 1rem;
-  font-size: 0.6rem;
-
-  li + li {
-    margin-top: .5rem;
-  }
+  /* 격자 크기 조절: 9px x 9px (8px 투명 + 1px 선) */
+  background-size: 2px 2px;
+  z-index: 1000;
 }

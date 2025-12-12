@@ -2,7 +2,7 @@
 <html lang='en'>
 <head>
   <meta charset='UTF-8'>
-  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no'>
   <title>Marble Roulette 2025 Recap</title>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollSmoother.min.js"></script>
@@ -17,25 +17,34 @@
 <body>
 <div id='smooth-wrapper'>
   <div id='smooth-content'>
-    <div id='main-marble'></div>
     <article>
-      <header>
+      <section id='title-page'>
+        <div id='main-marble'></div>
         <video class='header-bg' muted autoplay loop src='/assets/2025_recap/header-bg.mp4'></video>
-        <div>
-          <div class='logo'></div>
-          <h1>2<span id='marbleStart'>0</span>25 마블 룰렛 결산</h1>
+        <div class='content'>
+          <h1>Marble R<span id='marble-start'>o</span>ulette</h1>
+          <h2>Recap 2025</h2>
           <p>올 한 해 마블 룰렛의 기록</p>
+          <div class='square'></div>
         </div>
-      </header>
-      <div class='content'>
-      <section id='people'>
-        <div>
-          <h2>약 <span data-increase-target='1430000'>0</span>명<sup>*</sup></h2>
+      </section>
+
+      <section id='people-page'>
+        <div class='text'>
+          <div>
           <h3>룰렛을 돌린 사람</h3>
+          <h2>약 <span data-prop='people'>0</span>명<sup>*</sup></h2>
           <p>대한민국 국민의 2.7%</p>
+          </div>
           <span id='people-marble'></span>
         </div>
-        <video muted autoplay src='/assets/2025_recap/people.mp4' playsinline></video>
+        <div class='video'>
+          <video muted autoplay src='/assets/2025_recap/people.mp4' playsinline></video>
+        </div>
+      </section>
+
+      <div class='content'>
+      <section id='people'>
       </section>
       <section id='count'>
         <canvas id='clock'></canvas>
@@ -91,6 +100,7 @@
     </article>
   </div>
 </div>
+<div class='filter'></div>
 
 <script type='module' src='src/misc/recap.ts'>
 </script>
