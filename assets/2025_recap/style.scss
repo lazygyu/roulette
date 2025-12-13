@@ -1,9 +1,12 @@
+@use 'sass:list';
+
 @font-face {
   font-family: 'DNFBitBitv2';
   font-style: normal;
   font-weight: 800;
   src: url('//cdn.df.nexon.com/img/common/font/DNFBitBitv2.otf') format('opentype')
 }
+
 
 :root {
   font-size: 16pt;
@@ -89,15 +92,15 @@ section#title-page {
 
       @for $i from 1 through 9 {
         $current-shadows: (
-                -#{$i}px 0px 1px #ffffff,
-                #{$i}px 0px 1px #ffffff,
-                0px -#{$i}px 1px #ffffff,
-                0px #{$i}px 1px #ffffff,
+                -#{$i}px 0px 1px #00ffff,
+                #{$i}px 0px 1px #00ffff,
+                0px -#{$i}px 1px #00ffff,
+                0px #{$i}px 1px #00ffff,
         );
 
-        $all-shadows: join($all-shadows, $current-shadows);
+        $all-shadows: list.join($all-shadows, $current-shadows);
       }
-      $all-shadows: join($all-shadows, (0px 0px 30px #00ffff,));
+      $all-shadows: list.join($all-shadows, (0px 0px 30px #00ffff,));
       text-shadow: $all-shadows;
       color: black;
     }
@@ -123,15 +126,28 @@ div.square {
 section#people-page {
   height: 100vh;
   display: flex;
-  flex-direction: row;
   align-items: center;
   z-index: 90;
+  position: relative;
+  background-color: black;
 
   & > div.text {
     min-width: 50%;
+    position: absolute;
+
     display: flex;
     flex-direction: column;
     align-items: center;
+
+    &.country-count {
+      opacity: 0;
+    }
+  }
+
+  div.video {
+    min-width: 50%;
+    position: absolute;
+    right: 0;
   }
 
   video {
@@ -149,11 +165,74 @@ section#people-page {
 
 @media screen and (max-width: 800px) {
   section#people-page {
-    flex-direction: column-reverse;
-    justify-content: center;
+    display: block;
+
+    h2 {
+      font-size: 1.5rem;
+    }
 
     & > div.text {
-      margin-top: 1rem;
+      display: block;
+      margin: 0;
+      position: absolute;
+      right: 10%;
+      top: 10%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 10;
+      white-space: nowrap;
+
+      &.country-count {
+        top: 60%;
+        right: unset;
+        left: 10%;
+      }
+    }
+
+    div.video {
+      width: 100%;
+      position: absolute;
+      left: 50%;
+      right: 0;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      justify-content: center;
+    }
+  }
+}
+
+section#execution-page {
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  display: block;
+  align-items: center;
+  z-index: 80;
+  overflow: hidden;
+
+  video#execution-video {
+    position: absolute;
+    min-width: 100%;
+    min-height: 100%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  div.text {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 90%;
+    transform: translate(-50%, -50%);
+  }
+
+}
+
+@media screen and (max-width: 800px) {
+  section#execution-page {
+    h2 {
+      font-size: 1.2rem;
     }
   }
 }
@@ -182,7 +261,7 @@ div.filter {
                           to bottom, /* 아래 방향으로 반복 */
                           transparent,
                           transparent 1px, /* 8px까지는 투명 */
-                          #000 2px, /* 9px에서 1px 두께의 검은 선 */
+                          rgba(0, 0, 0, 0.6) 2px, /* 9px에서 1px 두께의 검은 선 */
                           transparent 3px
           ),
             /* 2. 수직선 (Vertical Lines) */
@@ -190,11 +269,11 @@ div.filter {
                           to right, /* 오른쪽 방향으로 반복 */
                           transparent,
                           transparent 1px, /* 8px까지는 투명 */
-                          #000 2px, /* 9px에서 1px 두께의 검은 선 */
+                          rgba(0, 0, 0, 0.6) 2px, /* 9px에서 1px 두께의 검은 선 */
                           transparent 3px
           );
 
   /* 격자 크기 조절: 9px x 9px (8px 투명 + 1px 선) */
-  background-size: 2px 2px;
+  background-size: 3px 3px;
   z-index: 1000;
 }

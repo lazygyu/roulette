@@ -18,7 +18,7 @@
 <div id='smooth-wrapper'>
   <div id='smooth-content'>
     <article>
-      <section id='title-page'>
+      <section id='title-page' data-speed='3'>
         <div id='main-marble'></div>
         <video class='header-bg' muted autoplay loop src='/assets/2025_recap/header-bg.mp4'></video>
         <div class='content'>
@@ -30,7 +30,7 @@
       </section>
 
       <section id='people-page'>
-        <div class='text'>
+        <div class='text people-count'>
           <div>
           <h3>룰렛을 돌린 사람</h3>
           <h2>약 <span data-prop='people'>0</span>명<sup>*</sup></h2>
@@ -38,21 +38,28 @@
           </div>
           <span id='people-marble'></span>
         </div>
+        <div class='text country-count'>
+          <div>
+            <h3>룰렛을 사용한 나라</h3>
+            <h2><span data-prop='country'>0</span>개국<sup>*</sup></h2>
+          </div>
+        </div>
         <div class='video'>
-          <video muted autoplay src='/assets/2025_recap/people.mp4' playsinline></video>
+          <video id='people-video' muted src='/assets/2025_recap/people.mp4' playsinline></video>
+        </div>
+      </section>
+
+      <section id='execution-page'>
+        <video id='execution-video' src='/assets/2025_recap/pour.mp4' muted playsinline></video>
+        <div class='text'>
+          <h2>약 <span data-prop='startCount'>0</span>회<sup>*</sup></h2>
+          <h3>룰렛을 돌린 횟수</h3>
+          <p>약 3초에 한 번씩 누군가가 룰렛을 돌리고 있어요!</p>
         </div>
       </section>
 
       <div class='content'>
       <section id='people'>
-      </section>
-      <section id='count'>
-        <canvas id='clock'></canvas>
-        <div>
-          <h2>약 <span data-increase-target='8840000'>0</span>회<sup>*</sup></h2>
-          <h3>룰렛을 돌린 횟수</h3>
-          <p>약 3초에 한 번씩 누군가가 룰렛을 돌리고 있어요!</p>
-        </div>
       </section>
       <section id='marble-count'>
         <div>
@@ -73,10 +80,6 @@
         </div>
       </section>
       <section id='countries'>
-        <div>
-          <h2><span data-increase-target='147'>0</span>개국<sup>*</sup></h2>
-          <h3>룰렛을 사용한 나라</h3>
-        </div>
       </section>
       <section id='hours'>
         <div>
