@@ -253,7 +253,7 @@ const executionPage = () => {
       currentTime: 0,
     }, {
       currentTime: video.duration || 1,
-      duration: 1000,
+      duration: 500,
     }, 0);
   });
 
@@ -274,7 +274,11 @@ const executionPage = () => {
       onUpdate: () => {
         startCountValue.innerHTML = comma(Math.round(numbersAppear.startCountProgress * data.startCount));
       },
-    }, '<');
+    }, '<')
+      .to(ePage, {
+        autoAlpha: 0,
+        duration: 100,
+      }, '>+100');
 
   setTimeout(() => {
     fetch(src)
