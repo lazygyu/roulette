@@ -233,7 +233,6 @@ const executionPage = () => {
 
   const tl = gsap.timeline({
     scrollTrigger: {
-      markers: { startColor: 'green', endColor: 'red', fontSize: '12px' },
       trigger: ePage,
       start: 'top top',
       end: '+=1000',
@@ -297,6 +296,60 @@ const executionPage = () => {
   }, 1000);
 };
 
+const dateTimePage = () => {
+  const dPage = document.querySelector('#date-hours-page') as HTMLDivElement;
+
+  const hours = document.querySelector('#hour-content') as HTMLDivElement;
+  const dates = document.querySelector('#date-content') as HTMLDivElement;
+
+  gsap.set(dPage, { y: '-=300vh' });
+  const tl = gsap.timeline({
+    scrollTrigger: {
+      markers: { startColor: 'green', endColor: 'red', fontSize: '12px' },
+      trigger: dPage,
+      start: 'top top',
+      end: '+=1000',
+      scrub: true,
+      pin: true,
+    }
+  });
+  tl.fromTo(hours, {
+    autoAlpha: 0,
+    y: '+=1rem'
+  }, {
+    autoAlpha: 1,
+    y: '-=1rem',
+    duration: 100,
+  }, 0)
+      .to(hours, {
+        delay: 300,
+        y: '-=1rem',
+        autoAlpha: 0,
+        duration: 100,
+      })
+      .fromTo(dates, {
+        autoAlpha: 0,
+        y: '+=1rem'
+      }, {
+        duration: 100,
+        autoAlpha: 1,
+        y: '-=1rem',
+      }, '<+50');
+
+  tl.fromTo(hours.querySelector('div.hour.hand'), {
+    rotation: 0,
+  }, {
+    rotation: 360 + 30,
+    duration: 500,
+  }, 0)
+      .fromTo(hours.querySelector('div.hand.minute'), {
+        rotation: 0,
+      }, {
+        rotation: 360 * 10,
+        duration: 500,
+      }, '<')
+};
+
 const init = () => {
   setNumbers();
 
@@ -315,6 +368,7 @@ const init = () => {
   titlePage();
   peoplePage();
   executionPage();
+  dateTimePage();
 
 };
 

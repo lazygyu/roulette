@@ -42,6 +42,15 @@ section#title-page {
   overflow: hidden;
   z-index: 100;
 
+  div#main-marble {
+    position: absolute;
+    opacity: 0;
+    width: 25px;
+    height: 25px;
+    background: #FF3333;
+    border-radius: 50%;
+    z-index: 999;
+  }
 
   video.header-bg {
     position: absolute;
@@ -227,6 +236,10 @@ section#execution-page {
     transform: translate(-50%, -50%);
   }
 
+  h2 {
+    color: white;
+  }
+
 }
 
 @media screen and (max-width: 800px) {
@@ -238,14 +251,79 @@ section#execution-page {
 }
 
 
-div#main-marble {
-  position: absolute;
-  opacity: 0;
-  width: 25px;
-  height: 25px;
-  background: #FF3333;
-  border-radius: 50%;
-  z-index: 999;
+section#date-hours-page {
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  position: relative;
+
+  h2 {
+    color: white;
+  }
+
+  #date-content, #hour-content {
+    padding-left: 1rem;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+  }
+
+  div.clock {
+    position: absolute;
+    border: 5px solid white;
+    border-radius: 50%;
+    width: min(80vw, 80vh);
+    height: min(80vw, 80vh);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    div.clock-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    div.hand {
+      position: absolute;
+      width: 5px;
+      height: min(45%, 45%);
+      background: #FF3333;
+      bottom: 50%;
+      left: 50%;
+      transform: translate(-50%, 0);
+
+      &.hour {
+        width: 15px;
+        height: min(30%, 30%);
+        background: #00baff;
+      }
+
+      &.minute {
+        width: 10px;
+        height: min(40%, 40%);
+        background: #00ffff;
+      }
+
+      &.second {
+        transform-origin: center bottom;
+        animation: second-hand 60s steps(60) infinite;
+      }
+
+    }
+
+  }
+
+}
+
+@keyframes second-hand {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 div.filter {
