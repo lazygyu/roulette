@@ -10,7 +10,7 @@ const setNumbers = () => {
     const key = elem.getAttribute('data-prop');
     if (key && data.hasOwnProperty(key)) {
       const value = data[key as keyof typeof data];
-      elem.setAttribute('data-target', String(value));
+      elem.innerHTML = typeof value === 'number' ? comma(value) : value;
     }
   });
 
@@ -33,16 +33,14 @@ function once(el: EventTarget, event: string, fn: Function, opts?: any) {
 const loadVideo = (video: HTMLVideoElement, tl?: GSAPTimeline) => {
   let src = video.currentSrc || video.src;
 
-  if (tl) {
-    once(document.documentElement, 'touchstart', function() {
-      video.play();
-      console.log('pause by normal touch');
-      video.pause();
-    });
-  }
+  // if (tl) {
+  //   once(document.documentElement, 'touchstart', function() {
+  //     video.play();
+  //     video.pause();
+  //   });
+  // }
 
   once(video, 'loadedmetadata', () => {
-    console.log(`${video.src} has loaded`);
     if (tl) {
       tl.fromTo(video, {
         currentTime: 0,
@@ -55,24 +53,24 @@ const loadVideo = (video: HTMLVideoElement, tl?: GSAPTimeline) => {
     }
   });
 
-  setTimeout(() => {
-    fetch(src)
-      .then((res) => res.blob())
-      .then((res) => {
-        const blobUrl = URL.createObjectURL(res);
-        const t = video.currentTime;
-        if (tl) {
-          once(document.documentElement, 'touchstart', () => {
-            video.play();
-            console.log('pause by load touch');
-            video.pause();
-          });
-        }
-
-        video.setAttribute('src', blobUrl);
-        video.currentTime = t + 0.01;
-      });
-  }, 1000);
+  // setTimeout(() => {
+  //   fetch(src)
+  //     .then((res) => res.blob())
+  //     .then((res) => {
+  //       const blobUrl = URL.createObjectURL(res);
+  //       const t = video.currentTime;
+  //       if (tl) {
+  //         once(document.documentElement, 'touchstart', () => {
+  //           video.play();
+  //           console.log('pause by load touch');
+  //           video.pause();
+  //         });
+  //       }
+  //
+  //       video.setAttribute('src', blobUrl);
+  //       video.currentTime = t + 0.01;
+  //     });
+  // }, 1000);
 
 };
 
@@ -103,15 +101,7 @@ const titlePage = () => {
 
   gsap.set('div.square', { rotate: 0 });
 
-  const tl = gsap.timeline(/*{
-    scrollTrigger: {
-      trigger: titlePage,
-      start: 'top top',
-      end: '+=1000',
-      scrub: true,
-    },
-  }*/);
-
+  const tl = gsap.timeline();
 
   const square = document.querySelector('.square')!;
 
@@ -189,11 +179,11 @@ const peoplePage = () => {
     }, 0)
     .to(numbersAppear, {
       peopleCountProgress: 1,
-      duration: 200,
+      duration: 100,
       onUpdate: () => {
         peopleCountValue.innerHTML = comma(Math.round(numbersAppear.peopleCountProgress * data.people));
       },
-    }, '<')
+    }, '>')
     .to(peopleCount, {
       delay: 100,
       duration: 400,
@@ -229,23 +219,9 @@ const executionPage = () => {
   const video = document.querySelector('video#execution-video') as HTMLVideoElement;
   const startCountValue = ePage.querySelector('[data-prop="startCount"]') as HTMLElement;
 
-  let src = video.currentSrc || video.src;
-
   const tl = gsap.timeline();
 
-  once(document.documentElement, 'touchstart', function() {
-    video.play();
-    video.pause();
-  });
-
-  once(video, 'loadedmetadata', () => {
-    tl.fromTo(video, {
-      currentTime: 0,
-    }, {
-      currentTime: video.duration || 1,
-      duration: 500,
-    }, 0);
-  });
+  loadVideo(video, tl);
 
   const numbersAppear = {
     startCountProgress: 0,
@@ -254,7 +230,7 @@ const executionPage = () => {
 
   tl
     .to(numbersAppear, {
-      duration: 200,
+      duration: 300,
       startCountProgress: 1,
       onUpdate: () => {
         startCountValue.innerHTML = comma(Math.round(numbersAppear.startCountProgress * data.startCount));
@@ -263,23 +239,8 @@ const executionPage = () => {
     .to(ePage, {
       autoAlpha: 0,
       duration: 100,
-    }, '>+200');
+    }, '>+600');
 
-  setTimeout(() => {
-    fetch(src)
-      .then((res) => res.blob())
-      .then((res) => {
-        const blobUrl = URL.createObjectURL(res);
-        const t = video.currentTime;
-        once(document.documentElement, 'touchstart', () => {
-          video.play();
-          video.pause();
-        });
-
-        video.setAttribute('src', blobUrl);
-        video.currentTime = t + 0.01;
-      });
-  }, 1000);
   return tl;
 };
 
@@ -304,7 +265,7 @@ const dateTimePage = () => {
     hoursProgress: 0,
   }, {
     hoursProgress: 1,
-    duration: 200,
+    duration: 100,
     onUpdate: () => {
       hoursFromValue.innerHTML = String(Math.floor(data.busiestTimeFrom * numbersProgress.hoursProgress));
       hoursToValue.innerHTML = String(Math.floor(data.busiestTimeTo * numbersProgress.hoursProgress));
@@ -336,6 +297,7 @@ const dateTimePage = () => {
       datesProgress: 0,
     }, {
       datesProgress: 1,
+      delay: 100,
       duration: 100,
       ease: 'power3.out',
       onUpdate: () => {
@@ -367,8 +329,33 @@ const marbleCountPage = () => {
   const mPage = document.querySelector('#marble-count-page') as HTMLDivElement;
 
   const marbleCount = mPage.querySelector('[data-prop="marbleCount"]') as HTMLElement;
-  const pyramidCount = mPage.querySelector('[data-prop="pyramidCount"]') as HTMLElement;
-  const pyramids = mPage.querySelector('.pyramids') as HTMLDivElement;
+
+  const containers = mPage.querySelector('#containers') as HTMLDivElement;
+  const trains = mPage.querySelector('#trains') as HTMLDivElement;
+
+
+  const cubes: HTMLElement[] = [];
+  for (let i = 0; i < 34; i++) {
+    const containerWrap = document.createElement('div');
+    containerWrap.className = 'container-wrap';
+    const container = document.createElement('div');
+    container.className = 'container-3d';
+
+    const cube = document.createElement('div');
+    cube.className = 'cube';
+    cube.innerHTML = `
+        <div class="face front">MARBLE</div>
+        <div class="face back">ROULETTE</div>
+        <div class="face right"></div>
+        <div class="face left"></div>
+        <div class="face top"></div>
+        <div class="face bottom"></div>
+    `;
+    container.append(cube);
+    containerWrap.append(container);
+    containers.append(containerWrap);
+    cubes.push(cube);
+  }
 
   const numbersProgress = {
     progress: 0,
@@ -376,45 +363,23 @@ const marbleCountPage = () => {
 
   const tl = gsap.timeline();
 
-  tl.fromTo(numbersProgress, {
-    progress: 0,
+  const progressEach = 1 / 34;
+  const totalProgress = 34 * 100 + 500;
+
+  gsap.fromTo(containers, {
+    x: 500,
   }, {
-    progress: 1,
-    duration: 2800,
-    onUpdate: () => {
-      const count = Math.round(numbersProgress.progress * data.pyramidCount);
-      marbleCount.innerHTML = comma(Math.floor(numbersProgress.progress * data.marbleCount));
-      pyramidCount.innerHTML = String(count);
-      for (let i = 0; i < data.pyramidCount; i++) {
-        (pyramids.children[i] as HTMLElement).style.display = i < count ? 'block' : 'none';
-      }
+    ease: 'none',
+    x: `-=${34 * 100 + 500}`,
+    scrollTrigger: {
+      pin: mPage,
+      trigger: mPage,
+      start: 'top top',
+      end: 'bottom top',
+      scrub: 1,
     },
-  }, 0)
-    .fromTo(mPage.querySelector('div.content'), {
-      autoAlpha: 0,
-      y: '+=1rem',
-    }, {
-      autoAlpha: 1,
-      duration: 100,
-      y: '-=1rem',
-    }, 0)
-    .to(mPage.querySelector('div.content'), {
-      autoAlpha: 0,
-      y: '-=1rem',
-      duration: 100,
-    }, '>+3000')
-    .to(pyramids, {
-      autoAlpha: 0,
-      scale: 10,
-      duration: 500,
-    }, '<')
-    .fromTo(mPage, {
-      autoAlpha: 1,
-    }, {
-      autoAlpha: 0,
-      duration: 100,
-    }, '>-100');
-  return tl;
+  });
+
 };
 
 const coffeePage = () => {
@@ -474,9 +439,26 @@ const init = () => {
     smoothTouch: 0.1,
   });
 
-  // ScrollTrigger.normalizeScroll(true);
+  //
   const sections = gsap.utils.toArray<HTMLElement>('section');
   gsap.set(sections[0], { autoAlpha: 1 });
+
+  const peopleVideo = document.querySelector('#people-video') as HTMLVideoElement;
+  ScrollTrigger.create({
+    trigger: peopleVideo,
+    onEnter: () => {
+      peopleVideo.play();
+    },
+    onEnterBack: () => {
+      peopleVideo.play();
+    },
+    onLeave: () => {
+      peopleVideo.pause();
+    },
+    onLeaveBack: () => {
+      peopleVideo.pause();
+    },
+  });
 
   const getTimeline = (section: HTMLElement) => {
     switch (section.id) {
@@ -498,27 +480,40 @@ const init = () => {
     return null;
   };
 
-  sections.forEach((section, i, arr) => {
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: section,
-        start: 'top top',
-        end: 'bottom top',
-        pin: i !== arr.length - 1,
-        pinSpacing: false,
-        scrub: true,
-        onEnter: () => gsap.to(section, { autoAlpha: 1, duration: .35 }),
-        onLeaveBack: () => i && gsap.to(section, { autoAlpha: 0, duration: .35 }),
-        // onLeave: () => gsap.to(section, { yPercent: -100, duration: 0.35 }),
-      },
-    });
-    const child = getTimeline(section);
-    if (child) {
-      tl.add(child, 0);
-    }
-  });
+  // sections.forEach((section, i, arr) => {
+  //   const tl = gsap.timeline({
+  //     scrollTrigger: {
+  //       trigger: section,
+  //       start: 'top top',
+  //       end: 'bottom top',
+  //       pin: i !== arr.length - 1,
+  //       pinSpacing: false,
+  //       scrub: true,
+  //       onEnter: () => gsap.to(section, { autoAlpha: 1, duration: .35 }),
+  //       onEnterBack: () => gsap.to(section, { autoAlpha: 1, duration: .35 }),
+  //       onLeaveBack: () => i && gsap.to(section, { autoAlpha: 0, duration: .35 }),
+  //       onLeave: () => gsap.to(section, { autoAlpha: 0, duration: .35 }),
+  //     },
+  //   });
+  //   const child = getTimeline(section);
+  //   if (child) {
+  //     tl.add(child, 0);
+  //   }
+  // });
 
   document.querySelector('#statDate')!.innerHTML = data.date;
+
+  once(document, 'touchstart', () => {
+    document.querySelectorAll<HTMLVideoElement>('video:not([autoplay])').forEach((v) => {
+      v.play().then(() => {
+        v.pause();
+        v.currentTime = 0;
+      }).catch((err) => {
+      });
+    });
+  });
+
+  marbleCountPage();
 };
 
 document.addEventListener('DOMContentLoaded', init);

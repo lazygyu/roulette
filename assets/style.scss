@@ -33,6 +33,54 @@ div.copyright a {
   color: var(--copyright-color);
 }
 
+.icon {
+  background: currentColor;
+  mask-repeat: no-repeat;
+  mask-position: center center;
+  mask-size: contain;
+  display: inline-block;
+  width: 25px;
+  height: 25px;
+  vertical-align: middle;
+
+  &.play {
+    mask-image: url('images/play.svg');
+  }
+
+  &.shuffle {
+    mask-image: url('images/shuffle.svg');
+  }
+
+  &.megaphone {
+    mask-image: url('images/megaphone.svg');
+  }
+
+  &.record {
+    mask-image: url('images/record.svg');
+  }
+
+  &.map {
+    mask-image: url('images/map.svg');
+  }
+
+  &.trophy {
+    mask-image: url('images/trophy.svg');
+  }
+
+  &.bomb {
+    mask-image: url('images/bomb.svg');
+  }
+
+  &.sun {
+    mask-image: url('images/sun.svg');
+  }
+
+  &.moon {
+    mask-image: url('images/moon.svg');
+  }
+}
+
+
 #settings {
   position: fixed;
   bottom: 1rem;
@@ -94,53 +142,6 @@ div.copyright a {
     align-items: center;
     color: white;
     justify-content: flex-end;
-  }
-
-  .icon {
-    background: currentColor;
-    mask-repeat: no-repeat;
-    mask-position: center center;
-    mask-size: contain;
-    display: inline-block;
-    width: 25px;
-    height: 25px;
-    vertical-align: middle;
-
-    &.play {
-      mask-image: url('images/play.svg');
-    }
-
-    &.shuffle {
-      mask-image: url('images/shuffle.svg');
-    }
-
-    &.megaphone {
-      mask-image: url('images/megaphone.svg');
-    }
-
-    &.record {
-      mask-image: url('images/record.svg');
-    }
-
-    &.map {
-      mask-image: url('images/map.svg');
-    }
-
-    &.trophy {
-      mask-image: url('images/trophy.svg');
-    }
-
-    &.bomb {
-      mask-image: url('images/bomb.svg');
-    }
-
-    &.sun {
-      mask-image: url('images/sun.svg');
-    }
-
-    &.moon {
-      mask-image: url('images/moon.svg');
-    }
   }
 
   div.left {
@@ -357,11 +358,25 @@ div.copyright a {
   visibility: visible;
   opacity: 1;
   transition: visibility 0s, opacity 1s linear;
+  display: flex;
 
   &.hide {
     opacity: 0;
     visibility: hidden;
   }
+
+  & > a {
+  }
+
+
+  .icon {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.recap-button.small {
+  margin-left: 1rem;
 }
 
 @media screen and (max-width: 750px) {

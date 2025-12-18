@@ -20,6 +20,7 @@ export const Translations = {
     'This program is freeware and may be used freely anywhere, including in broadcasts and videos.': 'This program is freeware and may be used freely anywhere, including in broadcasts and videos.',
     'Close': 'Close',
     'The result has been copied': 'The result has been copied',
+    '2025 Recap': '2025 Recap',
   },
   ko: {
     'Enter names below': '이름들을 입력하세요',
@@ -42,6 +43,7 @@ export const Translations = {
     'This program is freeware and may be used freely anywhere, including in broadcasts and videos.': '이 프로그램은 프리웨어이며 방송이나 영상 등을 포함한 어떤 용도로든 자유롭게 사용하는 것이 허용되어있습니다.',
     'Close': '닫기',
     'The result has been copied': '결과가 복사되었습니다',
+    '2025 Recap': '2025 결산',
   },
 } as const;
 
