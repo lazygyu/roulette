@@ -381,11 +381,29 @@ div.copyright a {
 
 @media screen and (max-width: 750px) {
   #donate {
-    bottom: 2rem;
+    bottom: 3rem;
+    width: calc(100% - 2rem);
+
+    .bmc-btn-container {
+      width: calc(100% - 70px);
+
+      .bmc-btn {
+        width: 100%;
+      }
+
+      .bmc-btn-text {
+        font-size: 14pt;
+      }
+    }
+
+    .recap-button.small {
+      margin-left: 10px;
+    }
+
   }
 
   #settings {
-    bottom: calc(2.5rem + 60px);
+    bottom: calc(4rem + 60px);
     display: block;
     min-width: 0;
     max-width: 100%;
