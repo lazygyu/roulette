@@ -6,9 +6,11 @@
     "@parcel/packager-raw-url": "2.16.1",
     "@parcel/transformer-sass": "2.16.1",
     "@parcel/transformer-webmanifest": "2.16.1",
+    "@types/gsap": "^3.0.0",
     "eslint": "^9.15.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
+    "gsap": "^3.14.1",
     "parcel": "^2.16.1",
     "path-browserify": "^1.0.0",
     "prettier": "^3.3.3",
@@ -20,7 +22,7 @@
   },
   "scripts": {
     "lint": "eslint --fix src/**/*.ts",
-    "dev": "parcel index.html --port 1235",
+    "dev": "parcel index.html --host 0.0.0.0 --port 1235",
     "build": "parcel build index.html --public-url /roulette/ && node scripts/build-sw.js"
   },
   "dependencies": {
