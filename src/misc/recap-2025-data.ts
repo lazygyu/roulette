@@ -1,12 +1,12 @@
 export const data = {
-  date: '2025년 12월 25일',
-  people: 1881508,
-  startCount: 9369958,
+  date: '2025년 12월 29일',
+  people: 1901495,
+  startCount: 9479112,
   busiestTimeFrom: 12,
   busiestTimeTo: 13,
   busiestDateMonth: 11,
   busiestDateDate: 11,
-  marbleCount: 1279293433,
+  marbleCount: 1298856408,
   country: 147,
   coffeeBuyer: 37,
 } as const;
