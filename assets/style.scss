@@ -375,29 +375,17 @@ div.copyright a {
   }
 }
 
-.recap-button.small {
-  margin-left: 1rem;
-}
-
 @media screen and (max-width: 750px) {
   #donate {
     bottom: 3rem;
     width: calc(100% - 2rem);
 
     .bmc-btn-container {
-      width: calc(100% - 70px);
+      width: calc(100%);
 
       .bmc-btn {
         width: 100%;
       }
-
-      .bmc-btn-text {
-        font-size: 14pt;
-      }
-    }
-
-    .recap-button.small {
-      margin-left: 10px;
     }
 
   }
