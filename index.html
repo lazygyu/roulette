@@ -69,14 +69,19 @@
     newGroupTextArea.id = `group_${newGroupIndex}`;
     newGroupTextArea.placeholer = '';
     newGroupTextArea.setAttribute('data-trans', 'true');
-    newGroupTextArea.addEventListener('input', getReady);
+    newGroupTextArea.addEventListener('input', (event) => {
+      window.teamDicider.setGroupName(newGroupIndex, event.target.value);
+    });
     newGroupDiv.appendChild(newGroupTextArea);
     
     const newMembersTextArea = document.createElement('textarea');
     newMembersTextArea.id = `members_${newGroupIndex}`;
     newMembersTextArea.placeholer = '';
     newMembersTextArea.setAttribute('data-trans', 'true');
-    newMembersTextArea.addEventListener('input', getReady);
+    newMembersTextArea.addEventListener('input', (event) => {
+      window.teamDicider.setGroupMembers(newGroupIndex, event.target.value);
+      getReady();
+    });
     newGroupDiv.appendChild(newMembersTextArea);
 
     namesDiv.appendChild(newGroupDiv);
@@ -92,25 +97,9 @@
       }
     }
 
-    if (groupIndex === 0) {
-      return;
+    if (groupIndex > 0) {
+      document.getElementById(`groupdiv_${groupIndex}`).remove();
     }
-
-    const groupTextArea = document.getElementById(`group_${groupIndex}`);
-    if (groupTextArea)
-    {
-      groupTextArea.removeEventListener('input', getReady);
-      groupTextArea.remove();
-    }
-
-    const membersTextArea = document.getElementById(`members_${groupIndex}`);
-    if (membersTextArea)
-    {
-      membersTextArea.removeEventListener('input', getReady);
-      membersTextArea.remove();
-    }
-
-    document.getElementById(`groupdiv_${groupIndex}`).remove();
   }
 
   function getGroups() {
