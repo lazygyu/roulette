@@ -47,31 +47,132 @@
   gtag('js', new Date());
   gtag('config', 'G-5899C1DJM0');
 
-  function getNames() {
-    const value = document.querySelector('#in_names').value.trim();
-    return value.split(/[,\r\n]/g).map(v => v.trim()).filter(v => !!v);
+  const maxGroupNum = 5;
+
+  function addGroup() {
+    const namesDiv = document.getElementById('names_div');
+    if (!namesDiv) {
+      return;
+    }
+
+    let newGroupIndex = 0;
+    for (; newGroupIndex < maxGroupNum; newGroupIndex++) {
+      if (!document.getElementById(`groupdiv_${newGroupIndex}`)) {
+        break;
+      }
+    }
+
+    const newGroupDiv = document.createElement('div');
+    newGroupDiv.id = `groupdiv_${newGroupIndex}`;
+
+    const newGroupTextArea = document.createElement('textarea');
+    newGroupTextArea.id = `group_${newGroupIndex}`;
+    newGroupTextArea.placeholer = '';
+    newGroupTextArea.setAttribute('data-trans', 'true');
+    newGroupTextArea.addEventListener('input', getReady);
+    newGroupDiv.appendChild(newGroupTextArea);
+    
+    const newMembersTextArea = document.createElement('textarea');
+    newMembersTextArea.id = `members_${newGroupIndex}`;
+    newMembersTextArea.placeholer = '';
+    newMembersTextArea.setAttribute('data-trans', 'true');
+    newMembersTextArea.addEventListener('input', getReady);
+    newGroupDiv.appendChild(newMembersTextArea);
+
+    namesDiv.appendChild(newGroupDiv);
   }
 
-  function parseName(nameStr) {
-    const weightRegex = /(\/\d+)/;
-    const countRegex = /(\*\d+)/;
-    const hasWeight = weightRegex.test(nameStr);
-    const hasCount = countRegex.test(nameStr);
-    const name = /^\s*([^\/*]+)?/.exec(nameStr)[1];
-    const weight = hasWeight ? parseInt(weightRegex.exec(nameStr)[1].replace('/', '')) : 1;
-    const count = hasCount ? parseInt(countRegex.exec(nameStr)[1].replace('*', '')) : 1;
-    return {
-      name,
-      weight,
-      count,
-    };
+  function removeGroup() {
+    let groupIndex = 0;
+    for (let index = 0; index < maxGroupNum; index++) {
+      if (document.getElementById(`groupdiv_${index}`)) {
+        groupIndex = index;
+      } else {
+        break;
+      }
+    }
+
+    if (groupIndex === 0) {
+      return;
+    }
+
+    const groupTextArea = document.getElementById(`group_${groupIndex}`);
+    if (groupTextArea)
+    {
+      groupTextArea.removeEventListener('input', getReady);
+      groupTextArea.remove();
+    }
+
+    const membersTextArea = document.getElementById(`members_${groupIndex}`);
+    if (membersTextArea)
+    {
+      membersTextArea.removeEventListener('input', getReady);
+      membersTextArea.remove();
+    }
+
+    document.getElementById(`groupdiv_${groupIndex}`).remove();
+  }
+
+  function getGroups() {
+    const result = new Map();
+    for (let index = 0; index < maxGroupNum; index++) {
+      const groupTextArea = document.getElementById(`group_${index}`);
+      const memberTextArea = document.getElementById(`members_${index}`);
+      if (!memberTextArea || !groupTextArea) {
+        break;
+      }
+
+      let groupName = groupTextArea.value.trim();
+      if (!groupName) {
+        groupName = (index + 1).toString();
+      }
+
+      const members = memberTextArea.value.trim().split(/[,\r\n]/g).map(v => v.trim()).filter(v => !!v);
+      result.set(groupName, members);
+    }
+    return result;
+  }
+
+  function getGroupStr() {
+    const groups = [];
+    for (let index = 0; index < maxGroupNum; index++) {
+      let groupStr = document.getElementById(`group_${index}`).value.trim();
+      if (!groupStr) {
+        groupStr = (index + 1).toString();
+      }
+
+      let memberStr = document.getElementById(`members_${index}`).value.trim();
+      if (memberStr) {
+        memberStr = memberStr.split(/[,\r\n]/g).map(v => v.trim()).filter(v => !!v).join(',');
+        groupStr += ',' + memberStr;
+      }
+
+      groups.push(groupStr);
+    }
+    return groups.join('/');
+  }
+
+  function getNames() {
+    let result = [];
+    for (let index = 0; index < maxGroupNum; index++) {
+      const memberTextArea = document.getElementById(`members_${index}`);
+      if (!memberTextArea) {
+        break;
+      }
+
+      const value = memberTextArea.value.trim();
+      result.push(...value.split(/[,\r\n]/g).map(v => v.trim()).filter(v => !!v));
+    }
+    return result;
   }
 
   function getReady() {
+    const groups = getGroups();
     const names = getNames();
     window.roulette.setMarbles(names);
+    //window.roulette.setGroups(groups);
     ready = names.length > 0;
-    localStorage.setItem('mbr_names', names.join(','));
+    localStorage.setItem('mbr_names', getGroupStr());
     switch (winnerType) {
       case 'first':
         setWinnerRank(1);
@@ -122,47 +223,32 @@
     const urlParams = new URLSearchParams(window.location.search);
     const namesFromUrl = urlParams.get('names');
 
-    if (namesFromUrl) {
-      document.querySelector('#in_names').value = namesFromUrl.replace(/,/g, '\n');
-    } else {
-      const savedNames = localStorage.getItem('mbr_names');
-      if (savedNames) {
-        document.querySelector('#in_names').value = savedNames;
+    const savedGroups = localStorage.getItem('mbr_groups');
+    if (savedGroups) {
+      const groupstrs = savedGroups.split('/');
+      for (let groupIndex = 0; groupIndex < groupstrs.length; groupIndex++) {
+        const groupandmembers = groupstrs[groupIndex].split(',', 2);
+        addGroup();
+        
+        if (groupandmembers.length > 0) {
+          document.getElementById(`group_${groupIndex}`).value = groupandmembers[0];
+        }
+
+        if (groupandmembers.length > 1) {
+          document.getElementById(`members_${groupIndex}`).value = groupandmembers[1];
+        }
       }
+    } else {
+      addGroup();
+      addGroup();
     }
-    document.querySelector('#in_names').addEventListener('input', () => {
-      getReady();
+
+    document.querySelector('#btnAddGroup').addEventListener('click', () => {
+      addGroup();
     });
 
-    document.querySelector('#in_names').addEventListener('blur', () => {
-      const nameSource = getNames();
-      const nameSet = new Set();
-      const nameCounts = {};
-      nameSource.forEach(nameSrc => {
-        const name = parseName(nameSrc);
-        const key = name.weight > 1 ? `${name.name}/${name.weight}` : name.name;
-        if (!nameSet.has(key)) {
-          nameSet.add(key);
-          nameCounts[key] = 0;
-        }
-        nameCounts[key] += name.count;
-      });
-      const result = [];
-      Object.keys(nameCounts).forEach(key => {
-        if (nameCounts[key] > 1) {
-          result.push(`${key}*${nameCounts[key]}`);
-        } else {
-          result.push(key);
-        }
-      });
-
-      const oldValue = document.querySelector('#in_names').value;
-      const newValue = result.join(',');
-
-      if (oldValue !== newValue) {
-        document.querySelector('#in_names').value = newValue;
-        getReady();
-      }
+    document.querySelector('#btnRemoveGroup').addEventListener('click', () => {
+      removeGroup();
     });
 
     document.querySelector('#btnShuffle').addEventListener('click', () => {
@@ -202,6 +288,10 @@
       winnerType = 'custom';
       setWinnerRank(isNaN(v) ? 0 : v);
     });
+
+    document.querySelector('#fixedLane').addEventListener('change', (e) => {
+      
+    })
 
     document.querySelector('.btn-last-winner').addEventListener('click', () => {
       const total = window.roulette.getCount();
@@ -341,10 +431,24 @@
         <i class='icon moon'></i>
       </div>
     </div>
+    <div class="row">
+      <lable for='fixedLane'>
+        <span data-trans>Fixed Lane</span>
+      </lable>
+      <input type="checkbox" id="fixedLane" checked />
+    </div>
   </div>
   <div class="left">
     <h3 data-trans>Enter names below</h3>
-    <textarea id="in_names" placeholder="Input names separated by commas or line feed here" data-trans="placeholder">짱구*5, 짱아*10, 봉미선*3</textarea>
+    <div id="names_div"></div>
+    <div class="actions">
+      <button id="btnAddGroup">
+        <span data-trans>Add Group</span>
+      </button>
+      <button id="btnRemoveGroup">
+        <span data-trans>Remove Group</span>
+      </button>
+    </div>
     <div class="actions">
       <button id="btnNotice">
         <i class="icon megaphone"></i>
