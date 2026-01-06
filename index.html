@@ -284,8 +284,8 @@
       setWinnerRank(isNaN(v) ? 0 : v);
     });
 
-    document.querySelector('#fixedLane').addEventListener('change', (e) => {
-      
+    document.querySelector('#laneType').addEventListener('change', (e) => {
+      window.roulette.setLaneType(e.target.matches(':checked') ? 'fixedLane' : 'fromTop');
     })
 
     document.querySelector('.btn-last-winner').addEventListener('click', () => {
@@ -427,10 +427,10 @@
       </div>
     </div>
     <div class="row">
-      <lable for='fixedLane'>
+      <lable for='laneType'>
         <span data-trans>Fixed Lane</span>
       </lable>
-      <input type="checkbox" id="fixedLane" checked />
+      <input type="checkbox" id="laneType" checked />
     </div>
   </div>
   <div class="left">

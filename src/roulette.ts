@@ -459,4 +459,8 @@ export class Roulette extends EventTarget {
   public getGroupStr(): string {
     return this._teamDicider.getGroupStr();
   }
+
+  public setLaneType(laneType: string) {
+    this._teamDicider.setLaneType(laneType);
+  }
 }

@@ -4,7 +4,7 @@ import { MembersGroup } from './membersGroup';
 enum LaneType {
     FromTop = 0,
     FixedLane,
-    Randoms     // TODO
+    Random     // TODO
 }
 
 export class TeamDicider {
@@ -38,6 +38,16 @@ export class TeamDicider {
         }
 
         this._groups[index].setMembers(members);
+    }
+
+    public setLaneType(laneType: string) {
+        if (laneType === 'fixedLane') {
+            this._laneType = LaneType.FixedLane;
+        } else if (laneType === 'random') {
+            this._laneType = LaneType.Random;
+        } else {
+            this._laneType = LaneType.FromTop;
+        }
     }
 
     private getGroupIndex(member: string): number {
