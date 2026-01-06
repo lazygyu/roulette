@@ -227,8 +227,10 @@
         if (splitPoint >= 0) {
           const nameStr = groupstrs[groupIndex].substr(0, splitPoint);
           document.getElementById(`group_${groupIndex}`).value = nameStr;
+          window.roulette.setGroupName(groupIndex, nameStr);
           const membersStr = groupstrs[groupIndex].substr(splitPoint + 1, groupstrs[groupIndex].length);
           document.getElementById(`members_${groupIndex}`).value = membersStr;
+          window.roulette.setGroupMembers(groupIndex, membersStr);
         }
       }
     } else {

@@ -14,7 +14,9 @@ export class TeamDicider {
     // designated lane groups if type is FixedLane. -1 === any group. it can be longer than 5 if each side assigned to different group
     private _laneGroups: number[] = [];
 
-    private _teamResult: string[] = [];
+    private _winners: string = '';
+    private _teamResult: string[] = new Array(10).fill('');
+    private _remainders: string[] = [];
 
     public addGroup() {
         const newMembersGroup = new MembersGroup();
@@ -44,6 +46,7 @@ export class TeamDicider {
                 return index;
             }
         }
+        console.log(`unknown member: ${member}`);
         return -1;
     }
 
@@ -60,57 +63,95 @@ export class TeamDicider {
     }
 
     public updateTeams(winners: Marble[]) {
+        if (winners.length === 0) {
+            this.resetTeamResult();
+            return;
+        }
+
+        let winnerStr = winners.map((winner: Marble) => winner.name).join(',');
+
+        if (winnerStr === this._winners) {
+            return;
+        }
+        const oldWinners = this._winners.split(',');
+        const addedWinners = winners.filter((winner: Marble) => !oldWinners.includes(winner.name));
+        this._winners = winnerStr;
+
         switch (this._laneType) {
             case LaneType.FromTop:
-                this.updateTeamsFromTop(winners);
+                this.updateTeamsFromTop(addedWinners);
                 break;
             case LaneType.FixedLane:
-                this.updateTeamsWithFixedLane(winners);
+                this.updateTeamsWithFixedLane(addedWinners);
                 break;
+        }
+
+        if (this._teamResult.length > 0) {
+            console.log('team result');
+            console.log(this._teamResult.slice(0, 5));
+            console.log(this._teamResult.slice(5, 10));
+            console.log(this._teamResult.slice(10));
         }
     }
 
-    private updateTeamsFromTop(winners: Marble[]) {
-        const teamResult: string[] = new Array(10).fill('');
-        const remainders: string[] = [];
+    private resetTeamResult() {
+        if (this._winners.length === 0) {
+            return;
+        }
 
-        let teamMemberIndex = 0;
-        for (const winner of winners) {
-            if (teamMemberIndex < 5) {
-                teamResult[teamMemberIndex++] = winner.name;
+        this._winners = '';
+        this._teamResult = new Array(10).fill('');
+        this._remainders = [];
+    }
+
+    private updateTeamsFromTop(newMembers: Marble[]) {
+        const membersInTeam1GroupMap = new Map<number, number[]>();
+        for (let index = 0; index < 5; index++) {
+            const memberName = this._teamResult[index];
+            if (memberName.length === 0) {
+                continue;
+            }
+
+            const groupIndex = this.getGroupIndex(memberName);
+            const membersInTeam1 = membersInTeam1GroupMap.get(groupIndex);
+            if (membersInTeam1) {
+                membersInTeam1.push(index);
             } else {
-                let bFindTeam: boolean = false;
-                for (let index = 5; index < 10; index++)
-                {
-                    if (teamResult[index].length !== 0) {
-                        continue;
-                    }
+                membersInTeam1GroupMap.set(groupIndex, [index]);
+            }
+        }
 
-                    if (this.getGroupIndex(teamResult[index - 5]) === this.getGroupIndex(winner.name)) {
-                        teamResult[index] = winner.name;
-                        bFindTeam = true;
+        for (const newMember of newMembers) {
+            const groupIndex: number = this.getGroupIndex(newMember.name);
+            let membersInTeam1 = membersInTeam1GroupMap.get(groupIndex);
+            let bIsRemainder = true;
+            if (membersInTeam1 && membersInTeam1.length >= this._groups[groupIndex].getLength() / 2) {
+                for (const index of membersInTeam1) {
+                    if (this._teamResult[index + 5].length === 0) {
+                        this._teamResult[index + 5] = newMember.name;
+                        bIsRemainder = false;
                         break;
                     }
                 }
-
-                if (!bFindTeam) {
-                    remainders.push(winner.name);
+            } else {
+                for (let index = 0; index < 5; index++) {
+                    if (this._teamResult[index].length === 0) {
+                        this._teamResult[index] = newMember.name;
+                        bIsRemainder = false;
+                        if (membersInTeam1) {
+                            membersInTeam1.push(index);
+                        } else {
+                            membersInTeam1GroupMap.set(groupIndex, [index]);
+                        }
+                        break;
+                    }
                 }
             }
-        }
 
-        let remainderIndex = 0;
-        for (const index in teamResult) {
-            if (remainderIndex >= remainders.length) {
-                break;
-            }
-
-            if (teamResult[index].length === 0) {
-                teamResult[index] = remainders[remainderIndex++];
+            if (bIsRemainder) {
+                this._remainders.push(newMember.name);
             }
         }
-
-        this._teamResult = teamResult.concat(remainders.slice(remainderIndex));
     }
 
     private isAvailableInFixedLane(lane: number, member: string): boolean {
@@ -129,36 +170,20 @@ export class TeamDicider {
         return this._laneGroups[lane] === -1 || this._laneGroups[lane] === this.getGroupIndex(member);
     }
 
-    private updateTeamsWithFixedLane(winners: Marble[]) {
-        const teamResult: string[] = new Array(10).fill('');
-        const remainders: string[] = [];
-
-        for (const winner of winners) {
-            let bFindTeam: boolean = false;
+    private updateTeamsWithFixedLane(newMembers: Marble[]) {
+        for (const newMember of newMembers) {
+            let bIsRemainder: boolean = true;
             for (let index = 0; index < 10; index++) {
-                if (teamResult[index].length === 0 && this.isAvailableInFixedLane(index, winner.name)) {
-                    teamResult[index] = winner.name;
-                    bFindTeam = true;
+                if (this._teamResult[index].length === 0 && this.isAvailableInFixedLane(index, newMember.name)) {
+                    this._teamResult[index] = newMember.name;
+                    bIsRemainder = false;
                     break;
                 }
             }
 
-            if (!bFindTeam) {
-                remainders.push(winner.name);
+            if (bIsRemainder) {
+                this._remainders.push(newMember.name);
             }
         }
-
-        let remainderIndex = 0;
-        for (const index in teamResult) {
-            if (remainderIndex >= remainders.length) {
-                break;
-            }
-
-            if (teamResult[index].length === 0) {
-                teamResult[index] = remainders[remainderIndex++];
-            }
-        }
-
-        this._teamResult = teamResult.concat(remainders.slice(remainderIndex));
     }
 }
