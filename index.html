@@ -62,8 +62,13 @@
       }
     }
 
+    if (newGroupIndex === maxGroupNum) {
+      return;
+    }
+
     const newGroupDiv = document.createElement('div');
     newGroupDiv.id = `groupdiv_${newGroupIndex}`;
+    newGroupDiv.className = 'row';
 
     const newGroupTextArea = document.createElement('textarea');
     newGroupTextArea.id = `group_${newGroupIndex}`;
@@ -217,15 +222,13 @@
     if (savedGroups) {
       const groupstrs = savedGroups.split('/');
       for (let groupIndex = 0; groupIndex < groupstrs.length; groupIndex++) {
-        const groupandmembers = groupstrs[groupIndex].split(',', 2);
+        const splitPoint = groupstrs[groupIndex].indexOf(',');
         addGroup();
-        
-        if (groupandmembers.length > 0) {
-          document.getElementById(`group_${groupIndex}`).value = groupandmembers[0];
-        }
-
-        if (groupandmembers.length > 1) {
-          document.getElementById(`members_${groupIndex}`).value = groupandmembers[1];
+        if (splitPoint >= 0) {
+          const nameStr = groupstrs[groupIndex].substr(0, splitPoint);
+          document.getElementById(`group_${groupIndex}`).value = nameStr;
+          const membersStr = groupstrs[groupIndex].substr(splitPoint + 1, groupstrs[groupIndex].length);
+          document.getElementById(`members_${groupIndex}`).value = membersStr;
         }
       }
     } else {

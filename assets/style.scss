@@ -149,6 +149,11 @@ div.copyright a {
     flex-shrink: 1;
     order: 1;
 
+    div.row {
+      display: flex;
+      align-items: center;
+    }
+
     .actions {
       display: flex;
       align-items: center;
@@ -358,7 +363,7 @@ div.copyright a {
   visibility: visible;
   opacity: 1;
   transition: visibility 0s, opacity 1s linear;
-  display: flex;
+  display: none;
 
   &.hide {
     opacity: 0;
