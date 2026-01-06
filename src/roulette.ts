@@ -56,7 +56,7 @@ export class Roulette extends EventTarget {
   private fastForwarder!: FastForwader;
   private _theme: ColorTheme = Themes.dark;
 
-  private _teamDicider: TeamDicider = new TeamDicider();
+  private _teamDicider!: TeamDicider;
 
   get isReady() {
     return this._isReady;
@@ -128,7 +128,6 @@ export class Roulette extends EventTarget {
     }
 
     this._render();
-    this._teamDicider.updateTeams(this._winners);
     window.requestAnimationFrame(this._update);
   }
 
@@ -254,6 +253,8 @@ export class Roulette extends EventTarget {
     this.addUiObject(minimap);
     this.fastForwarder = new FastForwader();
     this.addUiObject(this.fastForwarder);
+    this._teamDicider = new TeamDicider();
+    this.addUiObject(this._teamDicider);
     this._stage = stages[0];
     this._loadMap();
   }

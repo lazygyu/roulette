@@ -1,5 +1,8 @@
 import { Marble } from './marble';
 import { MembersGroup } from './membersGroup';
+import { RenderParameters } from './rouletteRenderer';
+import { Rect } from './types/rect.type';
+import { UIObject } from './UIObject';
 
 enum LaneType {
     FromTop = 0,
@@ -7,7 +10,7 @@ enum LaneType {
     Random     // TODO
 }
 
-export class TeamDicider {
+export class TeamDicider implements UIObject {
     private _groups: MembersGroup[] = [];
 
     private _laneType: LaneType = LaneType.FromTop;
@@ -17,6 +20,84 @@ export class TeamDicider {
     private _winners: string = '';
     private _teamResult: string[] = new Array(10).fill('');
     private _remainders: string[] = [];
+
+    // for render
+    private _currentY = 0;
+    private _targetY = 0;
+    private fontHeight = 16;
+    private _userMoved = 0;
+    private _currentWinner = -1;
+    private maxY = 0;
+
+    update(deltaTime: number): void {
+        
+    }
+
+    render(
+        ctx: CanvasRenderingContext2D, 
+        { winners, theme }: RenderParameters, 
+        width: number, 
+        height: number
+    ): void {
+        this.updateTeams(winners);
+
+        if (this._winners.length === 0) {
+            return;
+        }
+
+        const startX = width - 5;
+        const startY = Math.max(-this.fontHeight, this._currentY - height / 2);
+        this.maxY = this.fontHeight * 7;
+        this._currentWinner = winners.length;
+
+        ctx.save();
+        ctx.textAlign = 'right';
+        ctx.font = '10pt sans-serif';
+        ctx.fillStyle = '#666';
+
+        ctx.beginPath();
+        ctx.rect(width - 150, this.fontHeight + 2, width, this.maxY);
+        ctx.clip();
+
+        ctx.translate(0, -startY);
+        ctx.font = 'bold 11pt sans-serif';
+        if (theme.rankStroke) {
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = theme.rankStroke;
+        }
+
+        const lanes = ['top', 'jg', 'mid', 'adc', 'sup'];
+        for (let index = 0; index < 5; index++) {
+            let team1 = this._teamResult[index];
+            let team2 = this._teamResult[index + 5];
+            if (team1.length === 0 && team2.length === 0) {
+                team1 = '--';
+                team2 = '--';
+            } else if (team1.length === 0) {
+                team1 = '-'.repeat(team2.length);
+            } else if (team2.length === 0) {
+                team2 = '-'.repeat(team1.length);
+            }
+
+            const teamText = `${team1}\t${lanes[index]}\t${team2}`;
+            ctx.strokeText(
+                teamText, 
+                startX, 
+                20 + index * this.fontHeight
+            );
+            ctx.fillText(
+                teamText,
+                startX,
+                20 + index * this.fontHeight
+            );
+        }
+        ctx.restore();
+
+    }
+
+    getBoundingBox(): Rect | null {
+        return null;
+    }
 
     public addGroup() {
         const newMembersGroup = new MembersGroup();

@@ -138,8 +138,8 @@ export class RouletteRenderer {
         this._canvas.height,
       ),
     );
-    renderParameters.particleManager.render(this.ctx);
-    this.renderWinner(renderParameters);
+    // renderParameters.particleManager.render(this.ctx);
+    // this.renderWinner(renderParameters);
   }
 
   private renderEntities(entities: MapEntityState[]) {
