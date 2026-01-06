@@ -18,6 +18,7 @@ import { Box2dPhysics } from './physics-box2d';
 import { MouseEventHandlerName, MouseEventName } from './types/mouseEvents.type';
 import { FastForwader } from './fastForwader';
 import { ColorTheme } from './types/ColorTheme';
+import { TeamDicider } from './teamDicider';
 
 export class Roulette extends EventTarget {
   private _marbles: Marble[] = [];
@@ -54,6 +55,8 @@ export class Roulette extends EventTarget {
   private _isReady: boolean = false;
   private fastForwarder!: FastForwader;
   private _theme: ColorTheme = Themes.dark;
+
+  private _teamDicider: TeamDicider = new TeamDicider();
 
   get isReady() {
     return this._isReady;
@@ -125,6 +128,7 @@ export class Roulette extends EventTarget {
     }
 
     this._render();
+    this._teamDicider.updateTeams(this._winners);
     window.requestAnimationFrame(this._update);
   }
 
@@ -434,5 +438,25 @@ export class Roulette extends EventTarget {
     this._stage = stages[index];
     this.setMarbles(names);
     this._camera.initializePosition();
+  }
+
+  public addGroup() {
+    this._teamDicider.addGroup();
+  }
+
+  public removeGroup() {
+    this._teamDicider.removeGroup();
+  }
+
+  public setGroupName(index: number, name: string) {
+    this._teamDicider.setGroupName(index, name);
+  }
+
+  public setGroupMembers(index: number, members: string) {
+    this._teamDicider.setGroupMembers(index, members);
+  }
+
+  public getGroupStr(): string {
+    return this._teamDicider.getGroupStr();
   }
 }

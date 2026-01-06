@@ -5,6 +5,10 @@ export class MembersGroup {
 
     private _members: string[] = [];
 
+    public setIndex(index: number) {
+        this._index = index;
+    }
+
     public setName(name: string) {
         this._name = name;
     }
@@ -20,5 +24,12 @@ export class MembersGroup {
 
     public isMember(member: string): boolean {
         return this._members.includes(member.trim());
+    }
+
+    public getGroupStr(): string {
+        if (this._name.length > 0) {
+            return this._name + ',' + this._members.join(',');
+        }
+        return (this._index + 1).toString() + ',' + this._members.join(',');
     }
 }

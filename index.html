@@ -70,7 +70,8 @@
     newGroupTextArea.placeholer = '';
     newGroupTextArea.setAttribute('data-trans', 'true');
     newGroupTextArea.addEventListener('input', (event) => {
-      window.teamDicider.setGroupName(newGroupIndex, event.target.value);
+      window.roulette.setGroupName(newGroupIndex, event.target.value);
+      localStorage.setItem('mbr_groups', window.roulette.getGroupStr());
     });
     newGroupDiv.appendChild(newGroupTextArea);
     
@@ -79,11 +80,13 @@
     newMembersTextArea.placeholer = '';
     newMembersTextArea.setAttribute('data-trans', 'true');
     newMembersTextArea.addEventListener('input', (event) => {
-      window.teamDicider.setGroupMembers(newGroupIndex, event.target.value);
+      window.roulette.setGroupMembers(newGroupIndex, event.target.value);
       getReady();
+      localStorage.setItem('mbr_groups', window.roulette.getGroupStr());
     });
     newGroupDiv.appendChild(newMembersTextArea);
 
+    window.roulette.addGroup();
     namesDiv.appendChild(newGroupDiv);
   }
 
@@ -99,6 +102,7 @@
 
     if (groupIndex > 0) {
       document.getElementById(`groupdiv_${groupIndex}`).remove();
+      window.roulette.removeGroup();
     }
   }
 
@@ -156,12 +160,9 @@
   }
 
   function getReady() {
-    const groups = getGroups();
     const names = getNames();
     window.roulette.setMarbles(names);
-    //window.roulette.setGroups(groups);
     ready = names.length > 0;
-    localStorage.setItem('mbr_names', getGroupStr());
     switch (winnerType) {
       case 'first':
         setWinnerRank(1);
