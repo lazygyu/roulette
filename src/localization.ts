@@ -22,9 +22,9 @@ function translateElement(element: Element) {
       element.setAttribute(prop, Translations[locale][key as TranslationKeys]);
     }
   } else {
-    const key = element.innerText.trim();
+    const key = element.textContent.trim();
     if (key && key in Translations[locale]) {
-      element.innerText = Translations[locale][key as TranslationKeys];
+      element.textContent = Translations[locale][key as TranslationKeys];
     }
   }
 }
