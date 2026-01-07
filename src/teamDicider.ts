@@ -3,6 +3,7 @@ import { MembersGroup } from './membersGroup';
 import { RenderParameters } from './rouletteRenderer';
 import { Rect } from './types/rect.type';
 import { UIObject } from './UIObject';
+import { translateText } from './localization';
 
 enum LaneType {
     FromTop = 0,
@@ -56,16 +57,19 @@ export class TeamDicider implements UIObject {
             ctx.strokeStyle = theme.rankStroke;
         }
 
-        ctx.strokeText('Team Result', startX, 20);
-        ctx.fillText('Team Result', startX, 20);
+        const teamResultText = translateText('Team Result');
+        ctx.strokeText(teamResultText, startX, 20);
+        ctx.fillText(teamResultText, startX, 20);
 
         ctx.font = 'bold 10pt sans-serif'
         ctx.fillStyle = '#0000CD';
-        ctx.strokeText('Blue', startX - 40, 40);
-        ctx.fillText('Blue', startX - 40, 40);
+        const BlueTeamText = translateText('Blue');
+        ctx.strokeText(BlueTeamText, startX - 35, 40);
+        ctx.fillText(BlueTeamText, startX - 35, 40);
         ctx.fillStyle = '#B22222';
-        ctx.strokeText('Red', startX + 40, 40);
-        ctx.fillText('Red', startX + 40, 40);
+        const RedTeamText = translateText('Red');
+        ctx.strokeText(RedTeamText, startX + 35, 40);
+        ctx.fillText(RedTeamText, startX + 35, 40);
 
         const getFillStyle = (name: string): string => {
             if (name.length > 0) {
@@ -84,28 +88,21 @@ export class TeamDicider implements UIObject {
 
         const lanes = ['top', 'jg', 'mid', 'adc', 'sup'];
         for (let index = 0; index < 5; index++) {
-            let team1 = this._teamResult[index];
-            let team2 = this._teamResult[index + 5];
-            if (team1.length === 0 && team2.length === 0) {
-                team1 = '--';
-                team2 = '--';
-            } else if (team1.length === 0) {
-                team1 = '-'.repeat(team2.length);
-            } else if (team2.length === 0) {
-                team2 = '-'.repeat(team1.length);
-            }
+            let team1 = this._teamResult[index].length > 0 ? this._teamResult[index] : '--';
+            let team2 = this._teamResult[index + 5].length > 0 ? this._teamResult[index + 5] : '--';
 
             ctx.fillStyle = getFillStyle(team1);
-            ctx.strokeText(team1, startX - 40, 22 + (index + 2) * this.fontHeight);
-            ctx.fillText(team1, startX - 40, 22 + (index + 2) * this.fontHeight);
+            ctx.strokeText(team1, startX - 35, 58 + index * this.fontHeight);
+            ctx.fillText(team1, startX - 35, 58 + index * this.fontHeight);
 
             ctx.fillStyle = getFillStyle(lanes[index]);
-            ctx.strokeText(lanes[index], startX, 22 + (index + 2) * this.fontHeight);
-            ctx.fillText(lanes[index], startX, 22 + (index + 2) * this.fontHeight);
+            const laneText = translateText(lanes[index]);
+            ctx.strokeText(laneText, startX, 58 + index * this.fontHeight);
+            ctx.fillText(laneText, startX, 58 + index * this.fontHeight);
 
             ctx.fillStyle = getFillStyle(team2);
-            ctx.strokeText(team2, startX + 40, 22 + (index + 2) * this.fontHeight);
-            ctx.fillText(team2, startX + 40, 22 + (index + 2) * this.fontHeight);
+            ctx.strokeText(team2, startX + 35, 58 + index * this.fontHeight);
+            ctx.fillText(team2, startX + 35, 58 + index * this.fontHeight);
         }
         ctx.restore();
 

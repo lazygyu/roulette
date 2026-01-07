@@ -33,6 +33,17 @@ function translatePage() {
   document.querySelectorAll('[data-trans]').forEach(translateElement);
 }
 
+export function translateText(text: string): string {
+  if (locale) {
+    const key = text.trim();
+    if (key && key in Translations[locale]) {
+      return Translations[locale][key as TranslationKeys];
+    }
+  }
+
+  return text;
+}
+
 function setLocale(newLocale: string) {
   if (newLocale === locale) return;
 
