@@ -36,10 +36,6 @@ export class TeamDicider implements UIObject {
     ): void {
         this.updateTeams(winners);
 
-//        if (this._winners.length === 0) {
-//            return;
-//        }
-        console.log(`${width}, ${height}`);
         const startX = width - 75;
         const startY = height - this.fontHeight * 9;
         const maxY = this.fontHeight * 7;
