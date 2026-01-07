@@ -47,7 +47,7 @@ export class TeamDicider implements UIObject {
         ctx.fillStyle = '#666';
 
         ctx.beginPath();
-        ctx.rect(width - 150, startY, width, startY + maxY);
+        ctx.rect(width - 200, startY, width, startY + maxY);
         ctx.clip();
 
         ctx.translate(0, startY);
@@ -82,27 +82,47 @@ export class TeamDicider implements UIObject {
             
             return '#666';
         };
+
+        const getLaneGroupName = (lane: number): string => {
+            const laneGroup = this._laneGroups[lane];
+            if (laneGroup === -1) {
+                return translateText('Any group');
+            }
+            return this._groups[laneGroup].getName();
+        }
         
         ctx.font = '10pt sans-serif'
         ctx.fillStyle = '#666';
 
         const lanes = ['top', 'jg', 'mid', 'adc', 'sup'];
         for (let index = 0; index < 5; index++) {
+            const posY = 58 + index * this.fontHeight;
+            if (this._laneType === LaneType.FixedLane) {
+                ctx.textAlign = 'right';
+                ctx.font = '8pt sans-serif'
+                ctx.fillStyle = '#666';
+                const laneGroupName = getLaneGroupName(index);
+                ctx.strokeText(laneGroupName, startX - 60, posY);
+                ctx.fillText(laneGroupName, startX - 60, posY);
+                ctx.textAlign = 'center';
+                ctx.font = '10pt sans-serif'
+            }
+
             let team1 = this._teamResult[index].length > 0 ? this._teamResult[index] : '--';
             let team2 = this._teamResult[index + 5].length > 0 ? this._teamResult[index + 5] : '--';
 
             ctx.fillStyle = getFillStyle(team1);
-            ctx.strokeText(team1, startX - 35, 58 + index * this.fontHeight);
-            ctx.fillText(team1, startX - 35, 58 + index * this.fontHeight);
+            ctx.strokeText(team1, startX - 35, posY);
+            ctx.fillText(team1, startX - 35, posY);
 
             ctx.fillStyle = getFillStyle(lanes[index]);
             const laneText = translateText(lanes[index]);
-            ctx.strokeText(laneText, startX, 58 + index * this.fontHeight);
-            ctx.fillText(laneText, startX, 58 + index * this.fontHeight);
+            ctx.strokeText(laneText, startX, posY);
+            ctx.fillText(laneText, startX, posY);
 
             ctx.fillStyle = getFillStyle(team2);
-            ctx.strokeText(team2, startX + 35, 58 + index * this.fontHeight);
-            ctx.fillText(team2, startX + 35, 58 + index * this.fontHeight);
+            ctx.strokeText(team2, startX + 35, posY);
+            ctx.fillText(team2, startX + 35, posY);
         }
         ctx.restore();
 
