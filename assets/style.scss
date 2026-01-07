@@ -92,6 +92,43 @@ div.copyright a {
   }
 }
 
+#fixed-lane-settings {
+  position: relative;
+  background: #666;
+  border-radius: 10px;
+  padding: 10px;
+  z-index: 999;
+  width: fit-content;
+
+  visibility: visible;
+  opacity: 1;
+  transition: visibility 0s, opacity 1s linear;
+
+  &.hide {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  h3 {
+    padding: 0;
+    margin: 0;
+    font-size: 12pt;
+    color: #fefefe;
+  }
+
+  div.row {
+    display: flex;
+    align-items: center;
+
+    label {
+      width: 80px;
+      flex-grow: 0;
+      flex-shrink: 0;
+      padding-left: 1rem;
+      color: white;
+    }
+  }
+}
 
 #settings {
   position: fixed;
@@ -426,6 +463,18 @@ div.copyright a {
       }
     }
 
+  }
+
+  #fixed-lane-settings {
+    bottom: calc(4rem + 60px);
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    width: calc(100% - 2rem);
+    overflow: hidden;
+    opacity: 1;
+    visibility: visible;
+    transition: visibility 0s, opacity 1s linear;
   }
 
   #settings {

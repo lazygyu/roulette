@@ -49,6 +49,29 @@
 
   const maxGroupNum = 5;
 
+  function refreshFixedLaneGroup() {
+    const groups = window.roulette.getGroups();
+    document.querySelectorAll('.fixed-lane-group').forEach((select, index) => {
+      let selectedIndex = Math.max(0, select.selectedIndex);
+      if (select.selectedIndex > groups.length) {
+        selectedIndex = 0;
+      }
+
+      select.innerHTML = '';
+      const anyOption = new Option('Any group', '-1');
+      anyOption.setAttribute('data-trans','');
+      window.translateElement(anyOption);
+      select.add(anyOption);
+
+      for (let index = 0; index < groups.length; index++) {
+        const newOption = new Option(groups[index].length > 0 ? groups[index] : `${index + 1}`, `${index}`);
+        select.add(newOption);
+      }
+
+      select.selectedIndex = selectedIndex;
+    });
+  }
+
   function addGroup() {
     const namesDiv = document.getElementById('names_div');
     if (!namesDiv) {
@@ -97,6 +120,7 @@
     window.translateElement(newGroupTextArea);
     newGroupTextArea.addEventListener('input', (event) => {
       window.roulette.setGroupName(newGroupIndex, event.target.value);
+      refreshFixedLaneGroup();
       localStorage.setItem('mbr_groups', window.roulette.getGroupStr());
     });
     newBodyDiv.appendChild(newGroupTextArea);
@@ -118,6 +142,7 @@
 
     window.roulette.addGroup();
     namesDiv.appendChild(newGroupDiv);
+    refreshFixedLaneGroup();
   }
 
   function removeGroup() {
@@ -134,6 +159,7 @@
       document.getElementById(`groupdiv_${groupIndex}`).remove();
       window.roulette.removeGroup();
       getReady();
+      refreshFixedLaneGroup();
     }
   }
 
@@ -205,6 +231,21 @@
     }
   }
 
+  function getFixedLaneGroups() {
+    let result = [];
+    const fixedLaneGroupIds = ['group-top', 'group-jg', 'group-mid', 'group-adc', 'group-sup'];
+    for (const fixedLaneGroupId of fixedLaneGroupIds) {
+      const groupId = Number(document.getElementById(fixedLaneGroupId).value);
+      result.push(Number.isInteger(groupId) ? groupId : -1);
+    }
+    return result;
+  }
+
+  function getFixedLaneReady() {
+    const fixedLaneGroups = getFixedLaneGroups();
+    window.roulette.setFixedLanes(fixedLaneGroups);
+  }
+
   function setWinnerRank(rank) {
     document.querySelector('#in_winningRank').value = rank;
     window.options.winningRank = rank - 1;
@@ -227,6 +268,12 @@
 
   function setLaneType(laneType) {
     window.roulette.setLaneType(laneType);
+
+    if (laneType === 'fixed') {
+      document.querySelector('#fixed-lane-settings').classList.remove('hide');
+    } else {
+      document.querySelector('#fixed-lane-settings').classList.add('hide');  
+    }
 
     if (laneType === 'fromTop') {
       document.querySelector('#btn-lane-fromTop').classList.toggle('active', true);
@@ -352,6 +399,12 @@
       setLaneType('random');
     });
 
+    document.querySelectorAll('.fixed-lane-group').forEach((select, number) => {
+      select.addEventListener('change', () => {
+        getFixedLaneReady();
+      });
+    });
+
     window.roulette.addEventListener('goal', () => {
       ready = false;
       setTimeout(() => {
@@ -441,6 +494,39 @@
     checkNotice();
   }
 </script>
+<div id="fixed-lane-settings" class="hide">
+  <h3 data-trans>Set group for lane</h3>
+  <div class="row">
+    <label>
+      <span data-trans>top</span>
+    </label>
+    <select id="group-top" class="fixed-lane-group"></select>
+  </div>
+  <div class="row">
+    <label>
+      <span data-trans>jg</span>
+    </label>
+    <select id="group-jg" class="fixed-lane-group"></select>
+  </div>
+  <div class="row">
+    <label>
+      <span data-trans>mid</span>
+    </label>
+    <select id="group-mid" class="fixed-lane-group"></select>
+  </div>
+  <div class="row">
+    <label>
+      <span data-trans>adc</span>
+    </label>
+    <select id="group-adc" class="fixed-lane-group"></select>
+  </div>
+  <div class="row">
+    <label>
+      <span data-trans>sup</span>
+    </label>
+    <select id="group-sup" class="fixed-lane-group"></select>
+  </div>
+</div>
 <div id="settings" class="settings">
   <div class="right">
     <div class="row">
@@ -487,7 +573,7 @@
       </label>
       <div class="btn-group">
         <button id="btn-lane-fromTop" class="btn-lane active" data-trans>From Top</button>
-        <button id="btn-lane-fixed" class="btn-lane" data-trans disabled>Fixed Lane</button>
+        <button id="btn-lane-fixed" class="btn-lane" data-trans>Fixed Lane</button>
         <button id="btn-lane-random" class="btn-lane" data-trans disabled>Random</button>
       </div>
     </div>

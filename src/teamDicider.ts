@@ -135,7 +135,7 @@ export class TeamDicider implements UIObject {
     }
 
     public setLaneType(laneType: string) {
-        if (laneType === 'fixedLane') {
+        if (laneType === 'fixed') {
             this._laneType = LaneType.FixedLane;
         } else if (laneType === 'random') {
             this._laneType = LaneType.Random;
@@ -154,6 +154,17 @@ export class TeamDicider implements UIObject {
         return -1;
     }
 
+    private getGroupIndexByName(name: string): number {
+        for (let index = 0; index < this._groups.length; index++) {
+            if (this._groups[index].getName() === name) {
+                return index;
+            }
+        }
+
+        console.log(`unknown group: ${name}`);
+        return -1;
+    }
+
     public removeGroup() {
         this._groups.pop();
     }
@@ -164,6 +175,22 @@ export class TeamDicider implements UIObject {
             groupstrs.push(group.getGroupStr());
         }
         return groupstrs.join('/');
+    }
+
+    public getGroups(): string[] {
+        const groups = [];
+        for (const group of this._groups) {
+            groups.push(group.getName());
+        }
+        return groups;
+    }
+
+    public setFixedLanes(groups: number[]) {
+        this._laneGroups = [];
+        let index = 0;
+        for (; index < groups.length; index++) {
+            this._laneGroups.push(groups[index]);
+        }
     }
 
     public updateTeams(winners: Marble[]) {

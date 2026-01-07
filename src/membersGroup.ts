@@ -26,6 +26,10 @@ export class MembersGroup {
         return this._members.includes(member.trim());
     }
 
+    public getName(): string {
+        return this._name;
+    }
+
     public getLength(): number {
         return this._members.length;
     }

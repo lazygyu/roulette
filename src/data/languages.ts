@@ -37,6 +37,8 @@ export const Translations = {
     'mid': 'mid',
     'adc': 'adc',
     'sup': 'sup',
+    'Any group': 'Any group',
+    'Set group for lane': 'Set group for lane',
   },
   ko: {
     'Enter names below': '이름들을 입력하세요',
@@ -76,6 +78,8 @@ export const Translations = {
     'mid': '미드',
     'adc': '원딜',
     'sup': '서폿',
+    'Any group': '아무 그룹',
+    'Set group for lane': '라인의 그룹을 설정하세요'
   },
 } as const;
 
