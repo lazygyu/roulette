@@ -266,7 +266,8 @@
     }
   }
 
-  function setLaneType(laneType) {
+  function setLaneType(inLaneType) {
+    laneType = inLaneType;
     window.roulette.setLaneType(laneType);
 
     if (laneType === 'fixed') {
@@ -295,10 +296,16 @@
 
   let ready = false;
   let winnerType = 'first';
+  let laneType = 'fromTop';
 
   document.addEventListener('DOMContentLoaded', () => {
     initialize();
   });
+
+  function UpdateBelowHeight() {
+    const H = document.getElementById('settings')?.getBoundingClientRect().height ?? 0;
+    document.documentElement.style.setProperty('--below-h', `${H}px`);
+  }
 
   function initialize() {
     if (!window.roulette || !window.roulette.isReady) {
@@ -308,8 +315,9 @@
     }
     console.log('initializing start');
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const namesFromUrl = urlParams.get('names');
+    window.addEventListener('resize', UpdateBelowHeight);
+    new ResizeObserver(UpdateBelowHeight).observe(document.getElementById('settings'));
+    UpdateBelowHeight();
 
     const savedGroups = localStorage.getItem('mbr_groups');
     if (savedGroups) {
@@ -351,6 +359,7 @@
         'value': window.roulette.getCount(),
       });
       window.roulette.start();
+      document.querySelector('#fixed-lane-settings').classList.add('hide');
       document.querySelector('#settings').classList.add('hide');
       document.querySelector('#donate').classList.add('hide');
     });
@@ -408,6 +417,9 @@
     window.roulette.addEventListener('goal', () => {
       ready = false;
       setTimeout(() => {
+        if (laneType === 'fixed') {
+          document.querySelector('#fixed-lane-settings').classList.remove('hide');
+        }
         document.querySelector('#settings').classList.remove('hide');
         document.querySelector('#donate').classList.remove('hide');
       }, 3000);

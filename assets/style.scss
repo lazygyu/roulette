@@ -1,5 +1,6 @@
 :root {
   --copyright-color: white;
+  --below-h: 0px;
 }
 
 :root.light {
@@ -93,7 +94,9 @@ div.copyright a {
 }
 
 #fixed-lane-settings {
-  position: relative;
+  position: fixed;
+  left: 1rem;
+  bottom: calc(1rem + var(--below-h, 0px) + 0.5rem);
   background: #666;
   border-radius: 10px;
   padding: 10px;
