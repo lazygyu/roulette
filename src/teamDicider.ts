@@ -112,15 +112,6 @@ export class TeamDicider implements UIObject {
         return null;
     }
 
-    private findfillStyleFromMarbles(name: string, marbles: Marble[], lightness: number): string {
-        for (const marble of marbles) {
-            if (marble.name === name) {
-                return `hsl(${marble.hue} 100% ${lightness}`;
-            }
-        }
-        return '#666';
-    }
-
     public addGroup() {
         const newMembersGroup = new MembersGroup();
         newMembersGroup.setIndex(this._groups.length);
