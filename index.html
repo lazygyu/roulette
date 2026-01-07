@@ -68,28 +68,50 @@
 
     const newGroupDiv = document.createElement('div');
     newGroupDiv.id = `groupdiv_${newGroupIndex}`;
-    newGroupDiv.className = 'row';
+    newGroupDiv.className = 'group-div';
+
+    const newHeaderDiv = document.createElement('div');
+    newHeaderDiv.className = 'row';
+
+    const newGroupSpan = document.createElement('span');
+    newGroupSpan.textContent = 'Group ';
+    newGroupSpan.setAttribute('data-trans', '');
+    newHeaderDiv.appendChild(newGroupSpan);
+
+    const newGroupNumSpan = document.createElement('span');
+    newGroupNumSpan.textContent = `${newGroupIndex + 1}`;
+    newGroupNumSpan.setAttribute('data-trans', '');
+    newHeaderDiv.appendChild(newGroupNumSpan);
+
+    newGroupDiv.appendChild(newHeaderDiv);
+
+    const newBodyDiv = document.createElement('div');
+    newBodyDiv.className = 'row';
 
     const newGroupTextArea = document.createElement('textarea');
     newGroupTextArea.id = `group_${newGroupIndex}`;
-    newGroupTextArea.placeholer = '';
-    newGroupTextArea.setAttribute('data-trans', 'true');
+    newGroupTextArea.className = 'group-textarea';
+    newGroupTextArea.placeholder = 'Input group name';
+    newGroupTextArea.setAttribute('data-trans', '');
     newGroupTextArea.addEventListener('input', (event) => {
       window.roulette.setGroupName(newGroupIndex, event.target.value);
       localStorage.setItem('mbr_groups', window.roulette.getGroupStr());
     });
-    newGroupDiv.appendChild(newGroupTextArea);
+    newBodyDiv.appendChild(newGroupTextArea);
     
     const newMembersTextArea = document.createElement('textarea');
     newMembersTextArea.id = `members_${newGroupIndex}`;
-    newMembersTextArea.placeholer = '';
-    newMembersTextArea.setAttribute('data-trans', 'true');
+    newMembersTextArea.className = 'members-textarea';
+    newMembersTextArea.placeholder = 'Input names separated by commas or line feed here';
+    newMembersTextArea.setAttribute('data-trans', '');
     newMembersTextArea.addEventListener('input', (event) => {
       window.roulette.setGroupMembers(newGroupIndex, event.target.value);
       getReady();
       localStorage.setItem('mbr_groups', window.roulette.getGroupStr());
     });
-    newGroupDiv.appendChild(newMembersTextArea);
+    newBodyDiv.appendChild(newMembersTextArea);
+
+    newGroupDiv.appendChild(newBodyDiv);
 
     window.roulette.addGroup();
     namesDiv.appendChild(newGroupDiv);
@@ -108,6 +130,7 @@
     if (groupIndex > 0) {
       document.getElementById(`groupdiv_${groupIndex}`).remove();
       window.roulette.removeGroup();
+      getReady();
     }
   }
 
@@ -199,6 +222,26 @@
     }
   }
 
+  function setLaneType(laneType) {
+    window.roulette.setLaneType(laneType);
+
+    if (laneType === 'fromTop') {
+      document.querySelector('#btn-lane-fromTop').classList.toggle('active', true);
+      document.querySelector('#btn-lane-fixed').classList.toggle('active', false);
+      document.querySelector('#btn-lane-random').classList.toggle('active', false);
+    } else if (laneType === 'fixed') {
+      document.querySelector('#btn-lane-fromTop').classList.toggle('active', false);
+      document.querySelector('#btn-lane-fixed').classList.toggle('active', true);
+      document.querySelector('#btn-lane-random').classList.toggle('active', false);
+    } else if (laneType === 'random') {
+      document.querySelector('#btn-lane-fromTop').classList.toggle('active', false);
+      document.querySelector('#btn-lane-fixed').classList.toggle('active', false);
+      document.querySelector('#btn-lane-random').classList.toggle('active', true);
+    } else {
+      console.log('invalid lane type');
+    }
+  }
+
 
   let ready = false;
   let winnerType = 'first';
@@ -284,10 +327,6 @@
       setWinnerRank(isNaN(v) ? 0 : v);
     });
 
-    document.querySelector('#laneType').addEventListener('change', (e) => {
-      window.roulette.setLaneType(e.target.matches(':checked') ? 'fixedLane' : 'fromTop');
-    })
-
     document.querySelector('.btn-last-winner').addEventListener('click', () => {
       const total = window.roulette.getCount();
       winnerType = 'last';
@@ -296,6 +335,18 @@
     document.querySelector('.btn-first-winner').addEventListener('click', () => {
       winnerType = 'first';
       setWinnerRank(1);
+    });
+
+    document.querySelector('#btn-lane-fromTop').addEventListener('click', () => {
+      setLaneType('fromTop');
+    });
+
+    document.querySelector('#btn-lane-fixed').addEventListener('click', () => {
+      setLaneType('fixed');
+    });
+
+    document.querySelector('#btn-lane-random').addEventListener('click', () => {
+      setLaneType('random');
     });
 
     window.roulette.addEventListener('goal', () => {
@@ -427,20 +478,28 @@
       </div>
     </div>
     <div class="row">
-      <label for='laneType'>
-        <span data-trans>Fixed Lane</span>
+      <label>
+        <i class='icon lane'></i>
+        <span data-trans>Lane Type</span>
       </label>
-      <input type="checkbox" id="laneType" checked />
+      <div class="btn-group">
+        <button id="btn-lane-fromTop" class="btn-lane active" data-trans>From Top</button>
+        <button id="btn-lane-fixed" class="btn-lane" data-trans disabled>Fixed Lane</button>
+        <button id="btn-lane-random" class="btn-lane" data-trans disabled>Random</button>
+      </div>
     </div>
   </div>
   <div class="left">
     <h3 data-trans>Enter names below</h3>
     <div id="names_div"></div>
     <div class="actions">
+      <div class="sep"></div>
       <button id="btnAddGroup">
+        <i class='icon plus'></i>
         <span data-trans>Add Group</span>
       </button>
       <button id="btnRemoveGroup">
+        <i class='icon minus'></i>
         <span data-trans>Remove Group</span>
       </button>
     </div>

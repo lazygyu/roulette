@@ -78,6 +78,18 @@ div.copyright a {
   &.moon {
     mask-image: url('images/moon.svg');
   }
+
+  &.plus {
+    mask-image: url('images/plus.svg');
+  }
+
+  &.minus {
+    mask-image: url('images/minus.svg');
+  }
+
+  &.lane {
+    mask-image: url('images/lane.svg');
+  }
 }
 
 
@@ -149,9 +161,25 @@ div.copyright a {
     flex-shrink: 1;
     order: 1;
 
+    span {
+      color: white;
+    }
+
     div.row {
       display: flex;
       align-items: center;
+      align-items: flex-start;
+    }
+
+    .group-div{
+      .group-textarea {
+        width: 60px;
+        height: 32px;
+        margin-right: 2px;
+        min-height: 1rem;
+        resize: none;
+        overflow: hidden;
+      }
     }
 
     .actions {
@@ -159,6 +187,7 @@ div.copyright a {
       align-items: center;
       justify-content: stretch;
       gap: 2px;
+      margin-top: 2px;
 
       div.sep {
         flex-grow: 1;
@@ -170,6 +199,9 @@ div.copyright a {
     order: 2;
     flex-grow: 0;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
 
     div.row {
       display: flex;
@@ -239,6 +271,7 @@ div.copyright a {
   .btn-group {
     display: flex;
     justify-content: stretch;
+    flex: 1;
 
     & > * {
       box-sizing: border-box;
