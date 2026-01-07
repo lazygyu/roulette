@@ -22,12 +22,7 @@ export class TeamDicider implements UIObject {
     private _remainders: string[] = [];
 
     // for render
-    private _currentY = 0;
-    private _targetY = 0;
     private fontHeight = 16;
-    private _userMoved = 0;
-    private _currentWinner = -1;
-    private maxY = 0;
 
     update(deltaTime: number): void {
         
@@ -41,30 +36,55 @@ export class TeamDicider implements UIObject {
     ): void {
         this.updateTeams(winners);
 
-        if (this._winners.length === 0) {
-            return;
-        }
-
-        const startX = width - 5;
-        const startY = Math.max(-this.fontHeight, this._currentY - height / 2);
-        this.maxY = this.fontHeight * 7;
-        this._currentWinner = winners.length;
+//        if (this._winners.length === 0) {
+//            return;
+//        }
+        console.log(`${width}, ${height}`);
+        const startX = width - 75;
+        const startY = height - this.fontHeight * 9;
+        const maxY = this.fontHeight * 7;
 
         ctx.save();
-        ctx.textAlign = 'right';
+        ctx.textAlign = 'center';
         ctx.font = '10pt sans-serif';
         ctx.fillStyle = '#666';
 
         ctx.beginPath();
-        ctx.rect(width - 150, this.fontHeight + 2, width, this.maxY);
+        ctx.rect(width - 150, startY, width, startY + maxY);
         ctx.clip();
 
-        ctx.translate(0, -startY);
+        ctx.translate(0, startY);
         ctx.font = 'bold 11pt sans-serif';
         if (theme.rankStroke) {
             ctx.lineWidth = 2;
             ctx.strokeStyle = theme.rankStroke;
         }
+
+        ctx.strokeText('Team Result', startX, 20);
+        ctx.fillText('Team Result', startX, 20);
+
+        ctx.font = 'bold 10pt sans-serif'
+        ctx.fillStyle = '#0000CD';
+        ctx.strokeText('Blue', startX - 40, 40);
+        ctx.fillText('Blue', startX - 40, 40);
+        ctx.fillStyle = '#B22222';
+        ctx.strokeText('Red', startX + 40, 40);
+        ctx.fillText('Red', startX + 40, 40);
+
+        const getFillStyle = (name: string): string => {
+            if (name.length > 0) {
+                for (const marble of winners) {
+                    if (marble.name === name) {
+                        return `hsl(${marble.hue} 100% ${theme.marbleLightness}`;
+                    }
+                }
+            }
+            
+            return '#666';
+        };
+        
+        ctx.font = '10pt sans-serif'
+        ctx.fillStyle = '#666';
 
         const lanes = ['top', 'jg', 'mid', 'adc', 'sup'];
         for (let index = 0; index < 5; index++) {
@@ -79,17 +99,17 @@ export class TeamDicider implements UIObject {
                 team2 = '-'.repeat(team1.length);
             }
 
-            const teamText = `${team1}\t${lanes[index]}\t${team2}`;
-            ctx.strokeText(
-                teamText, 
-                startX, 
-                20 + index * this.fontHeight
-            );
-            ctx.fillText(
-                teamText,
-                startX,
-                20 + index * this.fontHeight
-            );
+            ctx.fillStyle = getFillStyle(team1);
+            ctx.strokeText(team1, startX - 40, 22 + (index + 2) * this.fontHeight);
+            ctx.fillText(team1, startX - 40, 22 + (index + 2) * this.fontHeight);
+
+            ctx.fillStyle = getFillStyle(lanes[index]);
+            ctx.strokeText(lanes[index], startX, 22 + (index + 2) * this.fontHeight);
+            ctx.fillText(lanes[index], startX, 22 + (index + 2) * this.fontHeight);
+
+            ctx.fillStyle = getFillStyle(team2);
+            ctx.strokeText(team2, startX + 40, 22 + (index + 2) * this.fontHeight);
+            ctx.fillText(team2, startX + 40, 22 + (index + 2) * this.fontHeight);
         }
         ctx.restore();
 
@@ -97,6 +117,15 @@ export class TeamDicider implements UIObject {
 
     getBoundingBox(): Rect | null {
         return null;
+    }
+
+    private findfillStyleFromMarbles(name: string, marbles: Marble[], lightness: number): string {
+        for (const marble of marbles) {
+            if (marble.name === name) {
+                return `hsl(${marble.hue} 100% ${lightness}`;
+            }
+        }
+        return '#666';
     }
 
     public addGroup() {
