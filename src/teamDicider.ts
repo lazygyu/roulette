@@ -31,11 +31,11 @@ export class TeamDicider implements UIObject {
 
     render(
         ctx: CanvasRenderingContext2D, 
-        { winners, theme }: RenderParameters, 
+        { marbles, winners, theme }: RenderParameters, 
         width: number, 
         height: number
     ): void {
-        this.updateTeams(winners);
+        this.updateTeams(winners, marbles.length === 0);
 
         const startX = width - 75;
         const startY = height - this.fontHeight * 9;
@@ -47,7 +47,7 @@ export class TeamDicider implements UIObject {
         ctx.fillStyle = '#666';
 
         ctx.beginPath();
-        ctx.rect(width - 200, startY, width, startY + maxY);
+        ctx.rect(width - 150, startY, width, startY + maxY);
         ctx.clip();
 
         ctx.translate(0, startY);
@@ -83,12 +83,18 @@ export class TeamDicider implements UIObject {
             return '#666';
         };
 
-        const getLaneGroupName = (lane: number): string => {
+        const getEmptyMemberStr = (lane: number): string => {
+            if (this._laneType !== LaneType.FixedLane) {
+                return '--';
+            }
+
             const laneGroup = this._laneGroups[lane];
             if (laneGroup === -1) {
-                return translateText('Any group');
+                return '--';
             }
-            return this._groups[laneGroup].getName();
+
+            const groupName = this._groups[laneGroup].getName();
+            return groupName.length > 0 ? groupName : `${laneGroup + 1}`;
         }
         
         ctx.font = '10pt sans-serif'
@@ -97,21 +103,10 @@ export class TeamDicider implements UIObject {
         const lanes = ['top', 'jg', 'mid', 'adc', 'sup'];
         for (let index = 0; index < 5; index++) {
             const posY = 58 + index * this.fontHeight;
-            if (this._laneType === LaneType.FixedLane) {
-                ctx.textAlign = 'right';
-                ctx.font = '8pt sans-serif'
-                ctx.fillStyle = '#666';
-                const laneGroupName = getLaneGroupName(index);
-                ctx.strokeText(laneGroupName, startX - 60, posY);
-                ctx.fillText(laneGroupName, startX - 60, posY);
-                ctx.textAlign = 'center';
-                ctx.font = '10pt sans-serif'
-            }
+            const team1 = this._teamResult[index].length > 0 ? this._teamResult[index] : getEmptyMemberStr(index);
+            const team2 = this._teamResult[index + 5].length > 0 ? this._teamResult[index + 5] : getEmptyMemberStr(index);
 
-            let team1 = this._teamResult[index].length > 0 ? this._teamResult[index] : '--';
-            let team2 = this._teamResult[index + 5].length > 0 ? this._teamResult[index + 5] : '--';
-
-            ctx.fillStyle = getFillStyle(team1);
+            ctx.fillStyle = getFillStyle(this._teamResult[index]);
             ctx.strokeText(team1, startX - 35, posY);
             ctx.fillText(team1, startX - 35, posY);
 
@@ -120,9 +115,22 @@ export class TeamDicider implements UIObject {
             ctx.strokeText(laneText, startX, posY);
             ctx.fillText(laneText, startX, posY);
 
-            ctx.fillStyle = getFillStyle(team2);
+            ctx.fillStyle = getFillStyle(this._teamResult[index + 5]);
             ctx.strokeText(team2, startX + 35, posY);
             ctx.fillText(team2, startX + 35, posY);
+        }
+
+        if (this._remainders.length > 0)
+        {
+            ctx.font = '8pt sans-serif'
+            const posY = 58 + this.fontHeight * 5;
+            let posX = startX - 15 * (this._remainders.length - 1);
+            for (const remainder of this._remainders) {
+                ctx.fillStyle = getFillStyle(remainder);
+                ctx.strokeText(remainder, posX, posY);
+                ctx.fillText(remainder, posX, posY);
+                posX += 30;
+            }
         }
         ctx.restore();
 
@@ -174,17 +182,6 @@ export class TeamDicider implements UIObject {
         return -1;
     }
 
-    private getGroupIndexByName(name: string): number {
-        for (let index = 0; index < this._groups.length; index++) {
-            if (this._groups[index].getName() === name) {
-                return index;
-            }
-        }
-
-        console.log(`unknown group: ${name}`);
-        return -1;
-    }
-
     public removeGroup() {
         this._groups.pop();
     }
@@ -213,7 +210,7 @@ export class TeamDicider implements UIObject {
         }
     }
 
-    public updateTeams(winners: Marble[]) {
+    public updateTeams(winners: Marble[], bIsFinished: boolean) {
         if (winners.length === 0) {
             this.resetTeamResult();
             return;
@@ -235,6 +232,21 @@ export class TeamDicider implements UIObject {
             case LaneType.FixedLane:
                 this.updateTeamsWithFixedLane(addedWinners);
                 break;
+        }
+
+        if (bIsFinished) {
+            let remainderIndex = 0;
+            for (let index = 0; index < this._teamResult.length; index++) {
+                if (remainderIndex >= this._remainders.length) {
+                    break;
+                }
+
+                if (this._teamResult[index].length === 0) {
+                    this._teamResult[index] = this._remainders[remainderIndex++];
+                }
+            }
+
+            this._remainders =  this._remainders.slice(remainderIndex);
         }
 
         if (this._teamResult.length > 0) {
@@ -318,7 +330,7 @@ export class TeamDicider implements UIObject {
             lane -= 5;
         }
 
-        return this._laneGroups[lane] === -1 || this._laneGroups[lane] === this.getGroupIndex(member);
+        return this._laneGroups[lane] !== -1 && this._laneGroups[lane] === this.getGroupIndex(member);
     }
 
     private updateTeamsWithFixedLane(newMembers: Marble[]) {
