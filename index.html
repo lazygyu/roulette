@@ -242,19 +242,19 @@
       window.roulette.setMap(index);
     });
 
-    const checkDonateButtonLoaded = () => {
-      const btn = document.querySelector('span.bmc-btn-text');
-      if (!btn) {
-        setTimeout(checkDonateButtonLoaded, 100);
-      } else {
-        console.log('donation button has been loaded');
-        btn.setAttribute('data-trans', '');
-        window.translateElement(btn);
-      }
-    };
-    setTimeout(checkDonateButtonLoaded, 100);
+    // const checkDonateButtonLoaded = () => {
+    //   const btn = document.querySelector('span.bmc-btn-text');
+    //   if (!btn) {
+    //     setTimeout(checkDonateButtonLoaded, 100);
+    //   } else {
+    //     console.log('donation button has been loaded');
+    //     btn.setAttribute('data-trans', '');
+    //     window.translateElement(btn);
+    //   }
+    // };
+    // setTimeout(checkDonateButtonLoaded, 100);
 
-    const currentNotice = 3;
+    const currentNotice = 4;
     const noticeKey = 'lastViewedNotification';
 
     const closeNotice = () => {
@@ -349,6 +349,9 @@
       <button id="btnNotice">
         <i class="icon megaphone"></i>
       </button>
+      <a href='https://marblerouletteshop.com' target='_blank' id="btnShop" class='btn new' title='MarbleRoulette Shop'>
+        <img src='assets/images/marblerouletteshop.png' />
+      </a>
       <div class="sep"></div>
       <button id="btnShuffle">
         <i class="icon shuffle"></i>
@@ -361,25 +364,21 @@
     </div>
   </div>
 </div>
-<div id="donate">
-  <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
-          data-name="bmc-button" data-slug="lazygyu" data-color="#FFDD00" data-emoji=""
-          data-font="Comic" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000"
-          data-coffee-color="#ffffff"></script>
-</div>
 <div id="notice">
   <h1>Notice</h1>
   <div class="notice-body">
-    <h2>마블 룰렛 2025년 결산 페이지 오픈!</h2>
-    <p>👇👇 마블 룰렛의 지난 2025년을 돌아보고 싶다면 클릭!</p>
-    <p><a href='recap_2025.html' class='recap-button holographic'><img src='assets/2025_recap/recap_large.gif' /></a>
+    <h2>마블 룰렛 샵 오픈!</h2>
+    <p>원하는 구슬을 예쁘게 꾸밀 수 있는 마블 룰렛 샵이 오픈했습니다!</p>
+    <p>
+      <a href='https://marblerouletteshop.com' target='_blank' class='shop-button holographic'><img
+        src='assets/images/marblerouletteshop.png' width='125' height='125' /> 구슬 꾸미러 가기</a>
     </p>
   </div>
   <div class="notice-action">
     <button id="closeNotice" data-trans>Close</button>
   </div>
 </div>
-<div class="copyright">&copy; 2022-2025.<a href="https://lazygyu.net" target="_blank">lazygyu</a> <span data-trans>This program is freeware and may be used freely anywhere, including in broadcasts and videos.</span>
+<div class="copyright">&copy; 2022-2026.<a href="https://lazygyu.net" target="_blank">lazygyu</a> <span data-trans>This program is freeware and may be used freely anywhere, including in broadcasts and videos.</span>
 </div>
 </body>
 </html>

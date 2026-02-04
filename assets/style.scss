@@ -116,14 +116,14 @@ div.copyright a {
     font-size: 14pt;
   }
 
-  button {
+  button, .btn {
     color: #fefefe;
     background: #222;
     border: none;
     border-radius: 5px;
     padding: 5px 10px;
     position: relative;
-    overflow: hidden;
+    display: inline-block;
 
     &:active:after {
       content: '';
@@ -133,6 +133,28 @@ div.copyright a {
       right: 0;
       bottom: 0;
       background: rgba(0, 0, 0, 0.5);
+    }
+
+    &#btnShop {
+      height: 35px;
+
+      img {
+        width: 25px;
+        height: 25px;
+      }
+    }
+
+    &.new::before {
+      position: absolute;
+      background: #AA0000;
+      color: white;
+      content: 'NEW';
+      font-size: 9px;
+      padding: 2px 4px;
+      right: -10px;
+      top: -4px;
+      border-radius: 6px;
+      z-index: 1;
     }
   }
 
@@ -497,4 +519,32 @@ div.toast {
   margin-bottom: 1em;
   text-decoration: none;
   text-shadow: -2px 0px black, 0px 2px black, 2px 0px black, 0px -2px black;
+}
+
+
+.shop-button {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: .2em .4em .4em .4em;
+  margin: 0 auto;
+  width: fit-content;
+
+  color: black;
+  font-size: 32px;
+  line-height: 48px;
+  font-weight: bold;
+  text-decoration: none;
+
+  img {
+    width: 48px;
+    height: 48px;
+    margin-right: .2em;
+    margin-bottom: -4px;
+  }
+
+  background-color: #ffdd00;
+  border: 2px solid black;
+  border-radius: 10px;
 }

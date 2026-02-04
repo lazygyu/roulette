@@ -22,7 +22,7 @@
   },
   "scripts": {
     "lint": "eslint --fix src/**/*.ts",
-    "dev": "parcel index.html --host 0.0.0.0 --port 1235",
+    "dev": "parcel index.html --port 1235",
     "build": "parcel build index.html --public-url /roulette/ && node scripts/build-sw.js"
   },
   "dependencies": {

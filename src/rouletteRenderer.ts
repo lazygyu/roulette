@@ -8,6 +8,7 @@ import { UIObject } from './UIObject';
 import { VectorLike } from './types/VectorLike';
 import { MapEntityState } from './types/MapEntity.type';
 import { ColorTheme } from './types/ColorTheme';
+import { KeywordService } from './keywordService';
 
 export type RenderParameters = {
   camera: Camera;
@@ -30,6 +31,7 @@ export class RouletteRenderer {
 
   private _images: { [key: string]: HTMLImageElement } = {};
   private _theme: ColorTheme = Themes.dark;
+  private _keywordService: KeywordService = new KeywordService();
 
   constructor() {
   }
@@ -51,7 +53,7 @@ export class RouletteRenderer {
   }
 
   async init() {
-    await this._load();
+    await Promise.all([this._load(), this._keywordService.init()]);
 
     this._canvas = document.createElement('canvas');
     this._canvas.width = canvasWidth;
@@ -110,6 +112,15 @@ export class RouletteRenderer {
     })());
 
     await Promise.all(loadPromises);
+  }
+
+  private getMarbleImage(name: string): CanvasImageSource | undefined {
+    // Priority 1: Hardcoded images
+    if (this._images[name]) {
+      return this._images[name];
+    }
+    // Priority 2: Keyword sprites from API
+    return this._keywordService.getSprite(name);
   }
 
   render(renderParameters: RenderParameters, uiObjects: UIObject[]) {
@@ -205,7 +216,7 @@ export class RouletteRenderer {
         camera.zoom * initialZoom,
         i === winnerIndex,
         false,
-        this._images[marble.name] || undefined,
+        this.getMarbleImage(marble.name),
         viewPort,
         this._theme,
       );
@@ -222,39 +233,46 @@ export class RouletteRenderer {
       this._canvas.width / 2,
       168,
     );
+
+    // Draw marble image or colored circle
+    const marbleSize = 100;
+    const marbleCenterX = this._canvas.width - marbleSize / 2 - 20;
+    const marbleCenterY = this._canvas.height - 168 / 2;
+    const marbleImage = this.getMarbleImage(winner.name);
+
+    if (marbleImage) {
+      this.ctx.drawImage(
+        marbleImage,
+        marbleCenterX - marbleSize / 2,
+        marbleCenterY - marbleSize / 2,
+        marbleSize,
+        marbleSize,
+      );
+    } else {
+      this.ctx.beginPath();
+      this.ctx.arc(marbleCenterX, marbleCenterY, marbleSize / 2, 0, Math.PI * 2);
+      this.ctx.fillStyle = `hsl(${winner.hue} 100% ${theme.marbleLightness})`;
+      this.ctx.fill();
+    }
+
     this.ctx.fillStyle = theme.winnerText;
     this.ctx.strokeStyle = theme.winnerOutline;
 
     this.ctx.font = 'bold 48px sans-serif';
     this.ctx.textAlign = 'right';
     this.ctx.lineWidth = 4;
+    const textRightX = marbleCenterX - marbleSize / 2 - 20;
     if (theme.winnerOutline) {
-      this.ctx.strokeText(
-        'Winner',
-        this._canvas.width - 10,
-        this._canvas.height - 120,
-      );
+      this.ctx.strokeText('Winner', textRightX, this._canvas.height - 120);
     }
 
-    this.ctx.fillText(
-      'Winner',
-      this._canvas.width - 10,
-      this._canvas.height - 120,
-    );
+    this.ctx.fillText('Winner', textRightX, this._canvas.height - 120);
     this.ctx.font = 'bold 72px sans-serif';
-    this.ctx.fillStyle = `hsl(${winner.hue} 100% ${theme.marbleLightness}`;
+    this.ctx.fillStyle = `hsl(${winner.hue} 100% ${theme.marbleLightness})`;
     if (theme.winnerOutline) {
-      this.ctx.strokeText(
-        winner.name,
-        this._canvas.width - 10,
-        this._canvas.height - 55,
-      );
+      this.ctx.strokeText(winner.name, textRightX, this._canvas.height - 55);
     }
-    this.ctx.fillText(
-      winner.name,
-      this._canvas.width - 10,
-      this._canvas.height - 55,
-    );
+    this.ctx.fillText(winner.name, textRightX, this._canvas.height - 55);
     this.ctx.restore();
   }
 }
