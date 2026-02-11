@@ -50,12 +50,15 @@ export class Camera {
     this._shouldFollowMarbles = true;
   }
 
-  initializePosition() {
-    const centerX = 12.95;
-    const initialY = 2;
+  initializePosition(center?: VectorLike, zoom?: number) {
+    const x = center?.x ?? 12.95;
+    const y = center?.y ?? 2;
+    const z = zoom ?? 1;
 
-    this._position = { x: centerX, y: initialY };
-    this._targetPosition = { x: centerX, y: initialY };
+    this._position = { x, y };
+    this._targetPosition = { x, y };
+    this._zoom = z;
+    this._targetZoom = z;
     this._shouldFollowMarbles = false;
   }
 
