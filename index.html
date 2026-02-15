@@ -225,6 +225,14 @@
       simpleToast(e.detail);
     });
 
+    const toggleBtn = document.querySelector('#btnToggleSettings');
+    const collapsible = document.querySelector('.collapsible-rows');
+    toggleBtn.addEventListener('click', () => {
+      collapsible.classList.toggle('collapsed');
+      toggleBtn.querySelector('.toggle-arrow').textContent =
+        collapsible.classList.contains('collapsed') ? '▲' : '▼';
+    });
+
     document.querySelector('#btnShuffle').click();
 
     const maps = window.roulette.getMaps();
@@ -304,41 +312,51 @@
 </script>
 <div id="settings" class="settings">
   <div class="right">
-    <div class="row">
-      <label for='sltMap'>
-        <i class="icon map"></i>
-        <span data-trans>Map</span>
-      </label>
-      <select id="sltMap"></select>
-    </div>
-    <div class="row">
-      <label for='chkAutoRecording'>
-        <i class="icon record"></i>
-        <span data-trans>Recording</span>
-      </label>
-      <input type="checkbox" id="chkAutoRecording" />
-    </div>
-    <div class="row">
-      <label>
-        <i class="icon trophy"></i>
-        <span data-trans>The winner is</span>
-      </label>
-      <div class="btn-group">
-        <button class="btn-winner btn-first-winner active" data-trans>First</button>
-        <button class="btn-winner btn-last-winner" data-trans>Last</button>
-        <input type="number" id="in_winningRank" value="1" min="1" />
+    <button id="btnToggleSettings" class="btn-toggle-settings">
+      <span data-trans>Settings</span>
+      <i class="toggle-arrow">▲</i>
+    </button>
+    <div class="collapsible-rows collapsed">
+      <div class="row">
+        <label for='sltMap'>
+          <i class="icon map"></i>
+          <span data-trans>Map</span>
+        </label>
+        <select id="sltMap"></select>
       </div>
-    </div>
-    <div class="row">
-      <label for='chkSkill'>
-        <i class="icon bomb"></i>
-        <span data-trans>Using skills</span>
-      </label>
-      <input type="checkbox" id="chkSkill" checked />
-      <div class='theme'>
-        <i class='icon sun'></i>
-        <input type='checkbox' id='chkDarkMode' checked />
-        <i class='icon moon'></i>
+      <div class="row row-toggles">
+        <div class='toggle-item'>
+          <label for='chkAutoRecording'>
+            <i class="icon record"></i>
+            <span data-trans>Recording</span>
+          </label>
+          <input type="checkbox" id="chkAutoRecording" />
+        </div>
+        <div class='toggle-item'>
+          <label for='chkSkill'>
+            <i class="icon bomb"></i>
+            <span data-trans>Using skills</span>
+          </label>
+          <input type="checkbox" id="chkSkill" checked />
+        </div>
+      </div>
+      <div class="row">
+        <label>
+          <i class="icon trophy"></i>
+          <span data-trans>The winner is</span>
+        </label>
+        <div class="btn-group">
+          <button class="btn-winner btn-first-winner active" data-trans>First</button>
+          <button class="btn-winner btn-last-winner" data-trans>Last</button>
+          <input type="number" id="in_winningRank" value="1" min="1" />
+        </div>
+      </div>
+      <div class="row row-theme">
+        <div class='theme'>
+          <i class='icon sun'></i>
+          <input type='checkbox' id='chkDarkMode' checked />
+          <i class='icon moon'></i>
+        </div>
       </div>
     </div>
   </div>

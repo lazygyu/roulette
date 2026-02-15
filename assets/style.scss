@@ -183,6 +183,10 @@ div.copyright a {
     }
   }
 
+  .btn-toggle-settings {
+    display: none;
+  }
+
   div.right {
     order: 2;
     flex-grow: 0;
@@ -199,6 +203,10 @@ div.copyright a {
         flex-shrink: 0;
         padding-left: 1rem;
         color: white;
+      }
+
+      .toggle-item {
+        width: 50%;
       }
     }
   }
@@ -372,48 +380,9 @@ div.copyright a {
   }
 }
 
-#donate {
-  position: fixed;
-  bottom: calc(160px + 1.5rem);
-  left: 1rem;
-  z-index: 999;
-  visibility: visible;
-  opacity: 1;
-  transition: visibility 0s, opacity 1s linear;
-  display: flex;
-
-  &.hide {
-    opacity: 0;
-    visibility: hidden;
-  }
-
-  & > a {
-  }
-
-
-  .icon {
-    width: 24px;
-    height: 24px;
-  }
-}
-
 @media screen and (max-width: 750px) {
-  #donate {
-    bottom: 3rem;
-    width: calc(100% - 2rem);
-
-    .bmc-btn-container {
-      width: calc(100%);
-
-      .bmc-btn {
-        width: 100%;
-      }
-    }
-
-  }
-
   #settings {
-    bottom: calc(4rem + 60px);
+    bottom: 60px;
     display: block;
     min-width: 0;
     max-width: 100%;
@@ -428,6 +397,30 @@ div.copyright a {
       visibility: hidden;
     }
 
+    .btn-toggle-settings {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      margin-bottom: 6px;
+      cursor: pointer;
+      font-size: 11pt;
+
+      .toggle-arrow {
+        font-style: normal;
+      }
+    }
+
+    .collapsible-rows.collapsed {
+      display: none;
+    }
+
+    textarea {
+      min-height: 2.5rem;
+      font-size: 11pt;
+    }
+
     div.right div.row {
       height: auto;
       display: block;
@@ -439,6 +432,31 @@ div.copyright a {
         margin-bottom: .5rem;
         padding-left: 0;
         display: block;
+      }
+
+      &.row-toggles {
+        display: flex;
+        flex-wrap: wrap;
+
+        .toggle-item {
+          width: 50%;
+          display: flex;
+          flex-direction: column;
+          align-items: start;
+        }
+
+        label {
+          order: 0;
+          margin-bottom: .3rem;
+        }
+
+        input[type=checkbox] {
+          order: 1;
+        }
+      }
+
+      &.row-theme {
+        display: none;
       }
 
       .icon {
