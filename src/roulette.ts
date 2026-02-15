@@ -281,14 +281,24 @@ export class Roulette extends EventTarget {
 
   private attachEvent() {
     const canvas = this._renderer.canvas;
-    ['MouseMove', 'MouseDown', 'DblClick'].forEach(
+    const onPointerRelease = (e: Event) => {
+      this.mouseHandler('MouseUp', e as MouseEvent);
+      window.removeEventListener('pointerup', onPointerRelease);
+      window.removeEventListener('pointercancel', onPointerRelease);
+    };
+
+    canvas.addEventListener('pointerdown', (e: Event) => {
+      this.mouseHandler('MouseDown', e as MouseEvent);
+      window.addEventListener('pointerup', onPointerRelease);
+      window.addEventListener('pointercancel', onPointerRelease);
+    });
+
+    ['MouseMove', 'DblClick'].forEach(
       (ev) => {
         // @ts-ignore
         canvas.addEventListener(ev.toLowerCase().replace('mouse', 'pointer'), this.mouseHandler.bind(this, ev));
       },
     );
-    window.addEventListener('pointerup', this.mouseHandler.bind(this, 'MouseUp'));
-    canvas.addEventListener('pointercancel', this.mouseHandler.bind(this, 'MouseUp'));
     canvas.addEventListener('contextmenu', (e) => {
       e.preventDefault();
     });
