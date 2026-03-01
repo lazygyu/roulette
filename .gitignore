@@ -3,3 +3,11 @@ node_modules
 .parcel-cache
 dist
 yarn-error.log
+dist-custom
+dist-preview
+src/custom/
+src/custom.ts
+src/preview.ts
+custom.html
+preview.html
+scripts/build-custom.sh

@@ -1,16 +1,20 @@
 import { KeywordEntry, KeywordsData } from './types/keyword.type';
 
-const KEYWORDS_URL = 'https://marblerouletteshop.com/api/external/keywords.json';
-const SPRITE_BASE_URL = 'https://marblerouletteshop.com/api/external/sprites';
+const DEFAULT_KEYWORDS_URL = 'https://marblerouletteshop.com/api/external/keywords.json';
+const DEFAULT_SPRITE_BASE_URL = 'https://marblerouletteshop.com/api/external/sprites';
 const REFRESH_INTERVAL = 60000; // 60 seconds
 
 export class KeywordService {
-  private _keywordsData: KeywordsData | null = null;
-  private _spriteSheets: Map<number, HTMLImageElement> = new Map();
-  private _extractedSprites: Map<string, CanvasImageSource> = new Map();
+  protected _keywordsData: KeywordsData | null = null;
+  protected _spriteSheets: Map<number, HTMLImageElement> = new Map();
+  protected _extractedSprites: Map<string, CanvasImageSource> = new Map();
   private _intervalId: number | null = null;
-  private _loadingSprites: Map<number, Promise<HTMLImageElement | null>> = new Map();
-  private _lastGeneratedAt: string | null = null;
+  protected _loadingSprites: Map<number, Promise<HTMLImageElement | null>> = new Map();
+  protected _lastGeneratedAt: string | null = null;
+
+  protected get _keywordsUrl(): string { return DEFAULT_KEYWORDS_URL; }
+  protected get _spriteBaseUrl(): string { return DEFAULT_SPRITE_BASE_URL; }
+  protected get _checkExpiry(): boolean { return true; }
 
   async init(): Promise<void> {
     await this.fetchKeywords();
@@ -34,7 +38,7 @@ export class KeywordService {
 
   async fetchKeywords(): Promise<void> {
     try {
-      const response = await fetch(KEYWORDS_URL);
+      const response = await fetch(this._keywordsUrl);
       if (!response.ok) {
         console.warn(`[KeywordService] Failed to fetch keywords: ${response.status}`);
         return;
@@ -69,7 +73,7 @@ export class KeywordService {
     }
   }
 
-  private async _loadSpriteSheet(spriteId: number): Promise<HTMLImageElement | null> {
+  protected async _loadSpriteSheet(spriteId: number): Promise<HTMLImageElement | null> {
     if (this._spriteSheets.has(spriteId)) {
       return this._spriteSheets.get(spriteId)!;
     }
@@ -91,7 +95,7 @@ export class KeywordService {
         console.warn(`[KeywordService] Failed to load sprite sheet ${spriteId}`);
         resolve(null);
       };
-      img.src = `${SPRITE_BASE_URL}/${spriteId}.png?generated_at=${encodeURIComponent(this._lastGeneratedAt ?? '')}`;
+      img.src = `${this._spriteBaseUrl}/${spriteId}.png?generated_at=${encodeURIComponent(this._lastGeneratedAt ?? '')}`;
     });
 
     this._loadingSprites.set(spriteId, loadPromise);
@@ -100,7 +104,7 @@ export class KeywordService {
     return result;
   }
 
-  private _extractSprite(
+  protected _extractSprite(
     spriteSheet: HTMLImageElement,
     x: number,
     y: number,
@@ -136,7 +140,7 @@ export class KeywordService {
     }
 
     // Check expiration
-    if (new Date(entry.expires_at) < new Date()) {
+    if (this._checkExpiry && new Date(entry.expires_at) < new Date()) {
       return undefined;
     }
 

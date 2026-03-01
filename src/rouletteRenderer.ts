@@ -25,15 +25,20 @@ export type RenderParameters = {
 };
 
 export class RouletteRenderer {
-  private _canvas!: HTMLCanvasElement;
-  private ctx!: CanvasRenderingContext2D;
+  protected _canvas!: HTMLCanvasElement;
+  protected ctx!: CanvasRenderingContext2D;
   public sizeFactor = 1;
 
-  private _images: { [key: string]: HTMLImageElement } = {};
-  private _theme: ColorTheme = Themes.dark;
-  private _keywordService: KeywordService = new KeywordService();
+  protected _images: { [key: string]: HTMLImageElement } = {};
+  protected _theme: ColorTheme = Themes.dark;
+  protected _keywordService: KeywordService;
 
   constructor() {
+    this._keywordService = this.createKeywordService();
+  }
+
+  protected createKeywordService(): KeywordService {
+    return new KeywordService();
   }
 
   get width() {
@@ -123,6 +128,9 @@ export class RouletteRenderer {
     return this._keywordService.getSprite(name);
   }
 
+  protected onBeforeEntities(): void {}
+  protected onAfterScene(): void {}
+
   render(renderParameters: RenderParameters, uiObjects: UIObject[]) {
     this._theme = renderParameters.theme;
     this.ctx.fillStyle = this._theme.background;
@@ -135,11 +143,13 @@ export class RouletteRenderer {
     this.ctx.font = '0.4pt sans-serif';
     this.ctx.lineWidth = 3 / (renderParameters.camera.zoom + initialZoom);
     renderParameters.camera.renderScene(this.ctx, () => {
+      this.onBeforeEntities();
       this.renderEntities(renderParameters.entities);
       this.renderEffects(renderParameters);
       this.renderMarbles(renderParameters);
     });
     this.ctx.restore();
+    this.onAfterScene();
 
     uiObjects.forEach((obj) =>
       obj.render(

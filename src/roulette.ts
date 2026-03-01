@@ -33,8 +33,8 @@ export class Roulette extends EventTarget {
   private _particleManager = new ParticleManager();
   private _stage: StageDef | null = null;
 
-  private _camera: Camera = new Camera();
-  private _renderer: RouletteRenderer = new RouletteRenderer();
+  protected _camera: Camera = new Camera();
+  protected _renderer: RouletteRenderer;
 
   private _effects: GameObject[] = [];
 
@@ -52,15 +52,24 @@ export class Roulette extends EventTarget {
   private physics!: IPhysics;
 
   private _isReady: boolean = false;
-  private fastForwarder!: FastForwader;
-  private _theme: ColorTheme = Themes.dark;
+  protected fastForwarder!: FastForwader;
+  protected _theme: ColorTheme = Themes.dark;
 
   get isReady() {
     return this._isReady;
   }
 
+  protected createRenderer(): RouletteRenderer {
+    return new RouletteRenderer();
+  }
+
+  protected createFastForwader(): FastForwader {
+    return new FastForwader();
+  }
+
   constructor() {
     super();
+    this._renderer = this.createRenderer();
     this._renderer.init().then(() => {
       this._init().then(() => {
         this._isReady = true;
@@ -248,7 +257,7 @@ export class Roulette extends EventTarget {
       }
     });
     this.addUiObject(minimap);
-    this.fastForwarder = new FastForwader();
+    this.fastForwarder = this.createFastForwader();
     this.addUiObject(this.fastForwarder);
     this._stage = stages[0];
     this._loadMap();
