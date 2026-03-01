@@ -1,6 +1,6 @@
-import { GameObject } from './gameObject';
-import { VectorLike } from './types/VectorLike';
-import { ColorTheme } from './types/ColorTheme';
+import type { GameObject } from './gameObject';
+import type { ColorTheme } from './types/ColorTheme';
+import type { VectorLike } from './types/VectorLike';
 
 const lifetime = 500;
 

@@ -1,14 +1,14 @@
+import type { Camera } from './camera';
 import { canvasHeight, canvasWidth, initialZoom, Themes } from './data/constants';
-import { Camera } from './camera';
-import { StageDef } from './data/maps';
-import { Marble } from './marble';
-import { ParticleManager } from './particleManager';
-import { GameObject } from './gameObject';
-import { UIObject } from './UIObject';
-import { VectorLike } from './types/VectorLike';
-import { MapEntityState } from './types/MapEntity.type';
-import { ColorTheme } from './types/ColorTheme';
+import type { StageDef } from './data/maps';
+import type { GameObject } from './gameObject';
 import { KeywordService } from './keywordService';
+import type { Marble } from './marble';
+import type { ParticleManager } from './particleManager';
+import type { ColorTheme } from './types/ColorTheme';
+import type { MapEntityState } from './types/MapEntity.type';
+import type { VectorLike } from './types/VectorLike';
+import type { UIObject } from './UIObject';
 
 export type RenderParameters = {
   camera: Camera;
@@ -70,9 +70,7 @@ export class RouletteRenderer {
     document.body.appendChild(this._canvas);
 
     const resizing = (entries?: ResizeObserverEntry[]) => {
-      const realSize = entries
-        ? entries[0].contentRect
-        : this._canvas.getBoundingClientRect();
+      const realSize = entries ? entries[0].contentRect : this._canvas.getBoundingClientRect();
       const width = Math.max(realSize.width / 2, 640);
       const height = (width / realSize.width) * realSize.height;
       this._canvas.width = width;
@@ -97,24 +95,25 @@ export class RouletteRenderer {
   }
 
   private async _load(): Promise<void> {
-    const loadPromises =
-      [
-        { name: '챔루', imgUrl: new URL('../assets/images/chamru.png', import.meta.url) },
-        { name: '쿠빈', imgUrl: new URL('../assets/images/kubin.png', import.meta.url) },
-        { name: '꽉변', imgUrl: new URL('../assets/images/kkwak.png', import.meta.url) },
-        { name: '꽉변호사', imgUrl: new URL('../assets/images/kkwak.png', import.meta.url) },
-        { name: '꽉 변호사', imgUrl: new URL('../assets/images/kkwak.png', import.meta.url) },
-        { name: '주누피', imgUrl: new URL('../assets/images/junyoop.png', import.meta.url) },
-        { name: '왈도쿤', imgUrl: new URL('../assets/images/waldokun.png', import.meta.url) },
-      ].map(({ name, imgUrl }) => {
-        return (async () => {
-          this._images[name] = await this._loadImage(imgUrl.toString());
-        })();
-      });
+    const loadPromises = [
+      { name: '챔루', imgUrl: new URL('../assets/images/chamru.png', import.meta.url) },
+      { name: '쿠빈', imgUrl: new URL('../assets/images/kubin.png', import.meta.url) },
+      { name: '꽉변', imgUrl: new URL('../assets/images/kkwak.png', import.meta.url) },
+      { name: '꽉변호사', imgUrl: new URL('../assets/images/kkwak.png', import.meta.url) },
+      { name: '꽉 변호사', imgUrl: new URL('../assets/images/kkwak.png', import.meta.url) },
+      { name: '주누피', imgUrl: new URL('../assets/images/junyoop.png', import.meta.url) },
+      { name: '왈도쿤', imgUrl: new URL('../assets/images/waldokun.png', import.meta.url) },
+    ].map(({ name, imgUrl }) => {
+      return (async () => {
+        this._images[name] = await this._loadImage(imgUrl.toString());
+      })();
+    });
 
-    loadPromises.push((async () => {
-      await this._loadImage(new URL('../assets/images/ff.svg', import.meta.url).toString());
-    })());
+    loadPromises.push(
+      (async () => {
+        await this._loadImage(new URL('../assets/images/ff.svg', import.meta.url).toString());
+      })()
+    );
 
     await Promise.all(loadPromises);
   }
@@ -151,14 +150,7 @@ export class RouletteRenderer {
     this.ctx.restore();
     this.onAfterScene();
 
-    uiObjects.forEach((obj) =>
-      obj.render(
-        this.ctx,
-        renderParameters,
-        this._canvas.width,
-        this._canvas.height,
-      ),
-    );
+    uiObjects.forEach((obj) => obj.render(this.ctx, renderParameters, this._canvas.width, this._canvas.height));
     renderParameters.particleManager.render(this.ctx);
     this.renderWinner(renderParameters);
   }
@@ -172,7 +164,8 @@ export class RouletteRenderer {
       this.ctx.fillStyle = entity.shape.color ?? this._theme.entity[entity.shape.type].fill;
       this.ctx.strokeStyle = entity.shape.color ?? this._theme.entity[entity.shape.type].outline;
       this.ctx.shadowBlur = this._theme.entity[entity.shape.type].bloomRadius;
-      this.ctx.shadowColor = entity.shape.bloomColor ?? entity.shape.color ?? this._theme.entity[entity.shape.type].bloom;
+      this.ctx.shadowColor =
+        entity.shape.bloomColor ?? entity.shape.color ?? this._theme.entity[entity.shape.type].bloom;
       const shape = entity.shape;
       switch (shape.type) {
         case 'polyline':
@@ -185,13 +178,14 @@ export class RouletteRenderer {
             this.ctx.stroke();
           }
           break;
-        case 'box':
+        case 'box': {
           const w = shape.width * 2;
           const h = shape.height * 2;
           this.ctx.rotate(shape.rotation);
           this.ctx.fillRect(-w / 2, -h / 2, w, h);
           this.ctx.strokeRect(-w / 2, -h / 2, w, h);
           break;
+        }
         case 'circle':
           this.ctx.beginPath();
           this.ctx.arc(0, 0, shape.radius, 0, Math.PI * 2, false);
@@ -205,18 +199,10 @@ export class RouletteRenderer {
   }
 
   private renderEffects({ effects, camera }: RenderParameters) {
-    effects.forEach((effect) =>
-      effect.render(this.ctx, camera.zoom * initialZoom, this._theme),
-    );
+    effects.forEach((effect) => effect.render(this.ctx, camera.zoom * initialZoom, this._theme));
   }
 
-  private renderMarbles({
-                          marbles,
-                          camera,
-                          winnerRank,
-                          winners,
-                          size,
-                        }: RenderParameters) {
+  private renderMarbles({ marbles, camera, winnerRank, winners, size }: RenderParameters) {
     const winnerIndex = winnerRank - winners.length;
 
     const viewPort = { x: camera.x, y: camera.y, w: size.x, h: size.y, zoom: camera.zoom * initialZoom };
@@ -228,7 +214,7 @@ export class RouletteRenderer {
         false,
         this.getMarbleImage(marble.name),
         viewPort,
-        this._theme,
+        this._theme
       );
     });
   }
@@ -237,12 +223,7 @@ export class RouletteRenderer {
     if (!winner) return;
     this.ctx.save();
     this.ctx.fillStyle = theme.winnerBackground;
-    this.ctx.fillRect(
-      this._canvas.width / 2,
-      this._canvas.height - 168,
-      this._canvas.width / 2,
-      168,
-    );
+    this.ctx.fillRect(this._canvas.width / 2, this._canvas.height - 168, this._canvas.width / 2, 168);
 
     // Draw marble image or colored circle
     const marbleSize = 100;
@@ -256,7 +237,7 @@ export class RouletteRenderer {
         marbleCenterX - marbleSize / 2,
         marbleCenterY - marbleSize / 2,
         marbleSize,
-        marbleSize,
+        marbleSize
       );
     } else {
       this.ctx.beginPath();

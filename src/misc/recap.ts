@@ -1,6 +1,6 @@
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ScrollSmoother } from 'gsap/ScrollSmoother';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { data } from './recap-2025-data';
 
 const setNumbers = () => {
@@ -8,12 +8,11 @@ const setNumbers = () => {
 
   targets.forEach((elem) => {
     const key = elem.getAttribute('data-prop');
-    if (key && data.hasOwnProperty(key)) {
+    if (key && Object.hasOwn(data, key)) {
       const value = data[key as keyof typeof data];
       elem.innerHTML = typeof value === 'number' ? comma(value) : value;
     }
   });
-
 };
 
 function comma(v: number): string {
@@ -21,9 +20,9 @@ function comma(v: number): string {
 }
 
 function once(el: EventTarget, event: string, fn: Function, opts?: any) {
-  const onceFn = function() {
+  const onceFn = function () {
     el.removeEventListener(event, onceFn);
-    // @ts-ignore
+    // @ts-expect-error
     fn.apply(this, arguments);
   };
   el.addEventListener(event, onceFn, opts);
@@ -31,7 +30,7 @@ function once(el: EventTarget, event: string, fn: Function, opts?: any) {
 }
 
 const loadVideo = (video: HTMLVideoElement, tl?: GSAPTimeline) => {
-  let src = video.currentSrc || video.src;
+  const _src = video.currentSrc || video.src;
 
   // if (tl) {
   //   once(document.documentElement, 'touchstart', function() {
@@ -42,12 +41,17 @@ const loadVideo = (video: HTMLVideoElement, tl?: GSAPTimeline) => {
 
   once(video, 'loadedmetadata', () => {
     if (tl) {
-      tl.fromTo(video, {
-        currentTime: 0,
-      }, {
-        currentTime: video.duration || 1,
-        duration: 1000,
-      }, 0);
+      tl.fromTo(
+        video,
+        {
+          currentTime: 0,
+        },
+        {
+          currentTime: video.duration || 1,
+          duration: 1000,
+        },
+        0
+      );
     } else {
       video.play();
     }
@@ -71,9 +75,7 @@ const loadVideo = (video: HTMLVideoElement, tl?: GSAPTimeline) => {
   //       video.currentTime = t + 0.01;
   //     });
   // }, 1000);
-
 };
-
 
 const titlePage = () => {
   const marble = document.querySelector('div#main-marble')!;
@@ -105,50 +107,65 @@ const titlePage = () => {
 
   const square = document.querySelector('.square')!;
 
-
-  tl.fromTo(marble, {
-    x: () => {
-      const startPointRect = startPoint.getBoundingClientRect();
-      return startPointRect.x + startPointRect.width / 2 - 12;
+  tl.fromTo(
+    marble,
+    {
+      x: () => {
+        const startPointRect = startPoint.getBoundingClientRect();
+        return startPointRect.x + startPointRect.width / 2 - 12;
+      },
+      y: () => {
+        const startPointRect = startPoint.getBoundingClientRect();
+        return startPointRect.y + startPointRect.height / 2 - 9;
+      },
+      opacity: 1,
     },
-    y: () => {
-      const startPointRect = startPoint.getBoundingClientRect();
-      return startPointRect.y + startPointRect.height / 2 - 9;
-    },
-    opacity: 1,
-  }, {
-    y: () => {
-      const squareRect = square.getBoundingClientRect();
-      return squareRect.top - 50;
-    },
-    x: () => {
-      const squareRect = square.getBoundingClientRect();
-      return squareRect.left + 10;
-    },
-    duration: 500,
-    ease: 'back.in',
-  }, 0)
-    .to(marble, {
-      scale: 3,
-      duration: 500,
-    }, '<')
-    .to('div.square', { rotate: -45 * 3, ease: 'bounce.out', duration: 200 }, '>')
-    .to(marble, {
+    {
+      y: () => {
+        const squareRect = square.getBoundingClientRect();
+        return squareRect.top - 50;
+      },
       x: () => {
         const squareRect = square.getBoundingClientRect();
-        return squareRect.left - 80;
+        return squareRect.left + 10;
       },
       duration: 500,
-    }, '<')
-    .to(marble, {
-      y: innerHeight,
       ease: 'back.in',
-      opacity: 0,
-      duration: 500,
-    }, '<');
+    },
+    0
+  )
+    .to(
+      marble,
+      {
+        scale: 3,
+        duration: 500,
+      },
+      '<'
+    )
+    .to('div.square', { rotate: -45 * 3, ease: 'bounce.out', duration: 200 }, '>')
+    .to(
+      marble,
+      {
+        x: () => {
+          const squareRect = square.getBoundingClientRect();
+          return squareRect.left - 80;
+        },
+        duration: 500,
+      },
+      '<'
+    )
+    .to(
+      marble,
+      {
+        y: innerHeight,
+        ease: 'back.in',
+        opacity: 0,
+        duration: 500,
+      },
+      '<'
+    );
   return tl;
 };
-
 
 const peoplePage = () => {
   const pPage = document.querySelector('#people-page') as HTMLDivElement;
@@ -156,9 +173,7 @@ const peoplePage = () => {
 
   const tl = gsap.timeline();
 
-
   loadVideo(video, tl);
-
 
   const peopleCount = pPage.querySelector('.people-count') as HTMLElement;
   const countryCount = pPage.querySelector('.country-count') as HTMLElement;
@@ -170,46 +185,71 @@ const peoplePage = () => {
     countryCountProgress: 0,
   };
 
-  tl
-    .fromTo(peopleCount, {
+  tl.fromTo(
+    peopleCount,
+    {
       opacity: 0,
-    }, {
+    },
+    {
       duration: 100,
       opacity: 1,
-    }, 0)
-    .to(numbersAppear, {
-      peopleCountProgress: 1,
-      duration: 100,
-      onUpdate: () => {
-        peopleCountValue.innerHTML = comma(Math.round(numbersAppear.peopleCountProgress * data.people));
+    },
+    0
+  )
+    .to(
+      numbersAppear,
+      {
+        peopleCountProgress: 1,
+        duration: 100,
+        onUpdate: () => {
+          peopleCountValue.innerHTML = comma(Math.round(numbersAppear.peopleCountProgress * data.people));
+        },
       },
-    }, '>')
-    .to(peopleCount, {
-      delay: 100,
-      duration: 400,
-      ease: 'power4.in',
-      y: '-=30',
-      opacity: 0,
-    }, '>')
-    .fromTo(countryCount, {
-      opacity: 0,
-    }, {
-      duration: 500,
-      ease: 'power4.out',
-      opacity: 1,
-    }, '>-200')
-    .to(numbersAppear, {
-      countryCountProgress: 1,
-      duration: 200,
-      onUpdate: () => {
-        countryCountValue.innerHTML = comma(Math.round(numbersAppear.countryCountProgress * data.country));
+      '>'
+    )
+    .to(
+      peopleCount,
+      {
+        delay: 100,
+        duration: 400,
+        ease: 'power4.in',
+        y: '-=30',
+        opacity: 0,
       },
-    }, '<')
-    .to(pPage, {
-      delay: 900,
-      autoAlpha: 0,
-      duration: 100,
-    }, 0);
+      '>'
+    )
+    .fromTo(
+      countryCount,
+      {
+        opacity: 0,
+      },
+      {
+        duration: 500,
+        ease: 'power4.out',
+        opacity: 1,
+      },
+      '>-200'
+    )
+    .to(
+      numbersAppear,
+      {
+        countryCountProgress: 1,
+        duration: 200,
+        onUpdate: () => {
+          countryCountValue.innerHTML = comma(Math.round(numbersAppear.countryCountProgress * data.country));
+        },
+      },
+      '<'
+    )
+    .to(
+      pPage,
+      {
+        delay: 900,
+        autoAlpha: 0,
+        duration: 100,
+      },
+      0
+    );
 
   return tl;
 };
@@ -227,19 +267,24 @@ const executionPage = () => {
     startCountProgress: 0,
   };
 
-
-  tl
-    .to(numbersAppear, {
+  tl.to(
+    numbersAppear,
+    {
       duration: 300,
       startCountProgress: 1,
       onUpdate: () => {
         startCountValue.innerHTML = comma(Math.round(numbersAppear.startCountProgress * data.startCount));
       },
-    }, 0)
-    .to(ePage, {
+    },
+    0
+  ).to(
+    ePage,
+    {
       autoAlpha: 0,
       duration: 100,
-    }, '>+600');
+    },
+    '>+600'
+  );
 
   return tl;
 };
@@ -261,65 +306,95 @@ const dateTimePage = () => {
     hoursProgress: 0,
     datesProgress: 0,
   };
-  tl.fromTo(numbersProgress, {
-    hoursProgress: 0,
-  }, {
-    hoursProgress: 1,
-    duration: 100,
-    onUpdate: () => {
-      hoursFromValue.innerHTML = String(Math.floor(data.busiestTimeFrom * numbersProgress.hoursProgress));
-      hoursToValue.innerHTML = String(Math.floor(data.busiestTimeTo * numbersProgress.hoursProgress));
+  tl.fromTo(
+    numbersProgress,
+    {
+      hoursProgress: 0,
     },
-  }, 0);
-  tl.fromTo(hours, {
-    autoAlpha: 0,
-    y: '+=1rem',
-  }, {
-    autoAlpha: 1,
-    y: '-=2rem',
-    duration: 100,
-  }, 0)
+    {
+      hoursProgress: 1,
+      duration: 100,
+      onUpdate: () => {
+        hoursFromValue.innerHTML = String(Math.floor(data.busiestTimeFrom * numbersProgress.hoursProgress));
+        hoursToValue.innerHTML = String(Math.floor(data.busiestTimeTo * numbersProgress.hoursProgress));
+      },
+    },
+    0
+  );
+  tl.fromTo(
+    hours,
+    {
+      autoAlpha: 0,
+      y: '+=1rem',
+    },
+    {
+      autoAlpha: 1,
+      y: '-=2rem',
+      duration: 100,
+    },
+    0
+  )
     .to(hours, {
       delay: 100,
       y: '-=1rem',
       autoAlpha: 0,
       duration: 100,
     })
-    .fromTo(dates, {
-      autoAlpha: 0,
-      y: '+=1rem',
-    }, {
-      duration: 100,
-      autoAlpha: 1,
-      y: '-=2rem',
-    }, '<+50')
-    .fromTo(numbersProgress, {
-      datesProgress: 0,
-    }, {
-      datesProgress: 1,
-      delay: 100,
-      duration: 100,
-      ease: 'power3.out',
-      onUpdate: () => {
-        monthValue.innerHTML = String(Math.floor(numbersProgress.datesProgress * data.busiestDateMonth));
-        dateValue.innerHTML = String(Math.floor(numbersProgress.datesProgress * data.busiestDateDate));
+    .fromTo(
+      dates,
+      {
+        autoAlpha: 0,
+        y: '+=1rem',
       },
-    }, '<');
+      {
+        duration: 100,
+        autoAlpha: 1,
+        y: '-=2rem',
+      },
+      '<+50'
+    )
+    .fromTo(
+      numbersProgress,
+      {
+        datesProgress: 0,
+      },
+      {
+        datesProgress: 1,
+        delay: 100,
+        duration: 100,
+        ease: 'power3.out',
+        onUpdate: () => {
+          monthValue.innerHTML = String(Math.floor(numbersProgress.datesProgress * data.busiestDateMonth));
+          dateValue.innerHTML = String(Math.floor(numbersProgress.datesProgress * data.busiestDateDate));
+        },
+      },
+      '<'
+    );
 
-  tl.fromTo(dPage.querySelector('div.hour.hand'), {
-    transformOrigin: 'center bottom',
-    rotation: 0,
-  }, {
-    rotation: 360 + 30,
-    duration: 1000,
-  }, 0)
-    .fromTo(dPage.querySelector('div.hand.minute'), {
+  tl.fromTo(
+    dPage.querySelector('div.hour.hand'),
+    {
       transformOrigin: 'center bottom',
       rotation: 0,
-    }, {
-      rotation: 360 * 10,
+    },
+    {
+      rotation: 360 + 30,
       duration: 1000,
-    }, '<')
+    },
+    0
+  )
+    .fromTo(
+      dPage.querySelector('div.hand.minute'),
+      {
+        transformOrigin: 'center bottom',
+        rotation: 0,
+      },
+      {
+        rotation: 360 * 10,
+        duration: 1000,
+      },
+      '<'
+    )
     .fromTo(dPage, { autoAlpha: 1 }, { autoAlpha: 0, duration: 100 }, '>+100');
 
   return tl;
@@ -328,11 +403,10 @@ const dateTimePage = () => {
 const marbleCountPage = () => {
   const mPage = document.querySelector('#marble-count-page') as HTMLDivElement;
 
-  const marbleCount = mPage.querySelector('[data-prop="marbleCount"]') as HTMLElement;
+  const _marbleCount = mPage.querySelector('[data-prop="marbleCount"]') as HTMLElement;
 
   const containers = mPage.querySelector('#containers') as HTMLDivElement;
-  const trains = mPage.querySelector('#trains') as HTMLDivElement;
-
+  const _trains = mPage.querySelector('#trains') as HTMLDivElement;
 
   const cubes: HTMLElement[] = [];
   for (let i = 0; i < 34; i++) {
@@ -357,29 +431,32 @@ const marbleCountPage = () => {
     cubes.push(cube);
   }
 
-  const numbersProgress = {
+  const _numbersProgress = {
     progress: 0,
   };
 
-  const tl = gsap.timeline();
+  const _tl = gsap.timeline();
 
-  const progressEach = 1 / 34;
-  const totalProgress = 34 * 100 + 500;
+  const _progressEach = 1 / 34;
+  const _totalProgress = 34 * 100 + 500;
 
-  gsap.fromTo(containers, {
-    x: 500,
-  }, {
-    ease: 'none',
-    x: `-=${34 * 100 + 500}`,
-    scrollTrigger: {
-      pin: mPage,
-      trigger: mPage,
-      start: 'top top',
-      end: 'bottom top',
-      scrub: 1,
+  gsap.fromTo(
+    containers,
+    {
+      x: 500,
     },
-  });
-
+    {
+      ease: 'none',
+      x: `-=${34 * 100 + 500}`,
+      scrollTrigger: {
+        pin: mPage,
+        trigger: mPage,
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 1,
+      },
+    }
+  );
 };
 
 const coffeePage = () => {
@@ -392,34 +469,55 @@ const coffeePage = () => {
     progress: 0,
   };
 
-  const tl = gsap.timeline()
-    .fromTo(numbersProgress, { progress: 0 }, {
-      progress: 1,
-      duration: 200,
-      onUpdate: () => {
-        coffeeCountValue.innerHTML = String(Math.round(numbersProgress.progress * data.coffeeBuyer));
+  const tl = gsap
+    .timeline()
+    .fromTo(
+      numbersProgress,
+      { progress: 0 },
+      {
+        progress: 1,
+        duration: 200,
+        onUpdate: () => {
+          coffeeCountValue.innerHTML = String(Math.round(numbersProgress.progress * data.coffeeBuyer));
+        },
       },
-    }, 0).to(numbersProgress, { progress: 1, duration: 800 });
+      0
+    )
+    .to(numbersProgress, { progress: 1, duration: 800 });
 
-  tl.fromTo(img, {
-    y: '+=2rem',
-  }, {
-    y: '-=5rem',
-    ease: 'elastic.out',
-    duration: 100,
-  }, 0)
-    .fromTo(img, {
-      autoAlpha: 0,
-    }, {
-      autoAlpha: 1,
-      duration: 200,
-    }, '<')
-    .fromTo(cPage, {
-      autoAlpha: 1,
-    }, {
-      autoAlpha: 0,
+  tl.fromTo(
+    img,
+    {
+      y: '+=2rem',
+    },
+    {
+      y: '-=5rem',
+      ease: 'elastic.out',
       duration: 100,
-    });
+    },
+    0
+  )
+    .fromTo(
+      img,
+      {
+        autoAlpha: 0,
+      },
+      {
+        autoAlpha: 1,
+        duration: 200,
+      },
+      '<'
+    )
+    .fromTo(
+      cPage,
+      {
+        autoAlpha: 1,
+      },
+      {
+        autoAlpha: 0,
+        duration: 100,
+      }
+    );
   return tl;
 };
 
@@ -460,7 +558,7 @@ const init = () => {
     },
   });
 
-  const getTimeline = (section: HTMLElement) => {
+  const _getTimeline = (section: HTMLElement) => {
     switch (section.id) {
       case 'title-page':
         return titlePage();
@@ -505,11 +603,12 @@ const init = () => {
 
   once(document, 'touchstart', () => {
     document.querySelectorAll<HTMLVideoElement>('video:not([autoplay])').forEach((v) => {
-      v.play().then(() => {
-        v.pause();
-        v.currentTime = 0;
-      }).catch((err) => {
-      });
+      v.play()
+        .then(() => {
+          v.pause();
+          v.currentTime = 0;
+        })
+        .catch((_err) => {});
     });
   });
 

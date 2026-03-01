@@ -1,4 +1,4 @@
-import { KeywordEntry, KeywordsData } from './types/keyword.type';
+import type { KeywordEntry, KeywordsData } from './types/keyword.type';
 
 const DEFAULT_KEYWORDS_URL = 'https://marblerouletteshop.com/api/external/keywords.json';
 const DEFAULT_SPRITE_BASE_URL = 'https://marblerouletteshop.com/api/external/sprites';
@@ -12,9 +12,15 @@ export class KeywordService {
   protected _loadingSprites: Map<number, Promise<HTMLImageElement | null>> = new Map();
   protected _lastGeneratedAt: string | null = null;
 
-  protected get _keywordsUrl(): string { return DEFAULT_KEYWORDS_URL; }
-  protected get _spriteBaseUrl(): string { return DEFAULT_SPRITE_BASE_URL; }
-  protected get _checkExpiry(): boolean { return true; }
+  protected get _keywordsUrl(): string {
+    return DEFAULT_KEYWORDS_URL;
+  }
+  protected get _spriteBaseUrl(): string {
+    return DEFAULT_SPRITE_BASE_URL;
+  }
+  protected get _checkExpiry(): boolean {
+    return true;
+  }
 
   async init(): Promise<void> {
     await this.fetchKeywords();
@@ -48,8 +54,7 @@ export class KeywordService {
 
       // Check if generated_at is newer than last load
       const isNewer =
-        this._lastGeneratedAt === null ||
-        new Date(newData.generated_at) > new Date(this._lastGeneratedAt);
+        this._lastGeneratedAt === null || new Date(newData.generated_at) > new Date(this._lastGeneratedAt);
 
       if (isNewer) {
         // Clear sprite caches when data is updated
@@ -109,12 +114,10 @@ export class KeywordService {
     x: number,
     y: number,
     width: number,
-    height: number,
+    height: number
   ): CanvasImageSource {
     const canvas =
-      typeof OffscreenCanvas !== 'undefined'
-        ? new OffscreenCanvas(width, height)
-        : document.createElement('canvas');
+      typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(width, height) : document.createElement('canvas');
 
     if (!(canvas instanceof OffscreenCanvas)) {
       canvas.width = width;

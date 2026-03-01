@@ -1,8 +1,8 @@
-import { RenderParameters } from './rouletteRenderer';
-import { MouseEventArgs, UIObject } from './UIObject';
+import type { Marble } from './marble';
+import type { RenderParameters } from './rouletteRenderer';
+import type { Rect } from './types/rect.type';
+import type { MouseEventArgs, UIObject } from './UIObject';
 import { bound } from './utils/bound.decorator';
-import { Rect } from './types/rect.type';
-import { Marble } from './marble';
 
 export class RankRenderer implements UIObject {
   private _currentY = 0;
@@ -15,9 +15,6 @@ export class RankRenderer implements UIObject {
   private marbles: Marble[] = [];
   private winnerRank: number = -1;
   private messageHandler?: (msg: string) => void;
-
-  constructor() {
-  }
 
   @bound
   onWheel(e: WheelEvent) {
@@ -34,10 +31,12 @@ export class RankRenderer implements UIObject {
       if (navigator.clipboard) {
         const tsv: string[] = [];
         let rank = 0;
-        tsv.push(...[...this.winners, ...this.marbles].map((m) => {
-          rank++;
-          return [rank.toString(), m.name, rank - 1 === this.winnerRank ? '☆' : ''].join('\t');
-        }));
+        tsv.push(
+          ...[...this.winners, ...this.marbles].map((m) => {
+            rank++;
+            return [rank.toString(), m.name, rank - 1 === this.winnerRank ? '☆' : ''].join('\t');
+          })
+        );
 
         tsv.unshift(['Rank', 'Name', 'Winner'].join('\t'));
 
@@ -58,14 +57,11 @@ export class RankRenderer implements UIObject {
     ctx: CanvasRenderingContext2D,
     { winners, marbles, winnerRank, theme }: RenderParameters,
     width: number,
-    height: number,
+    height: number
   ) {
     const startX = width - 5;
     const startY = Math.max(-this.fontHeight, this._currentY - height / 2);
-    this.maxY = Math.max(
-      0,
-      (marbles.length + winners.length) * this.fontHeight + this.fontHeight,
-    );
+    this.maxY = Math.max(0, (marbles.length + winners.length) * this.fontHeight + this.fontHeight);
     this._currentWinner = winners.length;
 
     this.winners = winners;
@@ -88,20 +84,12 @@ export class RankRenderer implements UIObject {
       ctx.lineWidth = 2;
       ctx.strokeStyle = theme.rankStroke;
     }
-    winners.forEach((marble: { hue: number, name: string }, rank: number) => {
+    winners.forEach((marble: { hue: number; name: string }, rank: number) => {
       const y = rank * this.fontHeight;
       if (y >= startY && y <= startY + ctx.canvas.height) {
         ctx.fillStyle = `hsl(${marble.hue} 100% ${theme.marbleLightness}`;
-        ctx.strokeText(
-          `${rank === winnerRank ? '☆' : '\u2714'} ${marble.name} #${rank + 1}`,
-          startX,
-          20 + y,
-        );
-        ctx.fillText(
-          `${rank === winnerRank ? '☆' : '\u2714'} ${marble.name} #${rank + 1}`,
-          startX,
-          20 + y,
-        );
+        ctx.strokeText(`${rank === winnerRank ? '☆' : '\u2714'} ${marble.name} #${rank + 1}`, startX, 20 + y);
+        ctx.fillText(`${rank === winnerRank ? '☆' : '\u2714'} ${marble.name} #${rank + 1}`, startX, 20 + y);
       }
     });
     ctx.font = '10pt sans-serif';
@@ -109,16 +97,8 @@ export class RankRenderer implements UIObject {
       const y = (rank + winners.length) * this.fontHeight;
       if (y >= startY && y <= startY + ctx.canvas.height) {
         ctx.fillStyle = `hsl(${marble.hue} 100% ${theme.marbleLightness}`;
-        ctx.strokeText(
-          `${marble.name} #${rank + 1 + winners.length}`,
-          startX,
-          20 + y,
-        );
-        ctx.fillText(
-          `${marble.name} #${rank + 1 + winners.length}`,
-          startX,
-          20 + y,
-        );
+        ctx.strokeText(`${marble.name} #${rank + 1 + winners.length}`, startX, 20 + y);
+        ctx.fillText(`${marble.name} #${rank + 1 + winners.length}`, startX, 20 + y);
       }
     });
     ctx.restore();

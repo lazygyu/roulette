@@ -1,7 +1,7 @@
-import { Marble } from './marble';
-import { StageDef } from './data/maps';
 import { initialZoom, zoomThreshold } from './data/constants';
-import { VectorLike } from './types/VectorLike';
+import type { StageDef } from './data/maps';
+import type { Marble } from './marble';
+import type { VectorLike } from './types/VectorLike';
 
 export class Camera {
   private _position: VectorLike = { x: 0, y: 0 };
@@ -86,20 +86,13 @@ export class Camera {
     this._zoom = this._interpolation(this._zoom, this._targetZoom);
   }
 
-  private _calcTargetPositionAndZoom(
-    marbles: Marble[],
-    stage: StageDef,
-    needToZoom: boolean,
-    targetIndex: number
-  ) {
+  private _calcTargetPositionAndZoom(marbles: Marble[], stage: StageDef, needToZoom: boolean, targetIndex: number) {
     if (!this._shouldFollowMarbles) {
       return;
     }
 
     if (marbles.length > 0) {
-      const targetMarble = marbles[targetIndex]
-        ? marbles[targetIndex]
-        : marbles[0];
+      const targetMarble = marbles[targetIndex] ? marbles[targetIndex] : marbles[0];
       this.setPosition(targetMarble.position);
       if (needToZoom) {
         const goalDist = Math.abs(stage.zoomY - this._position.y);
@@ -121,18 +114,12 @@ export class Camera {
     return current + d / 10;
   }
 
-  renderScene(
-    ctx: CanvasRenderingContext2D,
-    callback: (ctx: CanvasRenderingContext2D) => void
-  ) {
+  renderScene(ctx: CanvasRenderingContext2D, callback: (ctx: CanvasRenderingContext2D) => void) {
     const zoomFactor = initialZoom * 2 * this._zoom;
     ctx.save();
     ctx.translate(-this.x * this._zoom, -this.y * this._zoom);
     ctx.scale(this.zoom, this.zoom);
-    ctx.translate(
-      ctx.canvas.width / zoomFactor,
-      ctx.canvas.height / zoomFactor
-    );
+    ctx.translate(ctx.canvas.width / zoomFactor, ctx.canvas.height / zoomFactor);
     callback(ctx);
     ctx.restore();
   }

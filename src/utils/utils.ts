@@ -12,10 +12,10 @@ export function parseName(nameStr: string) {
   const countRegex = /\*(\d+)/;
   const hasWeight = weightRegex.test(nameStr);
   const hasCount = countRegex.test(nameStr);
-  const name = getRegexValue(/^\s*([^\/*]+)?/, nameStr);
+  const name = getRegexValue(/^\s*([^/*]+)?/, nameStr);
   if (!name) return null;
-  const weight = hasWeight ? parseInt(getRegexValue(weightRegex, nameStr)) : 1;
-  const count = hasCount ? parseInt(getRegexValue(countRegex, nameStr)) : 1;
+  const weight = hasWeight ? parseInt(getRegexValue(weightRegex, nameStr), 10) : 1;
+  const count = hasCount ? parseInt(getRegexValue(countRegex, nameStr), 10) : 1;
   return {
     name,
     weight,
@@ -28,7 +28,7 @@ export function pad(v: number) {
 }
 
 export function shuffle<T>(originalArray: T[]): T[] {
-    const array = originalArray.slice();
+  const array = originalArray.slice();
   let currentIndex = array.length;
   let randomIndex;
 
@@ -39,10 +39,7 @@ export function shuffle<T>(originalArray: T[]): T[] {
     currentIndex--;
 
     // And swap it with the current element.
-    [array[currentIndex], array[randomIndex]] = [
-      array[randomIndex],
-      array[currentIndex],
-    ];
+    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
   }
 
   return array;
