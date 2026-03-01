@@ -6,7 +6,6 @@ export class VideoRecorder {
   private videoStream: MediaStream;
 
   private chunks: Blob[] = [];
-  private stopping = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.targetCanvas = canvas;

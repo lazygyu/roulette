@@ -1,4 +1,4 @@
-import { ColorTheme } from '../types/ColorTheme';
+import type { ColorTheme } from '../types/ColorTheme';
 
 export const initialZoom = 30;
 export const canvasWidth = 1600;

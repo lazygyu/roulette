@@ -1,4 +1,4 @@
-import { VectorLike } from '../types/VectorLike';
+import type { VectorLike } from '../types/VectorLike';
 
 export class Vector {
   static sub(v1: VectorLike, v2: VectorLike): VectorLike {
@@ -10,7 +10,7 @@ export class Vector {
   }
 
   static len(v: VectorLike) {
-    return Math.sqrt(this.lenSq(v));
+    return Math.sqrt(Vector.lenSq(v));
   }
 
   static mul(v: VectorLike, scalar: number) {

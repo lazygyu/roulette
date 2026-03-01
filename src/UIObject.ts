@@ -1,17 +1,12 @@
-import { RenderParameters } from './rouletteRenderer';
-import { Rect } from './types/rect.type';
+import type { RenderParameters } from './rouletteRenderer';
+import type { Rect } from './types/rect.type';
 
 export type MouseEventArgs = { x: number; y: number; button: number };
 
 export interface UIObject {
   update(deltaTime: number): void;
 
-  render(
-    ctx: CanvasRenderingContext2D,
-    params: RenderParameters,
-    width: number,
-    height: number,
-  ): void;
+  render(ctx: CanvasRenderingContext2D, params: RenderParameters, width: number, height: number): void;
 
   getBoundingBox(): Rect | null;
 

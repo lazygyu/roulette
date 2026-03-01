@@ -1,7 +1,7 @@
-import { IPhysics } from './IPhysics';
-import { StageDef } from './data/maps';
 import Box2DFactory from 'box2d-wasm';
-import { MapEntity, MapEntityState } from './types/MapEntity.type';
+import type { StageDef } from './data/maps';
+import type { IPhysics } from './IPhysics';
+import type { MapEntity, MapEntityState } from './types/MapEntity.type';
 
 export class Box2dPhysics implements IPhysics {
   private Box2D!: typeof Box2D & EmscriptenModule;
@@ -56,12 +56,7 @@ export class Box2dPhysics implements IPhysics {
       switch (entity.shape.type) {
         case 'box':
           shape = new this.Box2D.b2PolygonShape();
-          shape.SetAsBox(
-            entity.shape.width,
-            entity.shape.height,
-            0,
-            entity.shape.rotation,
-          );
+          shape.SetAsBox(entity.shape.width, entity.shape.height, 0, entity.shape.rotation);
           fixtureDef.set_shape(shape);
           body.CreateFixture(fixtureDef);
           break;
@@ -86,10 +81,7 @@ export class Box2dPhysics implements IPhysics {
       }
 
       body.SetAngularVelocity(entity.props.angularVelocity);
-      body.SetTransform(
-        new this.Box2D.b2Vec2(entity.position.x, entity.position.y),
-        0,
-      );
+      body.SetTransform(new this.Box2D.b2Vec2(entity.position.x, entity.position.y), 0);
       this.entities.push({
         body,
         x: entity.position.x,
@@ -126,10 +118,7 @@ export class Box2dPhysics implements IPhysics {
   shakeMarble(id: number): void {
     const body = this.marbleMap[id];
     if (body) {
-      body.ApplyLinearImpulseToCenter(
-        new this.Box2D.b2Vec2(Math.random() * 10 - 5, Math.random() * 10 - 5),
-        true,
-      );
+      body.ApplyLinearImpulseToCenter(new this.Box2D.b2Vec2(Math.random() * 10 - 5, Math.random() * 10 - 5), true);
     }
   }
 
@@ -167,10 +156,7 @@ export class Box2dPhysics implements IPhysics {
     Object.values(this.marbleMap).forEach((body) => {
       if (body === src) return;
 
-      const distVector = new this.Box2D.b2Vec2(
-        body.GetPosition().x,
-        body.GetPosition().y,
-      );
+      const distVector = new this.Box2D.b2Vec2(body.GetPosition().x, body.GetPosition().y);
       distVector.op_sub(src.GetPosition());
       const distSq = distVector.LengthSquared();
 
@@ -203,7 +189,7 @@ export class Box2dPhysics implements IPhysics {
       const entity = this.entities[i];
       if (entity.life > 0) {
         const edge = entity.body.GetContactList();
-        if (edge.contact && edge.contact.IsTouching()) {
+        if (edge.contact?.IsTouching()) {
           this.deleteCandidates.push(entity.body);
           this.entities.splice(i, 1);
         }

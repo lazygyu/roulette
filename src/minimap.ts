@@ -1,11 +1,11 @@
-import { RenderParameters } from './rouletteRenderer';
 import { initialZoom } from './data/constants';
-import { UIObject } from './UIObject';
+import type { RenderParameters } from './rouletteRenderer';
+import type { ColorTheme } from './types/ColorTheme';
+import type { MapEntityState } from './types/MapEntity.type';
+import type { Rect } from './types/rect.type';
+import type { VectorLike } from './types/VectorLike';
+import type { UIObject } from './UIObject';
 import { bound } from './utils/bound.decorator';
-import { Rect } from './types/rect.type';
-import { VectorLike } from './types/VectorLike';
-import { MapEntityState } from './types/MapEntity.type';
-import { ColorTheme } from './types/ColorTheme';
 
 export class Minimap implements UIObject {
   private ctx!: CanvasRenderingContext2D;
@@ -82,12 +82,7 @@ export class Minimap implements UIObject {
     ctx.save();
     ctx.strokeStyle = 'green';
     ctx.lineWidth = 1;
-    ctx.strokeRect(
-      this.boundingBox.x,
-      this.boundingBox.y,
-      this.boundingBox.w,
-      this.boundingBox.h,
-    );
+    ctx.strokeRect(this.boundingBox.x, this.boundingBox.y, this.boundingBox.w, this.boundingBox.h);
     ctx.restore();
   }
 
@@ -115,12 +110,13 @@ export class Minimap implements UIObject {
       this.ctx.save();
       const shape = entity.shape;
       switch (shape.type) {
-        case 'box':
+        case 'box': {
           const w = shape.width * 2;
           const h = shape.height * 2;
           this.ctx.rotate(shape.rotation);
           this.ctx.fillRect(-w / 2, -h / 2, w, h);
           break;
+        }
         case 'circle':
           this.ctx.beginPath();
           this.ctx.arc(0, 0, shape.radius, 0, Math.PI * 2, false);

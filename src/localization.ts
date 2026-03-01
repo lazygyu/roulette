@@ -1,8 +1,4 @@
-import {
-  TranslatedLanguages,
-  TranslationKeys,
-  Translations,
-} from './data/languages';
+import { type TranslatedLanguages, type TranslationKeys, Translations } from './data/languages';
 
 const defaultLocale: TranslatedLanguages = 'en';
 let locale: TranslatedLanguages | undefined;
@@ -40,10 +36,7 @@ function setLocale(newLocale: string) {
 
   const newLocaleLower = newLocale.toLocaleLowerCase();
 
-  locale =
-    newLocaleLower in Translations
-      ? (newLocaleLower as TranslatedLanguages)
-      : defaultLocale;
+  locale = newLocaleLower in Translations ? (newLocaleLower as TranslatedLanguages) : defaultLocale;
   translatePage();
 }
 
@@ -54,5 +47,4 @@ document.addEventListener('DOMContentLoaded', () => {
   setLocale(browserLocale);
 });
 
-// eslint-disable-next-line
 (window as any).translateElement = translateElement;

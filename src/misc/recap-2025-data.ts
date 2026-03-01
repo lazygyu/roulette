@@ -10,4 +10,3 @@ export const data = {
   country: 147,
   coffeeBuyer: 37,
 } as const;
-

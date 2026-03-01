@@ -1,5 +1,5 @@
+import type { VectorLike } from './types/VectorLike';
 import { rad } from './utils/utils';
-import { VectorLike } from './types/VectorLike';
 import { Vector } from './utils/Vector';
 
 const lifetime = 3000;
@@ -35,7 +35,7 @@ export class Particle {
 
   render(ctx: CanvasRenderingContext2D) {
     ctx.save();
-    ctx.globalAlpha = 1 - Math.pow(this._elapsed / lifetime, 2);
+    ctx.globalAlpha = 1 - (this._elapsed / lifetime) ** 2;
     ctx.fillStyle = this.color;
     ctx.fillRect(this.position.x, this.position.y, 20, 20);
     ctx.restore();
