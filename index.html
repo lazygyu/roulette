@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-5899C1DJM0"></script>
+  <script defer src="https://umami.lazygyu.net/script.js" data-website-id="205aee0d-30b6-4c69-a053-0c72c8377be0"></script>
 
   <title>Marble Roulette</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -175,6 +176,15 @@
         'event_category': 'roulette',
         'event_label': 'start',
         'value': window.roulette.getCount(),
+      });
+      const names = getNames();
+      const marbles = names.map(n => {
+        const p = parseName(n);
+        return { name: p.name, count: p.count };
+      });
+      typeof umami !== 'undefined' && umami.track('start', {
+        count: window.roulette.getCount(),
+        marbles: JSON.stringify(marbles),
       });
       window.roulette.start();
       document.querySelector('#settings').classList.add('hide');
