@@ -182,10 +182,12 @@
         const p = parseName(n);
         return { name: p.name, count: p.count };
       });
-      typeof umami !== 'undefined' && umami.track('start', {
-        count: window.roulette.getCount(),
-        marbles: JSON.stringify(marbles),
-      });
+      if (typeof umami !== 'undefined') {
+        umami.track('start', { count: window.roulette.getCount() });
+        marbles.forEach(m => {
+          umami.track('marble', { name: m.name, count: m.count });
+        });
+      }
       window.roulette.start();
       document.querySelector('#settings').classList.add('hide');
       document.querySelector('#donate').classList.add('hide');
