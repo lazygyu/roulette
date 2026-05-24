@@ -336,22 +336,16 @@ div.copyright a {
   flex-direction: column;
 
   h1 {
-    background-color: #ffdd00;
+    background-color: #58c9af;
     margin: -10px -10px 0 -10px;
     padding: 10px 5px 10px .5em;
-    border-bottom: 1px solid #333;
+    border-bottom: 4px solid #2c8470;
     display: flex;
     align-items: center;
-
-    &:before {
-      content: '';
-      display: inline-block;
-      width: 1em;
-      height: 1em;
-      background-image: url('images/megaphone.svg');
-      background-size: contain;
-      margin-right: 0.2em;
-    }
+    justify-content: center;
+    color: black;
+    text-transform: uppercase;
+    font-weight: bold;
   }
 
   div.notice-body {
@@ -360,18 +354,19 @@ div.copyright a {
 
   div.notice-action {
     display: flex;
-    justify-content: end;
+    justify-content: center;
 
     button {
       color: #fefefe;
       background: #222;
       border: none;
-      border-radius: 20px;
+      border-radius: 10px;
       padding: 5px 10px;
       position: relative;
       overflow: hidden;
       width: 50%;
       height: 50px;
+      font-size: 20px;
 
       &:active:after {
         content: '';
@@ -530,11 +525,11 @@ div.toast {
   align-items: center;
   justify-content: center;
   background: repeating-linear-gradient(
-                  45deg,
-                  #ffaa00,
-                  #ffaa00 20px,
-                  #222222 20px,
-                  #222222 40px
+          45deg,
+          #ffaa00,
+          #ffaa00 20px,
+          #222222 20px,
+          #222222 40px
   );
   color: white;
   font-size: 1.5em;
