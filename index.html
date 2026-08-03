@@ -183,7 +183,11 @@
         return { name: p.name, count: p.count };
       });
       if (typeof umami !== 'undefined') {
-        umami.track('start', { count: window.roulette.getCount() });
+        const currentMap = window.roulette.getCurrentMap();
+        umami.track('start', {
+          count: window.roulette.getCount(),
+          map: currentMap ? currentMap.title : 'unknown',
+        });
         marbles.forEach(m => {
           umami.track('marble', { name: m.name, count: m.count });
         });

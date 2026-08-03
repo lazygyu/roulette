@@ -442,6 +442,14 @@ export class Roulette extends EventTarget {
     });
   }
 
+  public getCurrentMap() {
+    if (!this._stage) return null;
+    return {
+      index: stages.indexOf(this._stage),
+      title: this._stage.title,
+    };
+  }
+
   public setMap(index: number) {
     if (index < 0 || index > stages.length - 1) {
       throw new Error('Incorrect map number');
