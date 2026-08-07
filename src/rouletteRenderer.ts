@@ -1,3 +1,4 @@
+import { type AdOverlayMode, type AdOverlayState, drawAdOverlay } from './adRenderer';
 import type { Camera } from './camera';
 import { canvasHeight, canvasWidth, initialZoom, Themes } from './data/constants';
 import type { StageDef } from './data/maps';
@@ -5,6 +6,7 @@ import type { GameObject } from './gameObject';
 import { KeywordService } from './keywordService';
 import type { Marble } from './marble';
 import type { ParticleManager } from './particleManager';
+import type { AdCreative } from './types/Ad.type';
 import type { ColorTheme } from './types/ColorTheme';
 import type { MapEntityState } from './types/MapEntity.type';
 import type { VectorLike } from './types/VectorLike';
@@ -31,6 +33,9 @@ export class RouletteRenderer {
 
   protected _images: { [key: string]: HTMLImageElement } = {};
   protected _theme: ColorTheme = Themes.dark;
+  private _ad: AdCreative | null = null;
+  private _adImageCache: Map<string, HTMLImageElement> = new Map();
+  private _adOverlay: AdOverlayState | null = null;
   protected _keywordService: KeywordService;
 
   constructor() {
@@ -130,6 +135,76 @@ export class RouletteRenderer {
   protected onBeforeEntities(): void {}
   protected onAfterScene(): void {}
 
+  setAd(ad: AdCreative | null): void {
+    this._ad = ad;
+    if (!ad) return;
+    for (const src of [ad.wide, ad.square, ad.qrImage]) {
+      if (src) this.cacheAdImage(src);
+    }
+  }
+
+  private cacheAdImage(src: string): HTMLImageElement {
+    const cached = this._adImageCache.get(src);
+    if (cached) return cached;
+    const el = new Image();
+    el.crossOrigin = 'anonymous';
+    el.src = src;
+    this._adImageCache.set(src, el);
+    return el;
+  }
+
+  showAdOverlay(mode: AdOverlayMode): void {
+    if (!this._ad) return;
+    this._adOverlay = { mode, ad: this._ad, since: performance.now(), endingSince: undefined };
+  }
+
+  hideAdOverlay(): void {
+    if (this._adOverlay && this._adOverlay.endingSince === undefined) {
+      this._adOverlay.endingSince = performance.now();
+    }
+  }
+
+  private renderAdOverlay(): void {
+    const overlay = this._adOverlay;
+    if (!overlay) return;
+    try {
+      const alive = drawAdOverlay(this.ctx, this._canvas.width, this._canvas.height, overlay, {
+        square: this._adImageCache.get(overlay.ad.square),
+        qr: overlay.ad.qrImage ? this._adImageCache.get(overlay.ad.qrImage) : undefined,
+      });
+      if (!alive) this._adOverlay = null;
+    } catch (e) {
+      console.error('[ads] 오버레이 렌더링 실패, 이번 노출은 건너뜁니다', e);
+      this._adOverlay = null;
+    }
+  }
+
+  private renderAdBoards(stage: StageDef): void {
+    const ad = this._ad;
+    if (!ad || !stage.adBoards?.length) return;
+
+    const img = this._adImageCache.get(ad.wide);
+    if (!img?.complete || img.naturalWidth === 0) return;
+
+    try {
+      this.ctx.save();
+      for (const board of stage.adBoards) {
+        const w = board.w ?? 4;
+        const h = board.h ?? 1;
+        const x = board.x - w / 2;
+        const y = board.y - h / 2;
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(x, y, w, h);
+        this.ctx.drawImage(img, x, y, w, h);
+      }
+    } catch (e) {
+      console.error('[ads] 광고판 렌더링 실패, 이번 게재는 건너뜁니다', e);
+      this._ad = null;
+    } finally {
+      this.ctx.restore();
+    }
+  }
+
   render(renderParameters: RenderParameters, uiObjects: UIObject[]) {
     this._theme = renderParameters.theme;
     this.ctx.fillStyle = this._theme.background;
@@ -142,6 +217,7 @@ export class RouletteRenderer {
     this.ctx.font = '0.4pt sans-serif';
     this.ctx.lineWidth = 3 / (renderParameters.camera.zoom + initialZoom);
     renderParameters.camera.renderScene(this.ctx, () => {
+      this.renderAdBoards(renderParameters.stage);
       this.onBeforeEntities();
       this.renderEntities(renderParameters.entities);
       this.renderEffects(renderParameters);
@@ -153,6 +229,7 @@ export class RouletteRenderer {
     uiObjects.forEach((obj) => obj.render(this.ctx, renderParameters, this._canvas.width, this._canvas.height));
     renderParameters.particleManager.render(this.ctx);
     this.renderWinner(renderParameters);
+    this.renderAdOverlay();
   }
 
   private renderEntities(entities: MapEntityState[]) {

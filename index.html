@@ -192,9 +192,12 @@
           umami.track('marble', { name: m.name, count: m.count });
         });
       }
-      window.roulette.start();
       document.querySelector('#settings').classList.add('hide');
-      document.querySelector('#donate').classList.add('hide');
+      if (window.ads) {
+        window.ads.beginRound(() => window.roulette.start());
+      } else {
+        window.roulette.start();
+      }
     });
 
     document.querySelector('#chkAutoRecording').addEventListener('change', (e) => {
@@ -231,9 +234,9 @@
 
     window.roulette.addEventListener('goal', () => {
       ready = false;
+      if (window.ads) window.ads.showResult();
       setTimeout(() => {
         document.querySelector('#settings').classList.remove('hide');
-        document.querySelector('#donate').classList.remove('hide');
       }, 3000);
     });
 

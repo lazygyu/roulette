@@ -12,6 +12,7 @@ import { Box2dPhysics } from './physics-box2d';
 import { RankRenderer } from './rankRenderer';
 import { RouletteRenderer } from './rouletteRenderer';
 import { SkillEffect } from './skillEffect';
+import type { AdCreative } from './types/Ad.type';
 import type { ColorTheme } from './types/ColorTheme';
 import type { MouseEventHandlerName, MouseEventName } from './types/mouseEvents.type';
 import type { UIObject } from './UIObject';
@@ -334,6 +335,18 @@ export class Roulette extends EventTarget {
       throw new Error('Speed multiplier must larger than 0');
     }
     this._speed = value;
+  }
+
+  public setAd(ad: AdCreative | null) {
+    this._renderer.setAd(ad);
+  }
+
+  public showAdOverlay(mode: 'preroll' | 'result') {
+    this._renderer.showAdOverlay(mode);
+  }
+
+  public hideAdOverlay() {
+    this._renderer.hideAdOverlay();
   }
 
   public setTheme(themeName: keyof typeof Themes) {
