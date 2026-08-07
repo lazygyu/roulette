@@ -1,10 +1,13 @@
 import type { AdCreative, AdResponse } from './types/Ad.type';
 
+const REFRESH_INTERVAL = 60000; // 60 seconds
+
 export class AdService {
   private _ads: AdCreative[] = [];
   private _current: AdCreative | null = null;
   private _cursor = 0;
   private _apiBase: string;
+  private _intervalId: number | null = null;
 
   constructor(apiBase: string) {
     this._apiBase = apiBase.replace(/\/$/, '');
@@ -12,6 +15,26 @@ export class AdService {
 
   get current(): AdCreative | null {
     return this._current;
+  }
+
+  async init(): Promise<void> {
+    await this.fetchAds();
+    this._startPeriodicRefresh();
+  }
+
+  destroy(): void {
+    if (this._intervalId !== null) {
+      clearInterval(this._intervalId);
+      this._intervalId = null;
+    }
+  }
+
+  private _startPeriodicRefresh(): void {
+    this._intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        this.fetchAds();
+      }
+    }, REFRESH_INTERVAL);
   }
 
   async fetchAds(): Promise<void> {

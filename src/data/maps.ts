@@ -20,7 +20,7 @@ export const stages: StageDef[] = [
     title: 'Wheel of fortune',
     goalY: 111,
     zoomY: 106.75,
-    adBoards: [{ x: 15.55, y: 106.75 }],
+    adBoards: [{ x: 15.92, y: 104.3, w: 5, h: 1.25 }],
     entities: [
       // polyline
       {
@@ -439,7 +439,10 @@ export const stages: StageDef[] = [
     title: 'BubblePop',
     goalY: 83,
     zoomY: 78,
-    adBoards: [{ x: 12.5, y: 78 }],
+    adBoards: [
+      { y: 80.5, x: 10 },
+      { y: 80.5, x: 15.05 },
+    ],
     entities: [
       {
         type: 'static',
@@ -901,7 +904,7 @@ export const stages: StageDef[] = [
     title: 'Pot of greed',
     goalY: 91,
     zoomY: 92.5,
-    adBoards: [{ x: 13.0, y: 89.5 }],
+    adBoards: [{ x: 13.0, y: 75.5, w: 9.5, h: 2.375 }],
     entities: [
       {
         type: 'static',

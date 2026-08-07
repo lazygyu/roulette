@@ -1,3 +1,4 @@
+import { winnerAreaHeight } from './data/constants';
 import type { AdCreative } from './types/Ad.type';
 
 export type AdOverlayMode = 'preroll' | 'result';
@@ -13,6 +14,11 @@ export interface AdImages {
   square?: HTMLImageElement;
   qr?: HTMLImageElement;
 }
+
+const RESULT_RIGHT_MARGIN = 80;
+const RESULT_GAP = 10;
+const RESULT_BOTTOM_GAP = 5;
+const QR_TO_LOGO_RATIO = 0.6;
 
 const FADE_IN_MS = 250;
 const FADE_OUT_MS = 200;
@@ -61,7 +67,7 @@ function drawPreroll(ctx: CanvasRenderingContext2D, w: number, h: number, ad: Ad
   ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
   ctx.fillRect(0, 0, w, h);
 
-  const provideSize = clamp(h * 0.08, 28, 104);
+  const provideSize = clamp(h * 0.04, 14, 52);
   const sponsorSize = clamp(h * 0.026, 14, 30);
   const qrSize = Math.min(h * 0.16, 240);
   const logoBase = Math.min(w * 0.3, h * 0.34, 360);
@@ -115,29 +121,18 @@ function drawResult(ctx: CanvasRenderingContext2D, w: number, h: number, images:
   const qr = ready(images.qr) ? images.qr : undefined;
   if (!logo && !qr) return;
 
-  const pad = h * 0.018;
-  const logoSize = Math.min(h * 0.16, 150);
-  const qrSize = Math.min(h * 0.1, 96);
-  const gap = h * 0.012;
+  const logoSize = winnerAreaHeight;
+  const qrSize = winnerAreaHeight * QR_TO_LOGO_RATIO;
+  const y = h - winnerAreaHeight * 2 - RESULT_BOTTOM_GAP;
 
-  const inner = (logo ? logoSize : 0) + (qr ? qrSize : 0) + (logo && qr ? gap : 0);
-  const cardW = Math.max(logoSize, qrSize) + pad * 2;
-  const cardH = inner + pad * 2;
-  const x = w - cardW - h * 0.03;
-  const y = h - cardH - h * 0.03;
-
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
-  fillRounded(ctx, x, y, cardW, cardH, Math.min(12, h * 0.014));
-
-  let cy = y + pad;
-  const cx = x + cardW / 2;
-
-  if (logo) {
-    ctx.drawImage(logo, cx - logoSize / 2, cy, logoSize, logoSize);
-    cy += logoSize + gap;
-  }
+  let x = w - RESULT_RIGHT_MARGIN;
   if (qr) {
-    ctx.drawImage(qr, cx - qrSize / 2, cy, qrSize, qrSize);
+    x -= qrSize;
+    ctx.drawImage(qr, x, y + logoSize - qrSize, qrSize, qrSize);
+  }
+  if (logo) {
+    x -= logoSize + (qr ? RESULT_GAP : 0);
+    ctx.drawImage(logo, x, y, logoSize, logoSize);
   }
 }
 
@@ -158,14 +153,4 @@ function drawSpaced(ctx: CanvasRenderingContext2D, text: string, cx: number, cy:
     x += widths[i] + spacing;
   });
   ctx.textAlign = prevAlign;
-}
-
-function fillRounded(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
-  ctx.beginPath();
-  if (typeof ctx.roundRect === 'function') {
-    ctx.roundRect(x, y, w, h, r);
-  } else {
-    ctx.rect(x, y, w, h);
-  }
-  ctx.fill();
 }

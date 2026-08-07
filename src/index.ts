@@ -11,12 +11,11 @@ const roulette = new Roulette();
 const isLocalhost = ['localhost', '127.0.0.1'].includes(location.hostname);
 const adService = new AdService(isLocalhost ? 'http://localhost:3000' : 'https://marblerouletteshop.com');
 
-adService.fetchAds();
+adService.init();
 
 (window as any).roulette = roulette;
 (window as any).options = options;
 const PREROLL_MS = 1500;
-const RESULT_MS = 3000;
 
 function once(fn: () => void): () => void {
   let called = false;
@@ -62,7 +61,6 @@ function once(fn: () => void): () => void {
   showResult() {
     try {
       roulette.showAdOverlay('result');
-      window.setTimeout(() => roulette.hideAdOverlay(), RESULT_MS);
     } catch (e) {
       console.error('[ads] 결과 화면 광고 표시 실패', e);
     }

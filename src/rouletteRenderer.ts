@@ -1,6 +1,6 @@
 import { type AdOverlayMode, type AdOverlayState, drawAdOverlay } from './adRenderer';
 import type { Camera } from './camera';
-import { canvasHeight, canvasWidth, initialZoom, Themes } from './data/constants';
+import { canvasHeight, canvasWidth, initialZoom, Themes, winnerAreaHeight } from './data/constants';
 import type { StageDef } from './data/maps';
 import type { GameObject } from './gameObject';
 import { KeywordService } from './keywordService';
@@ -164,9 +164,14 @@ export class RouletteRenderer {
     }
   }
 
-  private renderAdOverlay(): void {
+  private renderAdOverlay(renderParameters: RenderParameters): void {
     const overlay = this._adOverlay;
     if (!overlay) return;
+
+    if (overlay.mode === 'result' && !renderParameters.winner) {
+      this.hideAdOverlay();
+    }
+
     try {
       const alive = drawAdOverlay(this.ctx, this._canvas.width, this._canvas.height, overlay, {
         square: this._adImageCache.get(overlay.ad.square),
@@ -229,7 +234,7 @@ export class RouletteRenderer {
     uiObjects.forEach((obj) => obj.render(this.ctx, renderParameters, this._canvas.width, this._canvas.height));
     renderParameters.particleManager.render(this.ctx);
     this.renderWinner(renderParameters);
-    this.renderAdOverlay();
+    this.renderAdOverlay(renderParameters);
   }
 
   private renderEntities(entities: MapEntityState[]) {
@@ -300,12 +305,17 @@ export class RouletteRenderer {
     if (!winner) return;
     this.ctx.save();
     this.ctx.fillStyle = theme.winnerBackground;
-    this.ctx.fillRect(this._canvas.width / 2, this._canvas.height - 168, this._canvas.width / 2, 168);
+    this.ctx.fillRect(
+      this._canvas.width / 2,
+      this._canvas.height - winnerAreaHeight,
+      this._canvas.width / 2,
+      winnerAreaHeight
+    );
 
     // Draw marble image or colored circle
     const marbleSize = 100;
     const marbleCenterX = this._canvas.width - marbleSize / 2 - 20;
-    const marbleCenterY = this._canvas.height - 168 / 2;
+    const marbleCenterY = this._canvas.height - winnerAreaHeight / 2;
     const marbleImage = this.getMarbleImage(winner.name);
 
     if (marbleImage) {
