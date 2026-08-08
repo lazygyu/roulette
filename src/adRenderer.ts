@@ -3,11 +3,19 @@ import type { AdCreative } from './types/Ad.type';
 
 export type AdOverlayMode = 'preroll' | 'result';
 
+export interface AdRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export interface AdOverlayState {
   mode: AdOverlayMode;
   ad: AdCreative;
   since: number;
   endingSince?: number;
+  clickRect?: AdRect;
 }
 
 export interface AdImages {
@@ -15,10 +23,12 @@ export interface AdImages {
   qr?: HTMLImageElement;
 }
 
-const RESULT_RIGHT_MARGIN = 80;
-const RESULT_GAP = 10;
-const RESULT_BOTTOM_GAP = 5;
-const QR_TO_LOGO_RATIO = 0.6;
+const RESULT_GAP = 16;
+const RESULT_NAME_RATIO = 0.13;
+const RESULT_BAND_PADDING = 12;
+const RESULT_BAND_COLOR = 'rgba(0, 0, 0, 0.75)';
+const RESULT_LABEL_INSET = 12;
+const QR_TO_LOGO_RATIO = 0.5;
 
 const FADE_IN_MS = 250;
 const FADE_OUT_MS = 200;
@@ -56,7 +66,7 @@ export function drawAdOverlay(
   if (state.mode === 'preroll') {
     drawPreroll(ctx, w, h, state.ad, images);
   } else {
-    drawResult(ctx, w, h, images);
+    state.clickRect = drawResult(ctx, w, h, state.ad, images);
   }
 
   ctx.restore();
@@ -69,16 +79,13 @@ function drawPreroll(ctx: CanvasRenderingContext2D, w: number, h: number, ad: Ad
 
   const provideSize = clamp(h * 0.04, 14, 52);
   const sponsorSize = clamp(h * 0.026, 14, 30);
-  const qrSize = Math.min(h * 0.16, 240);
-  const logoBase = Math.min(w * 0.3, h * 0.34, 360);
-  const logoSize = Math.min(Math.max(logoBase, qrSize * 1.4), w * 0.72);
+  const logoSize = Math.min(w * 0.3, h * 0.34, 360);
   const labelSize = clamp(h * 0.013, 9, 14);
   const gap = h * 0.022;
 
   const logo = ready(images.square) ? images.square : undefined;
-  const qr = ready(images.qr) ? images.qr : undefined;
 
-  const parts = [provideSize, sponsorSize, logo ? logoSize : 0, qr ? qrSize : 0, labelSize];
+  const parts = [provideSize, sponsorSize, logo ? logoSize : 0, labelSize];
   const total = parts.reduce((a, b) => a + b, 0) + gap * (parts.filter((p) => p > 0).length - 1);
 
   let y = (h - total) / 2;
@@ -103,37 +110,61 @@ function drawPreroll(ctx: CanvasRenderingContext2D, w: number, h: number, ad: Ad
     y += logoSize + gap;
   }
 
-  if (qr) {
-    const pad = qrSize * 0.04;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(cx - qrSize / 2 - pad, y - pad, qrSize + pad * 2, qrSize + pad * 2);
-    ctx.drawImage(qr, cx - qrSize / 2, y, qrSize, qrSize);
-    y += qrSize + gap;
-  }
-
   ctx.font = `${labelSize}px ${SANS}`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
   ctx.fillText('광고', cx, y + labelSize / 2);
 }
 
-function drawResult(ctx: CanvasRenderingContext2D, w: number, h: number, images: AdImages): void {
+function drawResult(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  ad: AdCreative,
+  images: AdImages
+): AdRect | undefined {
   const logo = ready(images.square) ? images.square : undefined;
   const qr = ready(images.qr) ? images.qr : undefined;
-  if (!logo && !qr) return;
+  if (!logo && !qr) return undefined;
 
   const logoSize = winnerAreaHeight;
   const qrSize = winnerAreaHeight * QR_TO_LOGO_RATIO;
-  const y = h - winnerAreaHeight * 2 - RESULT_BOTTOM_GAP;
+  const bandH = logoSize + RESULT_BAND_PADDING * 2;
+  const bandY = (h - bandH) / 2;
+  const contentY = bandY + RESULT_BAND_PADDING;
 
-  let x = w - RESULT_RIGHT_MARGIN;
-  if (qr) {
-    x -= qrSize;
-    ctx.drawImage(qr, x, y + logoSize - qrSize, qrSize, qrSize);
-  }
+  ctx.fillStyle = RESULT_BAND_COLOR;
+  ctx.fillRect(0, bandY, w, bandH);
+
+  const logoX = (w - logoSize) / 2;
+
+  let clickRect: AdRect | undefined;
   if (logo) {
-    x -= logoSize + (qr ? RESULT_GAP : 0);
-    ctx.drawImage(logo, x, y, logoSize, logoSize);
+    ctx.drawImage(logo, logoX, contentY, logoSize, logoSize);
+    clickRect = { x: logoX, y: contentY, w: logoSize, h: logoSize };
   }
+
+  const colX = logoX + logoSize + RESULT_GAP;
+  const nameSize = logoSize * RESULT_NAME_RATIO;
+
+  ctx.font = `600 ${nameSize}px ${SANS}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  const ascent = ctx.measureText(ad.advertiser).actualBoundingBoxAscent || nameSize * 0.8;
+  ctx.fillText(ad.advertiser, colX, contentY + ascent);
+
+  if (qr) {
+    ctx.drawImage(qr, colX, contentY + logoSize - qrSize, qrSize, qrSize);
+  }
+
+  const labelSize = clamp(h * 0.013, 9, 14);
+  ctx.font = `${labelSize}px ${SANS}`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('광고', RESULT_LABEL_INSET, bandY + bandH - RESULT_LABEL_INSET);
+
+  return clickRect;
 }
 
 function clamp(v: number, min: number, max: number): number {

@@ -293,6 +293,15 @@ export class Roulette extends EventTarget {
     canvas.addEventListener('contextmenu', (e) => {
       e.preventDefault();
     });
+
+    canvas.addEventListener('click', (e) => {
+      const link = this.adLinkAt(e);
+      if (link) window.open(link, '_blank', 'noopener');
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      canvas.style.cursor = this.adLinkAt(e) ? 'pointer' : '';
+    });
   }
 
   private _loadMap() {
@@ -309,6 +318,15 @@ export class Roulette extends EventTarget {
     this._winner = null;
     this._winners = [];
     this._marbles = [];
+  }
+
+  public async startRecording() {
+    if (!this._autoRecording) return;
+    try {
+      await this._recorder.start();
+    } catch (e) {
+      console.error('recording failed to start', e);
+    }
   }
 
   public start() {
@@ -347,6 +365,11 @@ export class Roulette extends EventTarget {
 
   public hideAdOverlay() {
     this._renderer.hideAdOverlay();
+  }
+
+  private adLinkAt(e: MouseEvent): string | null {
+    const sizeFactor = this._renderer.sizeFactor;
+    return this._renderer.getAdLinkAt(e.offsetX * sizeFactor, e.offsetY * sizeFactor);
   }
 
   public setTheme(themeName: keyof typeof Themes) {

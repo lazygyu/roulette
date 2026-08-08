@@ -40,23 +40,25 @@ function once(fn: () => void): () => void {
       ad = null;
     }
 
-    if (!ad) {
-      start();
-      return;
-    }
+    roulette.startRecording().then(() => {
+      if (!ad) {
+        start();
+        return;
+      }
 
-    try {
-      roulette.showAdOverlay('preroll');
-    } catch (e) {
-      console.error('[ads] 프리롤 표시 실패, 바로 시작합니다', e);
-      start();
-      return;
-    }
+      try {
+        roulette.showAdOverlay('preroll');
+      } catch (e) {
+        console.error('[ads] 프리롤 표시 실패, 바로 시작합니다', e);
+        start();
+        return;
+      }
 
-    window.setTimeout(() => {
-      roulette.hideAdOverlay();
-      start();
-    }, PREROLL_MS);
+      window.setTimeout(() => {
+        roulette.hideAdOverlay();
+        start();
+      }, PREROLL_MS);
+    });
   },
   showResult() {
     try {

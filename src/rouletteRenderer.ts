@@ -154,8 +154,20 @@ export class RouletteRenderer {
   }
 
   showAdOverlay(mode: AdOverlayMode): void {
-    if (!this._ad) return;
+    if (!this._ad || !this._ad.slots?.includes(mode)) return;
     this._adOverlay = { mode, ad: this._ad, since: performance.now(), endingSince: undefined };
+  }
+
+  getAdLinkAt(x: number, y: number): string | null {
+    const overlay = this._adOverlay;
+    if (!overlay || overlay.endingSince !== undefined) return null;
+
+    const rect = overlay.clickRect;
+    const link = overlay.ad.linkUrl;
+    if (!rect || !link) return null;
+
+    const inside = x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h;
+    return inside ? link : null;
   }
 
   hideAdOverlay(): void {
@@ -186,7 +198,7 @@ export class RouletteRenderer {
 
   private renderAdBoards(stage: StageDef): void {
     const ad = this._ad;
-    if (!ad || !stage.adBoards?.length) return;
+    if (!ad || !ad.slots?.includes('goal') || !stage.adBoards?.length) return;
 
     const img = this._adImageCache.get(ad.wide);
     if (!img?.complete || img.naturalWidth === 0) return;
