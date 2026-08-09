@@ -15,8 +15,12 @@ export class VideoRecorder {
     });
   }
 
+  public get isRecording() {
+    return this.mediaRecorder.state === 'recording';
+  }
+
   public async start() {
-    this.stopping = false;
+    if (this.isRecording) return;
     return new Promise<void>((rs) => {
       this.chunks = [];
       this.mediaRecorder.ondataavailable = (e: BlobEvent) => {
@@ -42,7 +46,6 @@ export class VideoRecorder {
   }
 
   public stop() {
-    this.stopping = true;
     if (this.mediaRecorder.state === 'recording') {
       this.mediaRecorder.stop();
     }
