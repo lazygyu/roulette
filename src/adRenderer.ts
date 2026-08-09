@@ -139,10 +139,8 @@ function drawResult(
 
   const logoX = (w - logoSize) / 2;
 
-  let clickRect: AdRect | undefined;
   if (logo) {
     ctx.drawImage(logo, logoX, contentY, logoSize, logoSize);
-    clickRect = { x: logoX, y: contentY, w: logoSize, h: logoSize };
   }
 
   const colX = logoX + logoSize + RESULT_GAP;
@@ -152,8 +150,10 @@ function drawResult(
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
-  const ascent = ctx.measureText(ad.advertiser).actualBoundingBoxAscent || nameSize * 0.8;
+  const nameMetrics = ctx.measureText(ad.advertiser);
+  const ascent = nameMetrics.actualBoundingBoxAscent || nameSize * 0.8;
   ctx.fillText(ad.advertiser, colX, contentY + ascent);
+  let colWidth = nameMetrics.width;
 
   const qrTop = qr ? contentY + logoSize - qrSize : contentY + logoSize;
   if (ad.tagline) {
@@ -161,12 +161,22 @@ function drawResult(
     ctx.font = `${taglineSize}px ${SANS}`;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
     ctx.textBaseline = 'top';
+    colWidth = Math.max(colWidth, ctx.measureText(ad.tagline).width);
     ctx.fillText(ad.tagline, colX, contentY + nameSize + taglineSize * RESULT_TAGLINE_GAP_EM);
   }
 
   if (qr) {
     ctx.drawImage(qr, colX, qrTop, qrSize, qrSize);
+    colWidth = Math.max(colWidth, qrSize);
   }
+
+  const clickLeft = logo ? logoX : colX;
+  const clickRect: AdRect = {
+    x: clickLeft,
+    y: contentY,
+    w: colX + colWidth - clickLeft,
+    h: logoSize,
+  };
 
   const labelSize = clamp(h * 0.013, 9, 14);
   ctx.font = `${labelSize}px ${SANS}`;
