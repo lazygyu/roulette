@@ -1,5 +1,5 @@
 import { winnerAreaHeight } from './data/constants';
-import type { AdCreative } from './types/Ad.type';
+import type { RoundAd } from './types/Ad.type';
 
 export type AdOverlayMode = 'preroll' | 'result';
 
@@ -12,7 +12,7 @@ export interface AdRect {
 
 export interface AdOverlayState {
   mode: AdOverlayMode;
-  ad: AdCreative;
+  ad: RoundAd;
   since: number;
   endingSince?: number;
   clickRect?: AdRect;
@@ -25,6 +25,8 @@ export interface AdImages {
 
 const RESULT_GAP = 16;
 const RESULT_NAME_RATIO = 0.13;
+const RESULT_TAGLINE_RATIO = 0.1;
+const RESULT_TAGLINE_GAP_EM = 0.8;
 const RESULT_BAND_PADDING = 12;
 const RESULT_BAND_COLOR = 'rgba(0, 0, 0, 0.75)';
 const RESULT_LABEL_INSET = 12;
@@ -73,7 +75,7 @@ export function drawAdOverlay(
   return true;
 }
 
-function drawPreroll(ctx: CanvasRenderingContext2D, w: number, h: number, ad: AdCreative, images: AdImages): void {
+function drawPreroll(ctx: CanvasRenderingContext2D, w: number, h: number, ad: RoundAd, images: AdImages): void {
   ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
   ctx.fillRect(0, 0, w, h);
 
@@ -119,7 +121,7 @@ function drawResult(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
-  ad: AdCreative,
+  ad: RoundAd,
   images: AdImages
 ): AdRect | undefined {
   const logo = ready(images.square) ? images.square : undefined;
@@ -153,8 +155,17 @@ function drawResult(
   const ascent = ctx.measureText(ad.advertiser).actualBoundingBoxAscent || nameSize * 0.8;
   ctx.fillText(ad.advertiser, colX, contentY + ascent);
 
+  const qrTop = qr ? contentY + logoSize - qrSize : contentY + logoSize;
+  if (ad.tagline) {
+    const taglineSize = logoSize * RESULT_TAGLINE_RATIO;
+    ctx.font = `${taglineSize}px ${SANS}`;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.textBaseline = 'top';
+    ctx.fillText(ad.tagline, colX, contentY + nameSize + taglineSize * RESULT_TAGLINE_GAP_EM);
+  }
+
   if (qr) {
-    ctx.drawImage(qr, colX, contentY + logoSize - qrSize, qrSize, qrSize);
+    ctx.drawImage(qr, colX, qrTop, qrSize, qrSize);
   }
 
   const labelSize = clamp(h * 0.013, 9, 14);

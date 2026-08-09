@@ -6,7 +6,7 @@ import type { GameObject } from './gameObject';
 import { KeywordService } from './keywordService';
 import type { Marble } from './marble';
 import type { ParticleManager } from './particleManager';
-import type { AdCreative } from './types/Ad.type';
+import type { RoundAd } from './types/Ad.type';
 import type { ColorTheme } from './types/ColorTheme';
 import type { MapEntityState } from './types/MapEntity.type';
 import type { VectorLike } from './types/VectorLike';
@@ -33,7 +33,7 @@ export class RouletteRenderer {
 
   protected _images: { [key: string]: HTMLImageElement } = {};
   protected _theme: ColorTheme = Themes.dark;
-  private _ad: AdCreative | null = null;
+  private _ad: RoundAd | null = null;
   private _adImageCache: Map<string, HTMLImageElement> = new Map();
   private _adOverlay: AdOverlayState | null = null;
   protected _keywordService: KeywordService;
@@ -135,7 +135,7 @@ export class RouletteRenderer {
   protected onBeforeEntities(): void {}
   protected onAfterScene(): void {}
 
-  setAd(ad: AdCreative | null): void {
+  setAd(ad: RoundAd | null): void {
     this._ad = ad;
     if (!ad) return;
     for (const src of [ad.wide, ad.square, ad.qrImage]) {
@@ -186,7 +186,7 @@ export class RouletteRenderer {
 
     try {
       const alive = drawAdOverlay(this.ctx, this._canvas.width, this._canvas.height, overlay, {
-        square: this._adImageCache.get(overlay.ad.square),
+        square: overlay.ad.square ? this._adImageCache.get(overlay.ad.square) : undefined,
         qr: overlay.ad.qrImage ? this._adImageCache.get(overlay.ad.qrImage) : undefined,
       });
       if (!alive) this._adOverlay = null;
@@ -200,6 +200,7 @@ export class RouletteRenderer {
     const ad = this._ad;
     if (!ad || !ad.slots?.includes('goal') || !stage.adBoards?.length) return;
 
+    if (!ad.wide) return;
     const img = this._adImageCache.get(ad.wide);
     if (!img?.complete || img.naturalWidth === 0) return;
 

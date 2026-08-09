@@ -1221,7 +1221,7 @@ export const stages: StageDef[] = [
     zoomY: 234.5,
     adBoards: [
       { x: 11.5, y: 12, w: 16, h: 4 },
-      { x: 11.5, y: 140, w: 16, h: 4 },
+      { x: 11.5, y: 155, w: 16, h: 4 },
     ],
     entities: [
       {

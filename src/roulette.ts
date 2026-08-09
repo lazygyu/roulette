@@ -12,7 +12,7 @@ import { Box2dPhysics } from './physics-box2d';
 import { RankRenderer } from './rankRenderer';
 import { RouletteRenderer } from './rouletteRenderer';
 import { SkillEffect } from './skillEffect';
-import type { AdCreative } from './types/Ad.type';
+import type { RoundAd } from './types/Ad.type';
 import type { ColorTheme } from './types/ColorTheme';
 import type { MouseEventHandlerName, MouseEventName } from './types/mouseEvents.type';
 import type { UIObject } from './UIObject';
@@ -355,7 +355,7 @@ export class Roulette extends EventTarget {
     this._speed = value;
   }
 
-  public setAd(ad: AdCreative | null) {
+  public setAd(ad: RoundAd | null) {
     this._renderer.setAd(ad);
   }
 
