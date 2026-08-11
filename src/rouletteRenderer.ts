@@ -156,9 +156,13 @@ export class RouletteRenderer {
   setAd(ad: RoundAd | null): void {
     this._ad = ad;
     if (!ad) return;
-    for (const src of [ad.wide, ad.square, ad.qrImage]) {
+    for (const src of [...Object.values(ad.creatives), ad.qrImage]) {
       if (src) this.cacheAdImage(src);
     }
+  }
+
+  private adImage(src?: string): HTMLImageElement | undefined {
+    return src ? this._adImageCache.get(src) : undefined;
   }
 
   private cacheAdImage(src: string): HTMLImageElement {
@@ -212,8 +216,9 @@ export class RouletteRenderer {
         this._sceneCanvas.height,
         overlay,
         {
-          square: overlay.ad.square ? this._adImageCache.get(overlay.ad.square) : undefined,
-          qr: overlay.ad.qrImage ? this._adImageCache.get(overlay.ad.qrImage) : undefined,
+          preroll: this.adImage(overlay.ad.creatives.preroll),
+          result: this.adImage(overlay.ad.creatives.result),
+          qr: this.adImage(overlay.ad.qrImage),
         },
       );
       this._displayCtx.restore();
@@ -229,8 +234,7 @@ export class RouletteRenderer {
     const ad = this._ad;
     if (!ad || !ad.slots?.includes('goal') || !stage.adBoards?.length) return;
 
-    if (!ad.wide) return;
-    const img = this._adImageCache.get(ad.wide);
+    const img = this.adImage(ad.creatives.goal);
     if (!img?.complete || img.naturalWidth === 0) return;
 
     try {
