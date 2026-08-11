@@ -19,7 +19,10 @@ export interface AdOverlayState {
 }
 
 export interface AdImages {
-  square?: HTMLImageElement;
+  /** 프리롤 카드에 들어가는 로고 */
+  preroll?: HTMLImageElement;
+  /** 결과 화면 광고 소재 */
+  result?: HTMLImageElement;
   qr?: HTMLImageElement;
 }
 
@@ -85,7 +88,7 @@ function drawPreroll(ctx: CanvasRenderingContext2D, w: number, h: number, ad: Ro
   const labelSize = clamp(h * 0.013, 9, 14);
   const gap = h * 0.022;
 
-  const logo = ready(images.square) ? images.square : undefined;
+  const logo = ready(images.preroll) ? images.preroll : undefined;
 
   const parts = [provideSize, sponsorSize, logo ? logoSize : 0, labelSize];
   const total = parts.reduce((a, b) => a + b, 0) + gap * (parts.filter((p) => p > 0).length - 1);
@@ -124,7 +127,7 @@ function drawResult(
   ad: RoundAd,
   images: AdImages
 ): AdRect | undefined {
-  const logo = ready(images.square) ? images.square : undefined;
+  const logo = ready(images.result) ? images.result : undefined;
   const qr = ready(images.qr) ? images.qr : undefined;
   if (!logo && !qr) return undefined;
 

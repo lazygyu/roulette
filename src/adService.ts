@@ -1,4 +1,4 @@
-import type { AdCreative, AdResponse, RoundAd } from './types/Ad.type';
+import type { AdCreative, AdCreativeMap, AdResponse, AdSlotKey, RoundAd } from './types/Ad.type';
 
 const REFRESH_INTERVAL = 60000; // 60 seconds
 
@@ -46,12 +46,19 @@ export class AdService {
       if (!res.ok) return;
       const data = (await res.json()) as AdResponse;
       const ads = Array.isArray(data.ads) ? data.ads : [];
-      this._ads = ads.map((ad) => ({
-        ...ad,
-        wide: (ad.wide ?? []).map((p) => this.resolve(p)),
-        square: (ad.square ?? []).map((p) => this.resolve(p)),
-        qrImage: ad.qrImage ? this.resolve(ad.qrImage) : undefined,
-      }));
+      this._ads = ads.map((ad) => {
+        // 소재를 슬롯별로 나누기 전의 서버는 정사각 한 장을 프리롤과 결과가 함께 썼다
+        const raw = ad.creatives ?? { goal: ad.wide, preroll: ad.square, result: ad.square };
+        const creatives: AdCreativeMap<string[]> = {};
+        for (const [slot, list] of Object.entries(raw)) {
+          if (list?.length) creatives[slot as AdSlotKey] = list.map((p) => this.resolve(p));
+        }
+        return {
+          ...ad,
+          creatives,
+          qrImage: ad.qrImage ? this.resolve(ad.qrImage) : undefined,
+        };
+      });
     } catch {
       this._ads = [];
     }
@@ -73,7 +80,11 @@ export class AdService {
     const creativeCursor = this._creativeCursors.get(ad.id) ?? randomStart();
     this._creativeCursors.set(ad.id, creativeCursor + 1);
 
-    const pick = (list: string[]) => (list.length > 0 ? list[creativeCursor % list.length] : undefined);
+    // 슬롯마다 장수가 달라 같은 커서라도 각자의 주기로 돈다 (프리롤은 1장이라 늘 같다)
+    const creatives: AdCreativeMap<string> = {};
+    for (const [slot, list] of Object.entries(ad.creatives)) {
+      if (list?.length) creatives[slot as AdSlotKey] = list[creativeCursor % list.length];
+    }
 
     this._current = {
       id: ad.id,
@@ -83,8 +94,7 @@ export class AdService {
       qrImage: ad.qrImage,
       linkUrl: ad.linkUrl,
       house: ad.house,
-      wide: pick(ad.wide),
-      square: pick(ad.square),
+      creatives,
     };
     return this._current;
   }
