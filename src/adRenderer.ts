@@ -40,6 +40,10 @@ const QR_TO_LOGO_RATIO = 0.5;
 const FADE_IN_MS = 250;
 const FADE_OUT_MS = 200;
 
+/** 결과 광고는 한가운데서 시작해 이만큼 뒤에 위로 비켜준다 */
+const RESULT_MOVE_DELAY_MS = 2500;
+const RESULT_MOVE_MS = 600;
+
 /** 결과 광고를 이만큼 보여준 뒤에 닫기 버튼을 내준다 */
 const CLOSE_DELAY_MS = 5000;
 const CLOSE_FADE_MS = 250;
@@ -145,7 +149,7 @@ function drawResult(
   const logoSize = winnerAreaHeight;
   const qrSize = winnerAreaHeight * QR_TO_LOGO_RATIO;
   const bandH = logoSize + RESULT_BAND_PADDING * 2;
-  const bandY = (h - bandH) / 2;
+  const bandY = resultBandY(h, bandH, elapsed);
   const contentY = bandY + RESULT_BAND_PADDING;
 
   ctx.fillStyle = RESULT_BAND_COLOR;
@@ -200,6 +204,20 @@ function drawResult(
   ctx.fillText('광고', RESULT_LABEL_INSET, bandY + bandH - RESULT_LABEL_INSET);
 
   return { click: clickRect, close: drawCloseButton(ctx, w, bandY, h, elapsed) };
+}
+
+/**
+ * 처음엔 화면 한가운데에 세워 눈에 띄게 하고, 잠깐 뒤 화면 위로 미끄러져 비켜준다.
+ * 밴드 안의 로고·텍스트·QR·닫기 버튼이 모두 이 값에서 파생되므로 여기만 움직이면 된다.
+ */
+function resultBandY(h: number, bandH: number, elapsed: number): number {
+  const center = (h - bandH) / 2;
+  const t = clamp((elapsed - RESULT_MOVE_DELAY_MS) / RESULT_MOVE_MS, 0, 1);
+  return center * (1 - easeInOut(t));
+}
+
+function easeInOut(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 }
 
 /** 밴드 오른쪽 위 구석의 닫기 버튼. 아직 나올 때가 아니면 그리지도, 누를 수도 없다 */
