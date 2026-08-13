@@ -10,7 +10,7 @@ import options from './options';
 import { ParticleManager } from './particleManager';
 import { Box2dPhysics } from './physics-box2d';
 import { RankRenderer } from './rankRenderer';
-import { RouletteRenderer } from './rouletteRenderer';
+import { type AdHit, RouletteRenderer } from './rouletteRenderer';
 import { SkillEffect } from './skillEffect';
 import type { RoundAd } from './types/Ad.type';
 import type { ColorTheme } from './types/ColorTheme';
@@ -295,12 +295,17 @@ export class Roulette extends EventTarget {
     });
 
     canvas.addEventListener('click', (e) => {
-      const link = this.adLinkAt(e);
-      if (link) window.open(link, '_blank', 'noopener');
+      const hit = this.adHitAt(e);
+      if (!hit) return;
+      if (hit.type === 'close') {
+        this.hideAdOverlay();
+      } else {
+        window.open(hit.url, '_blank', 'noopener');
+      }
     });
 
     canvas.addEventListener('pointermove', (e) => {
-      canvas.style.cursor = this.adLinkAt(e) ? 'pointer' : '';
+      canvas.style.cursor = this.adHitAt(e) ? 'pointer' : '';
     });
   }
 
@@ -367,9 +372,9 @@ export class Roulette extends EventTarget {
     this._renderer.hideAdOverlay();
   }
 
-  private adLinkAt(e: MouseEvent): string | null {
+  private adHitAt(e: MouseEvent): AdHit | null {
     const sizeFactor = this._renderer.sizeFactor;
-    return this._renderer.getAdLinkAt(e.offsetX * sizeFactor, e.offsetY * sizeFactor);
+    return this._renderer.getAdHitAt(e.offsetX * sizeFactor, e.offsetY * sizeFactor);
   }
 
   public setTheme(themeName: keyof typeof Themes) {

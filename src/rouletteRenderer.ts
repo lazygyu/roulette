@@ -1,4 +1,4 @@
-import { type AdOverlayMode, type AdOverlayState, drawAdOverlay } from './adRenderer';
+import { type AdOverlayMode, type AdOverlayState, type AdRect, drawAdOverlay } from './adRenderer';
 import type { Camera } from './camera';
 import { canvasHeight, canvasWidth, initialZoom, Themes, winnerAreaHeight } from './data/constants';
 import type { StageDef } from './data/maps';
@@ -28,6 +28,12 @@ export type RenderParameters = {
 
 const MAX_DISPLAY_WIDTH = 1920;
 const WINNER_TEXT_OFFSET = 30;
+
+export type AdHit = { type: 'close' } | { type: 'link'; url: string };
+
+function inRect(rect: AdRect | undefined, x: number, y: number): boolean {
+  return !!rect && x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h;
+}
 
 export class RouletteRenderer {
   protected _canvas!: HTMLCanvasElement;
@@ -180,16 +186,16 @@ export class RouletteRenderer {
     this._adOverlay = { mode, ad: this._ad, since: performance.now(), endingSince: undefined };
   }
 
-  getAdLinkAt(x: number, y: number): string | null {
+  getAdHitAt(x: number, y: number): AdHit | null {
     const overlay = this._adOverlay;
     if (!overlay || overlay.endingSince !== undefined) return null;
 
-    const rect = overlay.clickRect;
-    const link = overlay.ad.linkUrl;
-    if (!rect || !link) return null;
+    if (inRect(overlay.closeRect, x, y)) return { type: 'close' };
 
-    const inside = x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h;
-    return inside ? link : null;
+    const link = overlay.ad.linkUrl;
+    if (link && inRect(overlay.clickRect, x, y)) return { type: 'link', url: link };
+
+    return null;
   }
 
   hideAdOverlay(): void {
@@ -210,17 +216,11 @@ export class RouletteRenderer {
     try {
       this._displayCtx.save();
       this._displayCtx.scale(scale, scale);
-      const alive = drawAdOverlay(
-        this._displayCtx,
-        this._sceneCanvas.width,
-        this._sceneCanvas.height,
-        overlay,
-        {
-          preroll: this.adImage(overlay.ad.creatives.preroll),
-          result: this.adImage(overlay.ad.creatives.result),
-          qr: this.adImage(overlay.ad.qrImage),
-        },
-      );
+      const alive = drawAdOverlay(this._displayCtx, this._sceneCanvas.width, this._sceneCanvas.height, overlay, {
+        preroll: this.adImage(overlay.ad.creatives.preroll),
+        result: this.adImage(overlay.ad.creatives.result),
+        qr: this.adImage(overlay.ad.qrImage),
+      });
       this._displayCtx.restore();
       if (!alive) this._adOverlay = null;
     } catch (e) {
@@ -276,7 +276,7 @@ export class RouletteRenderer {
     this.onAfterScene();
 
     uiObjects.forEach((obj) =>
-      obj.render(this.ctx, renderParameters, this._sceneCanvas.width, this._sceneCanvas.height),
+      obj.render(this.ctx, renderParameters, this._sceneCanvas.width, this._sceneCanvas.height)
     );
     renderParameters.particleManager.render(this.ctx);
     this.renderWinner(renderParameters);
