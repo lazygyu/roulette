@@ -35,12 +35,14 @@ const RESULT_TAGLINE_GAP_EM = 0.8;
 const RESULT_BAND_PADDING = 12;
 const RESULT_BAND_COLOR = 'rgba(0, 0, 0, 0.75)';
 const RESULT_LABEL_INSET = 12;
+/** 좌상단으로 붙었을 때 '광고' 라벨이 로고와 겹치지 않게 비워두는 왼쪽 여백 */
+const RESULT_LABEL_GUTTER = 34;
 const QR_TO_LOGO_RATIO = 0.5;
 
 const FADE_IN_MS = 250;
 const FADE_OUT_MS = 200;
 
-/** 결과 광고는 한가운데서 시작해 이만큼 뒤에 위로 비켜준다 */
+/** 결과 광고는 한가운데 전체 폭으로 시작해, 이만큼 뒤에 좌상단으로 오므라든다 */
 const RESULT_MOVE_DELAY_MS = 2500;
 const RESULT_MOVE_MS = 600;
 
@@ -148,44 +150,54 @@ function drawResult(
 
   const logoSize = winnerAreaHeight;
   const qrSize = winnerAreaHeight * QR_TO_LOGO_RATIO;
+  const nameSize = logoSize * RESULT_NAME_RATIO;
+  const taglineSize = logoSize * RESULT_TAGLINE_RATIO;
   const bandH = logoSize + RESULT_BAND_PADDING * 2;
-  const bandY = resultBandY(h, bandH, elapsed);
+
+  // 오므라든 폭을 알아야 밴드를 먼저 깔 수 있어서, 글자 폭은 그리기 전에 재둔다
+  ctx.font = `600 ${nameSize}px ${SANS}`;
+  const nameMetrics = ctx.measureText(ad.advertiser);
+  let colWidth = nameMetrics.width;
+  if (ad.tagline) {
+    ctx.font = `${taglineSize}px ${SANS}`;
+    colWidth = Math.max(colWidth, ctx.measureText(ad.tagline).width);
+  }
+  if (qr) colWidth = Math.max(colWidth, qrSize);
+
+  const t = easeInOut(clamp((elapsed - RESULT_MOVE_DELAY_MS) / RESULT_MOVE_MS, 0, 1));
+  // 오므라들면 오른쪽 위 구석이 광고주명 자리가 되므로, 닫기 버튼 자리를 따로 비워둔다
+  const dockedW =
+    RESULT_LABEL_GUTTER + logoSize + RESULT_GAP + colWidth + RESULT_BAND_PADDING * 2 + closeButtonSize(h) + CLOSE_INSET;
+
+  const bandY = lerp((h - bandH) / 2, 0, t);
+  const bandW = lerp(w, Math.min(dockedW, w), t);
   const contentY = bandY + RESULT_BAND_PADDING;
+  const logoX = lerp((w - logoSize) / 2, RESULT_BAND_PADDING + RESULT_LABEL_GUTTER, t);
+  const colX = logoX + logoSize + RESULT_GAP;
 
   ctx.fillStyle = RESULT_BAND_COLOR;
-  ctx.fillRect(0, bandY, w, bandH);
-
-  const logoX = (w - logoSize) / 2;
+  ctx.fillRect(0, bandY, bandW, bandH);
 
   if (logo) {
     ctx.drawImage(logo, logoX, contentY, logoSize, logoSize);
   }
 
-  const colX = logoX + logoSize + RESULT_GAP;
-  const nameSize = logoSize * RESULT_NAME_RATIO;
-
   ctx.font = `600 ${nameSize}px ${SANS}`;
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
-  const nameMetrics = ctx.measureText(ad.advertiser);
   const ascent = nameMetrics.actualBoundingBoxAscent || nameSize * 0.8;
   ctx.fillText(ad.advertiser, colX, contentY + ascent);
-  let colWidth = nameMetrics.width;
 
-  const qrTop = qr ? contentY + logoSize - qrSize : contentY + logoSize;
   if (ad.tagline) {
-    const taglineSize = logoSize * RESULT_TAGLINE_RATIO;
     ctx.font = `${taglineSize}px ${SANS}`;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
     ctx.textBaseline = 'top';
-    colWidth = Math.max(colWidth, ctx.measureText(ad.tagline).width);
     ctx.fillText(ad.tagline, colX, contentY + nameSize + taglineSize * RESULT_TAGLINE_GAP_EM);
   }
 
   if (qr) {
-    ctx.drawImage(qr, colX, qrTop, qrSize, qrSize);
-    colWidth = Math.max(colWidth, qrSize);
+    ctx.drawImage(qr, colX, contentY + logoSize - qrSize, qrSize, qrSize);
   }
 
   const clickLeft = logo ? logoX : colX;
@@ -203,17 +215,15 @@ function drawResult(
   ctx.textBaseline = 'bottom';
   ctx.fillText('광고', RESULT_LABEL_INSET, bandY + bandH - RESULT_LABEL_INSET);
 
-  return { click: clickRect, close: drawCloseButton(ctx, w, bandY, h, elapsed) };
+  return { click: clickRect, close: drawCloseButton(ctx, bandW, bandY, h, elapsed) };
 }
 
-/**
- * 처음엔 화면 한가운데에 세워 눈에 띄게 하고, 잠깐 뒤 화면 위로 미끄러져 비켜준다.
- * 밴드 안의 로고·텍스트·QR·닫기 버튼이 모두 이 값에서 파생되므로 여기만 움직이면 된다.
- */
-function resultBandY(h: number, bandH: number, elapsed: number): number {
-  const center = (h - bandH) / 2;
-  const t = clamp((elapsed - RESULT_MOVE_DELAY_MS) / RESULT_MOVE_MS, 0, 1);
-  return center * (1 - easeInOut(t));
+function closeButtonSize(h: number): number {
+  return clamp(h * 0.045, 20, 34);
+}
+
+function lerp(from: number, to: number, t: number): number {
+  return from + (to - from) * t;
 }
 
 function easeInOut(t: number): number {
@@ -230,7 +240,7 @@ function drawCloseButton(
 ): AdRect | undefined {
   if (elapsed < CLOSE_DELAY_MS) return undefined;
 
-  const size = clamp(h * 0.045, 20, 34);
+  const size = closeButtonSize(h);
   const cx = w - CLOSE_INSET - size / 2;
   const cy = bandY + CLOSE_INSET + size / 2;
   const arm = size * 0.22;
