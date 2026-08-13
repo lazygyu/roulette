@@ -16,6 +16,8 @@ export interface AdOverlayState {
   since: number;
   endingSince?: number;
   clickRect?: AdRect;
+  /** 노출 후 일정 시간이 지나야 생긴다. 없으면 아직 닫을 수 없다 */
+  closeRect?: AdRect;
 }
 
 export interface AdImages {
@@ -37,6 +39,12 @@ const QR_TO_LOGO_RATIO = 0.5;
 
 const FADE_IN_MS = 250;
 const FADE_OUT_MS = 200;
+
+/** 결과 광고를 이만큼 보여준 뒤에 닫기 버튼을 내준다 */
+const CLOSE_DELAY_MS = 5000;
+const CLOSE_FADE_MS = 250;
+const CLOSE_INSET = 12;
+const CLOSE_HIT_PADDING = 8;
 
 const SERIF = `'Nanum Myeongjo', 'Noto Serif KR', AppleMyungjo, Batang, serif`;
 const SANS = `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
@@ -71,7 +79,9 @@ export function drawAdOverlay(
   if (state.mode === 'preroll') {
     drawPreroll(ctx, w, h, state.ad, images);
   } else {
-    state.clickRect = drawResult(ctx, w, h, state.ad, images);
+    const rects = drawResult(ctx, w, h, state.ad, images, now - state.since);
+    state.clickRect = rects?.click;
+    state.closeRect = rects?.close;
   }
 
   ctx.restore();
@@ -125,8 +135,9 @@ function drawResult(
   w: number,
   h: number,
   ad: RoundAd,
-  images: AdImages
-): AdRect | undefined {
+  images: AdImages,
+  elapsed: number
+): { click?: AdRect; close?: AdRect } | undefined {
   const logo = ready(images.result) ? images.result : undefined;
   const qr = ready(images.qr) ? images.qr : undefined;
   if (!logo && !qr) return undefined;
@@ -188,7 +199,47 @@ function drawResult(
   ctx.textBaseline = 'bottom';
   ctx.fillText('광고', RESULT_LABEL_INSET, bandY + bandH - RESULT_LABEL_INSET);
 
-  return clickRect;
+  return { click: clickRect, close: drawCloseButton(ctx, w, bandY, h, elapsed) };
+}
+
+/** 밴드 오른쪽 위 구석의 닫기 버튼. 아직 나올 때가 아니면 그리지도, 누를 수도 없다 */
+function drawCloseButton(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  bandY: number,
+  h: number,
+  elapsed: number
+): AdRect | undefined {
+  if (elapsed < CLOSE_DELAY_MS) return undefined;
+
+  const size = clamp(h * 0.045, 20, 34);
+  const cx = w - CLOSE_INSET - size / 2;
+  const cy = bandY + CLOSE_INSET + size / 2;
+  const arm = size * 0.22;
+
+  ctx.save();
+  ctx.globalAlpha *= Math.min(1, (elapsed - CLOSE_DELAY_MS) / CLOSE_FADE_MS);
+  ctx.beginPath();
+  ctx.arc(cx, cy, size / 2, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+  ctx.lineWidth = Math.max(1.5, size * 0.07);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx - arm, cy - arm);
+  ctx.lineTo(cx + arm, cy + arm);
+  ctx.moveTo(cx + arm, cy - arm);
+  ctx.lineTo(cx - arm, cy + arm);
+  ctx.stroke();
+  ctx.restore();
+
+  return {
+    x: cx - size / 2 - CLOSE_HIT_PADDING,
+    y: cy - size / 2 - CLOSE_HIT_PADDING,
+    w: size + CLOSE_HIT_PADDING * 2,
+    h: size + CLOSE_HIT_PADDING * 2,
+  };
 }
 
 function clamp(v: number, min: number, max: number): number {
