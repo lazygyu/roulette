@@ -12,6 +12,9 @@ export class AdService {
   private _apiBase: string;
   private _intervalId: number | null = null;
 
+  /** 목록이 새로 들어올 때마다 불린다. 소재를 미리 받아두는 데 쓴다 */
+  onUpdate?: () => void;
+
   constructor(apiBase: string) {
     this._apiBase = apiBase.replace(/\/$/, '');
   }
@@ -62,10 +65,26 @@ export class AdService {
     } catch {
       this._ads = [];
     }
+    this.onUpdate?.();
   }
 
   private resolve(path: string): string {
     return path.startsWith('/') ? `${this._apiBase}${path}` : path;
+  }
+
+  /**
+   * 다음 `pickForRound()`가 고를 광고의 소재 URL 전부. 커서는 건드리지 않는다.
+   * 어느 장이 뽑힐지는 슬롯별 커서에 달려 있어, 그 광고 것은 다 받아둔다.
+   */
+  nextUrls(): string[] {
+    if (this._ads.length === 0) return [];
+    const ad = this._ads[this._cursor % this._ads.length];
+    const urls: string[] = [];
+    for (const list of Object.values(ad.creatives)) {
+      if (list) urls.push(...list);
+    }
+    if (ad.qrImage) urls.push(ad.qrImage);
+    return urls;
   }
 
   pickForRound(): RoundAd | null {

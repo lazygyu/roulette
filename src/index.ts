@@ -11,6 +11,9 @@ const roulette = new Roulette();
 const isLocalhost = ['localhost', '127.0.0.1'].includes(location.hostname);
 const adService = new AdService(isLocalhost ? 'http://localhost:3000' : 'https://marblerouletteshop.com');
 
+// 소재를 시작 버튼 누른 뒤에 받으면 프리롤이 로고 없이 떴다가 늦게 채워진다. 미리 받아둔다
+const preloadNextAd = () => roulette.preloadAdImages(adService.nextUrls());
+adService.onUpdate = preloadNextAd;
 adService.init();
 
 (window as any).roulette = roulette;
@@ -35,6 +38,7 @@ function once(fn: () => void): () => void {
       ad = adService.pickForRound();
       roulette.setAd(ad);
       if (ad) adService.trackImpression();
+      preloadNextAd();
     } catch (e) {
       console.error('[ads] 광고 준비 실패, 광고 없이 진행합니다', e);
       ad = null;

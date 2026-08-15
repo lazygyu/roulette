@@ -162,7 +162,12 @@ export class RouletteRenderer {
   setAd(ad: RoundAd | null): void {
     this._ad = ad;
     if (!ad) return;
-    for (const src of [...Object.values(ad.creatives), ad.qrImage]) {
+    this.preloadAdImages([...Object.values(ad.creatives), ad.qrImage]);
+  }
+
+  /** 소재를 미리 받아둔다. 여기서 만든 엘리먼트를 나중에 그대로 그리므로 캐시 헤더와 무관하게 즉시 뜬다 */
+  preloadAdImages(srcs: (string | undefined)[]): void {
+    for (const src of srcs) {
       if (src) this.cacheAdImage(src);
     }
   }

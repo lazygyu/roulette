@@ -364,6 +364,10 @@ export class Roulette extends EventTarget {
     this._renderer.setAd(ad);
   }
 
+  public preloadAdImages(srcs: (string | undefined)[]) {
+    this._renderer.preloadAdImages(srcs);
+  }
+
   public showAdOverlay(mode: 'preroll' | 'result') {
     this._renderer.showAdOverlay(mode);
   }
