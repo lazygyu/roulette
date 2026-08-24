@@ -8,8 +8,7 @@
     "@parcel/transformer-sass": "^2.16.4",
     "@parcel/transformer-webmanifest": "^2.16.4",
     "parcel": "^2.16.4",
-    "typescript": "^5.6.3",
-    "workbox-build": "7.4.0"
+    "typescript": "^5.6.3"
   },
   "scripts": {
     "lint": "biome check --fix src/",
