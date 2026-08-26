@@ -5,6 +5,8 @@ import type { StageDef } from './data/maps';
 import type { GameObject } from './gameObject';
 import { KeywordService } from './keywordService';
 import type { Marble } from './marble';
+import { MINIMAP_INSET, MINIMAP_WIDTH } from './minimap';
+import type { WinnerRange } from './options';
 import type { ParticleManager } from './particleManager';
 import type { RoundAd } from './types/Ad.type';
 import type { ColorTheme } from './types/ColorTheme';
@@ -20,14 +22,20 @@ export type RenderParameters = {
   winners: Marble[];
   particleManager: ParticleManager;
   effects: GameObject[];
-  winnerRank: number;
-  winner: Marble | null;
+  winnerRange: WinnerRange;
+  /** 진행 중에는 null, 당첨자가 모두 확정되면 당첨자 배열 */
+  result: Marble[] | null;
   size: VectorLike;
   theme: ColorTheme;
 };
 
 const MAX_DISPLAY_WIDTH = 1920;
 const WINNER_TEXT_OFFSET = 30;
+const RESULT_PANEL_MAX_WIDTH_RATIO = 0.9;
+const RESULT_PANEL_MAX_HEIGHT_RATIO = 0.8;
+const RESULT_COLUMN_MAX_WIDTH = 280;
+const PROGRESS_MAX_WIDTH_RATIO = 0.3;
+const PROGRESS_ACCENT = 'rgba(255, 215, 0, 0.8)';
 
 export type AdHit = { type: 'close' } | { type: 'link'; url: string };
 
@@ -213,7 +221,7 @@ export class RouletteRenderer {
     const overlay = this._adOverlay;
     if (!overlay) return;
 
-    if (overlay.mode === 'result' && !renderParameters.winner) {
+    if (overlay.mode === 'result' && !renderParameters.result) {
       this.hideAdOverlay();
     }
 
@@ -284,7 +292,8 @@ export class RouletteRenderer {
       obj.render(this.ctx, renderParameters, this._sceneCanvas.width, this._sceneCanvas.height)
     );
     renderParameters.particleManager.render(this.ctx);
-    this.renderWinner(renderParameters);
+    this.renderWinnerProgress(renderParameters);
+    this.renderResult(renderParameters);
 
     this._displayCtx.drawImage(this._sceneCanvas, 0, 0, this._canvas.width, this._canvas.height);
     this.renderAdOverlay(renderParameters);
@@ -337,15 +346,16 @@ export class RouletteRenderer {
     effects.forEach((effect) => effect.render(this.ctx, camera.zoom * initialZoom, this._theme));
   }
 
-  private renderMarbles({ marbles, camera, winnerRank, winners, size }: RenderParameters) {
-    const winnerIndex = winnerRank - winners.length;
+  private renderMarbles({ marbles, camera, winnerRange, winners, size }: RenderParameters) {
+    const firstIndex = winnerRange.start - winners.length;
+    const lastIndex = winnerRange.end - winners.length;
 
     const viewPort = { x: camera.x, y: camera.y, w: size.x, h: size.y, zoom: camera.zoom * initialZoom };
     marbles.forEach((marble, i) => {
       marble.render(
         this.ctx,
         camera.zoom * initialZoom,
-        i === winnerIndex,
+        i >= firstIndex && i <= lastIndex,
         false,
         this.getMarbleImage(marble.name),
         viewPort,
@@ -354,8 +364,174 @@ export class RouletteRenderer {
     });
   }
 
-  private renderWinner({ winner, theme }: RenderParameters) {
-    if (!winner) return;
+  private renderResult(params: RenderParameters) {
+    const result = params.result;
+    if (!result) return;
+    // 1명이면 기존 하단 Winner 표시, 여러명이면 화면 중앙 당첨자 목록 팝업
+    if (result.length === 1) {
+      this.renderWinner(result[0], params.theme);
+    } else {
+      this.renderWinnerList(result, params);
+    }
+  }
+
+  /**
+   * 여러명 모드에서 확정된 당첨자를 좌측 하단에 상시 표시한다.
+   * 우측은 랭킹 리스트가 구슬 수만큼 내려오므로 겹치지 않는 좌측 하단에 둔다.
+   */
+  private renderWinnerProgress({ winners, winnerRange, result, theme }: RenderParameters) {
+    const { start, end } = winnerRange;
+    if (end <= start) return; // 1명 추첨은 기존 하단 Winner 표시를 쓴다
+
+    const ctx = this.ctx;
+    const w = this._sceneCanvas.width;
+    const h = this._sceneCanvas.height;
+
+    const lineHeight = Math.min(24, Math.max(14, h * 0.042));
+    const pad = lineHeight * 0.6;
+    const rankWidth = lineHeight * 1.9;
+    const headerFont = `bold ${lineHeight * 0.7}px sans-serif`;
+    const rankFont = `${lineHeight * 0.6}px sans-serif`;
+    const nameFont = `bold ${lineHeight * 0.72}px sans-serif`;
+
+    // 확정 전에는 골인한 당첨자만, 확정 후에는 최종 명단(조기 확정분 포함)을 쓴다
+    const confirmed = result ?? winners.slice(start, end + 1);
+    const header = `Winners ${confirmed.length} / ${end - start + 1}`;
+
+    // 화면을 넘기면 오래된 쪽을 접는다. 전체 명단은 어차피 중앙 팝업에서 보여준다
+    const maxRows = Math.max(1, Math.floor((h * 0.55) / lineHeight) - 2);
+    const hidden = Math.max(0, confirmed.length - maxRows);
+    const shown = confirmed.slice(hidden);
+    const foldLabel = `+${hidden} more`;
+
+    ctx.save();
+
+    ctx.font = headerFont;
+    let contentW = ctx.measureText(header).width;
+    ctx.font = nameFont;
+    for (const marble of shown) {
+      contentW = Math.max(contentW, rankWidth + ctx.measureText(marble.name).width);
+    }
+    if (hidden > 0) {
+      ctx.font = rankFont;
+      contentW = Math.max(contentW, ctx.measureText(foldLabel).width);
+    }
+
+    const panelW = Math.min(contentW + pad * 2, w * PROGRESS_MAX_WIDTH_RATIO);
+    const rows = shown.length + (hidden > 0 ? 1 : 0);
+    const panelH = lineHeight * 1.5 + rows * lineHeight + pad;
+    const panelX = MINIMAP_INSET + MINIMAP_WIDTH + pad;
+    const panelY = h - panelH - pad * 1.5;
+
+    ctx.fillStyle = theme.winnerBackground;
+    ctx.fillRect(panelX, panelY, panelW, panelH);
+    ctx.strokeStyle = PROGRESS_ACCENT;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.font = headerFont;
+    ctx.fillStyle = theme.winnerText;
+    ctx.fillText(header, panelX + pad, panelY + lineHeight * 0.85);
+
+    let y = panelY + lineHeight * 1.5 + lineHeight / 2;
+    if (hidden > 0) {
+      ctx.font = rankFont;
+      ctx.fillStyle = theme.winnerText;
+      ctx.fillText(foldLabel, panelX + pad, y);
+      y += lineHeight;
+    }
+
+    shown.forEach((marble, i) => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(panelX, y - lineHeight / 2, panelW, lineHeight);
+      ctx.clip();
+
+      ctx.font = rankFont;
+      ctx.fillStyle = theme.winnerText;
+      ctx.fillText(`#${start + hidden + i + 1}`, panelX + pad, y);
+
+      ctx.font = nameFont;
+      ctx.fillStyle = `hsl(${marble.hue} 100% ${theme.marbleLightness}%)`;
+      ctx.fillText(marble.name, panelX + pad + rankWidth, y);
+      ctx.restore();
+      y += lineHeight;
+    });
+
+    ctx.restore();
+  }
+
+  /** 당첨자가 여러명일 때 화면 중앙에 목록 팝업을 그린다 */
+  private renderWinnerList(winners: Marble[], { theme, winnerRange }: RenderParameters) {
+    const ctx = this.ctx;
+    const w = this._sceneCanvas.width;
+    const h = this._sceneCanvas.height;
+
+    const lineHeight = Math.min(32, Math.max(16, h * 0.05));
+    const padding = lineHeight;
+    const titleHeight = lineHeight * 2;
+
+    // 세로로 다 안 들어가면 열을 늘린다
+    const maxRows = Math.max(
+      1,
+      Math.floor((h * RESULT_PANEL_MAX_HEIGHT_RATIO - titleHeight - padding * 2) / lineHeight)
+    );
+    const cols = Math.max(1, Math.ceil(winners.length / maxRows));
+    const rows = Math.ceil(winners.length / cols);
+
+    const colWidth = Math.min(RESULT_COLUMN_MAX_WIDTH, (w * RESULT_PANEL_MAX_WIDTH_RATIO - padding * 2) / cols);
+    const panelW = colWidth * cols + padding * 2;
+    const panelH = titleHeight + rows * lineHeight + padding;
+    const panelX = (w - panelW) / 2;
+    const panelY = (h - panelH) / 2;
+
+    ctx.save();
+
+    ctx.fillStyle = theme.winnerBackground;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = theme.background;
+    ctx.fillRect(panelX, panelY, panelW, panelH);
+    ctx.strokeStyle = theme.winnerText;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = theme.winnerText;
+    ctx.font = `bold ${lineHeight * 1.1}px sans-serif`;
+    ctx.fillText(`Winners (${winners.length})`, w / 2, panelY + titleHeight / 2);
+
+    const rankWidth = lineHeight * 1.8;
+    winners.forEach((marble, i) => {
+      const col = Math.floor(i / rows);
+      const row = i % rows;
+      const x = panelX + padding + col * colWidth;
+      const y = panelY + titleHeight + row * lineHeight + lineHeight / 2;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y - lineHeight / 2, colWidth, lineHeight);
+      ctx.clip();
+
+      ctx.textAlign = 'right';
+      ctx.fillStyle = theme.winnerText;
+      ctx.font = `${lineHeight * 0.6}px sans-serif`;
+      ctx.fillText(`#${winnerRange.start + i + 1}`, x + rankWidth * 0.8, y);
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = `hsl(${marble.hue} 100% ${theme.marbleLightness}%)`;
+      ctx.font = `bold ${lineHeight * 0.75}px sans-serif`;
+      ctx.fillText(marble.name, x + rankWidth, y);
+      ctx.restore();
+    });
+
+    ctx.restore();
+  }
+
+  private renderWinner(winner: Marble, theme: ColorTheme) {
     this.ctx.save();
     this.ctx.fillStyle = theme.winnerBackground;
     this.ctx.fillRect(

@@ -7,6 +7,12 @@ import type { VectorLike } from './types/VectorLike';
 import type { UIObject } from './UIObject';
 import { bound } from './utils/bound.decorator';
 
+const MINIMAP_SCALE = 4;
+const MINIMAP_UNITS = 26;
+/** 미니맵은 좌측에 세로로 긴 스트립이다. 다른 HUD가 피해가려면 이 값이 필요하다 */
+export const MINIMAP_INSET = 10;
+export const MINIMAP_WIDTH = MINIMAP_UNITS * MINIMAP_SCALE;
+
 export class Minimap implements UIObject {
   private ctx!: CanvasRenderingContext2D;
   private lastParams: RenderParameters | null = null;
@@ -17,9 +23,9 @@ export class Minimap implements UIObject {
 
   constructor() {
     this.boundingBox = {
-      x: 10,
-      y: 10,
-      w: 26 * 4,
+      x: MINIMAP_INSET,
+      y: MINIMAP_INSET,
+      w: MINIMAP_WIDTH,
       h: 0,
     };
   }
@@ -62,16 +68,16 @@ export class Minimap implements UIObject {
     if (!ctx) return;
     const { stage } = params;
     if (!stage) return;
-    this.boundingBox.h = stage.goalY * 4;
+    this.boundingBox.h = stage.goalY * MINIMAP_SCALE;
 
     this.lastParams = params;
 
     this.ctx = ctx;
     ctx.save();
     ctx.fillStyle = params.theme.minimapBackground;
-    ctx.translate(10, 10);
-    ctx.scale(4, 4);
-    ctx.fillRect(0, 0, 26, stage.goalY);
+    ctx.translate(MINIMAP_INSET, MINIMAP_INSET);
+    ctx.scale(MINIMAP_SCALE, MINIMAP_SCALE);
+    ctx.fillRect(0, 0, MINIMAP_UNITS, stage.goalY);
 
     this.ctx.lineWidth = 3 / (params.camera.zoom + initialZoom);
     this.drawEntities(params.entities, params.theme);
