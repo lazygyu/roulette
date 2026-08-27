@@ -281,8 +281,10 @@
       mapSelector.append(option);
     });
     mapSelector.addEventListener('change', (e) => {
-      const index = e.target.value;
-      window.roulette.setMap(index);
+      window.roulette.setMap(e.target.value);
+      // setMap은 살아남은 구슬에서 이름을 뽑아 재구성한다. 골인한 구슬이 사라지고
+      // 무게(/n)도 날아가므로, 원본인 이름 입력창에서 다시 채운다
+      getReady();
     });
 
     // const checkDonateButtonLoaded = () => {
