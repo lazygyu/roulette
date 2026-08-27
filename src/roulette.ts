@@ -52,6 +52,10 @@ export class Roulette extends EventTarget {
   /** 진행 중에는 null, 당첨자가 모두 확정되면 당첨자 배열 */
   private _result: Marble[] | null = null;
 
+  // 구슬 id(= order)는 매 라운드 재사용된다. 리셋 시 취소하지 않으면 이 타이머가
+  // 뒤늦게 발화해 같은 id를 가진 새 라운드의 구슬을 지워버린다
+  private _pendingRemovals: number[] = [];
+
   private _uiObjects: UIObject[] = [];
 
   private _autoRecording: boolean = false;
@@ -157,9 +161,11 @@ export class Roulette extends EventTarget {
         if (this._isRunning && this._isWinningRank(this._winners.length - 1)) {
           this._particleManager.shot(this._renderer.width, this._renderer.height);
         }
-        setTimeout(() => {
-          this.physics.removeMarble(marble.id);
-        }, 500);
+        this._pendingRemovals.push(
+          window.setTimeout(() => {
+            this.physics.removeMarble(marble.id);
+          }, 500)
+        );
       }
     }
 
@@ -347,6 +353,8 @@ export class Roulette extends EventTarget {
   }
 
   public clearMarbles() {
+    this._pendingRemovals.forEach((id) => window.clearTimeout(id));
+    this._pendingRemovals = [];
     this.physics.clearMarbles();
     this._result = null;
     this._winners = [];
