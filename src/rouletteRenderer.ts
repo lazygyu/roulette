@@ -445,9 +445,12 @@ export class RouletteRenderer {
 
     const panelW = Math.min(contentW + pad * 2, w * PROGRESS_MAX_WIDTH_RATIO);
     const rows = shown.length + (hidden > 0 ? 1 : 0);
-    const panelH = lineHeight * 1.5 + rows * lineHeight + pad;
+    // 헤더와 목록 사이 간격은 목록이 있을 때만 준다. 항상 주면 당첨자가 없을 때
+    // 아래쪽에만 빈 공간이 남아 위아래 여백이 어긋난다
+    const headerGap = rows > 0 ? lineHeight * 0.35 : 0;
+    const panelH = pad * 2 + lineHeight + headerGap + rows * lineHeight;
     const panelX = MINIMAP_INSET + MINIMAP_WIDTH + pad;
-    const panelY = pad * 1.5;
+    const panelY = MINIMAP_INSET; // 미니맵 상단과 맞춘다
 
     ctx.fillStyle = theme.winnerBackground;
     ctx.fillRect(panelX, panelY, panelW, panelH);
@@ -459,9 +462,9 @@ export class RouletteRenderer {
     ctx.textAlign = 'left';
     ctx.font = headerFont;
     ctx.fillStyle = theme.winnerText;
-    ctx.fillText(header, panelX + pad, panelY + lineHeight * 0.85);
+    ctx.fillText(header, panelX + pad, panelY + pad + lineHeight / 2);
 
-    let y = panelY + lineHeight * 1.5 + lineHeight / 2;
+    let y = panelY + pad + lineHeight + headerGap + lineHeight / 2;
     if (hidden > 0) {
       ctx.font = rankFont;
       ctx.fillStyle = theme.winnerText;
