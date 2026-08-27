@@ -6,7 +6,7 @@ import type { GameObject } from './gameObject';
 import type { IPhysics } from './IPhysics';
 import { Marble } from './marble';
 import { Minimap } from './minimap';
-import options from './options';
+import options, { type WinnerRange } from './options';
 import { ParticleManager } from './particleManager';
 import { Box2dPhysics } from './physics-box2d';
 import { RankRenderer } from './rankRenderer';
@@ -19,6 +19,13 @@ import type { UIObject } from './UIObject';
 import { bound } from './utils/bound.decorator';
 import { parseName, shuffle } from './utils/utils';
 import { VideoRecorder } from './utils/videoRecorder';
+
+/** 입력 범위를 실제 구슬 수에 맞춰 자른다. 범위를 넘기면 뒤쪽이 잘린다 */
+function clipWinnerRange({ start, end }: WinnerRange, marbleCount: number): WinnerRange {
+  const last = Math.max(0, marbleCount - 1);
+  const clippedStart = Math.min(Math.max(0, start), last);
+  return { start: clippedStart, end: Math.min(Math.max(clippedStart, end), last) };
+}
 
 export class Roulette extends EventTarget {
   private _marbles: Marble[] = [];
@@ -39,11 +46,15 @@ export class Roulette extends EventTarget {
 
   private _effects: GameObject[] = [];
 
-  private _winnerRank = 0;
-  private _totalMarbleCount = 0;
+  private _winnerRange: WinnerRange = { start: 0, end: 0 };
   private _goalDist: number = Infinity;
   private _isRunning: boolean = false;
-  private _winner: Marble | null = null;
+  /** 진행 중에는 null, 당첨자가 모두 확정되면 당첨자 배열 */
+  private _result: Marble[] | null = null;
+
+  // 구슬 id(= order)는 매 라운드 재사용된다. 리셋 시 취소하지 않으면 이 타이머가
+  // 뒤늦게 발화해 같은 id를 가진 새 라운드의 구슬을 지워버린다
+  private _pendingRemovals: number[] = [];
 
   private _uiObjects: UIObject[] = [];
 
@@ -127,7 +138,7 @@ export class Roulette extends EventTarget {
         marbles: this._marbles,
         stage: this._stage,
         needToZoom: this._goalDist < zoomThreshold,
-        targetIndex: this._winners.length > 0 ? this._winnerRank - this._winners.length : 0,
+        targetIndex: this._winners.length > 0 ? this._targetIndex : 0,
       });
     }
 
@@ -147,49 +158,66 @@ export class Roulette extends EventTarget {
       }
       if (marble.y > this._stage.goalY) {
         this._winners.push(marble);
-        if (this._isRunning && this._winners.length === this._winnerRank + 1) {
-          this.dispatchEvent(new CustomEvent('goal', { detail: { winner: marble.name } }));
-          this._winner = marble;
-          this._isRunning = false;
+        if (this._isRunning && this._isWinningRank(this._winners.length - 1)) {
           this._particleManager.shot(this._renderer.width, this._renderer.height);
-          setTimeout(() => {
-            this._recorder.stop();
-          }, 1000);
-        } else if (
-          this._isRunning &&
-          this._winnerRank === this._winners.length &&
-          this._winnerRank === this._totalMarbleCount - 1
-        ) {
-          this.dispatchEvent(
-            new CustomEvent('goal', {
-              detail: { winner: this._marbles[i + 1].name },
-            })
-          );
-          this._winner = this._marbles[i + 1];
-          this._isRunning = false;
-          this._particleManager.shot(this._renderer.width, this._renderer.height);
-          setTimeout(() => {
-            this._recorder.stop();
-          }, 1000);
         }
-        setTimeout(() => {
-          this.physics.removeMarble(marble.id);
-        }, 500);
+        this._pendingRemovals.push(
+          window.setTimeout(() => {
+            this.physics.removeMarble(marble.id);
+          }, 500)
+        );
       }
     }
 
-    const targetIndex = this._winnerRank - this._winners.length;
+    const targetIndex = this._targetIndex;
     const topY = this._marbles[targetIndex] ? this._marbles[targetIndex].y : 0;
     this._goalDist = Math.abs(this._stage.zoomY - topY);
     this._timeScale = this._calcTimeScale();
 
     this._marbles = this._marbles.filter((marble) => marble.y <= this._stage?.goalY);
+
+    this._checkFinish();
+  }
+
+  /** 카메라와 슬로우모션이 주목할 구슬 = 당첨 커트라인에 걸쳐있는 구슬 */
+  private get _targetIndex() {
+    return this._winnerRange.end - this._winners.length;
+  }
+
+  private _isWinningRank(rank: number) {
+    return rank >= this._winnerRange.start && rank <= this._winnerRange.end;
+  }
+
+  private _checkFinish() {
+    if (!this._isRunning) return;
+    const { start, end } = this._winnerRange;
+
+    // 남은 구슬이 1개면 그 등수는 골인하지 않아도 확정된다. 2개 이상 남았다면 그들 사이의
+    // 순위는 물리로만 정해지므로 예측하지 않는다 (당첨 범위 안에서도 순위는 의미를 가진다)
+    const early = this._winners.length > 0 && this._marbles.length === 1;
+    const ranked = early ? [...this._winners, this._marbles[0]] : this._winners;
+    if (ranked.length <= end) return;
+
+    if (early && this._isWinningRank(this._winners.length)) {
+      this._particleManager.shot(this._renderer.width, this._renderer.height);
+    }
+
+    this._result = ranked.slice(start, end + 1);
+    this._isRunning = false;
+    this.dispatchEvent(
+      new CustomEvent('goal', {
+        detail: { winner: this._result[0].name, winners: this._result.map((m) => m.name) },
+      })
+    );
+    setTimeout(() => {
+      this._recorder.stop();
+    }, 1000);
   }
 
   private _calcTimeScale(): number {
     if (!this._stage) return 1;
-    const targetIndex = this._winnerRank - this._winners.length;
-    if (this._winners.length < this._winnerRank + 1 && this._goalDist < zoomThreshold) {
+    const targetIndex = this._targetIndex;
+    if (this._winners.length < this._winnerRange.end + 1 && this._goalDist < zoomThreshold) {
       if (
         this._marbles[targetIndex].y > this._stage.zoomY - zoomThreshold * 1.2 &&
         (this._marbles[targetIndex - 1] || this._marbles[targetIndex + 1])
@@ -215,8 +243,8 @@ export class Roulette extends EventTarget {
       winners: this._winners,
       particleManager: this._particleManager,
       effects: this._effects,
-      winnerRank: this._winnerRank,
-      winner: this._winner,
+      winnerRange: this._winnerRange,
+      result: this._result,
       size: { x: this._renderer.width, y: this._renderer.height },
       theme: this._theme,
     };
@@ -295,17 +323,23 @@ export class Roulette extends EventTarget {
     });
 
     canvas.addEventListener('click', (e) => {
+      // 광고 오버레이가 팝업 위에 그려지므로 먼저 검사한다
       const hit = this.adHitAt(e);
-      if (!hit) return;
-      if (hit.type === 'close') {
-        this.hideAdOverlay();
-      } else {
-        window.open(hit.url, '_blank', 'noopener');
+      if (hit) {
+        if (hit.type === 'close') {
+          this.hideAdOverlay();
+        } else {
+          window.open(hit.url, '_blank', 'noopener');
+        }
+        return;
+      }
+      if (this.resultCloseHitAt(e)) {
+        this._renderer.closeResultPopup();
       }
     });
 
     canvas.addEventListener('pointermove', (e) => {
-      canvas.style.cursor = this.adHitAt(e) ? 'pointer' : '';
+      canvas.style.cursor = this.adHitAt(e) || this.resultCloseHitAt(e) ? 'pointer' : '';
     });
   }
 
@@ -319,8 +353,10 @@ export class Roulette extends EventTarget {
   }
 
   public clearMarbles() {
+    this._pendingRemovals.forEach((id) => window.clearTimeout(id));
+    this._pendingRemovals = [];
     this.physics.clearMarbles();
-    this._winner = null;
+    this._result = null;
     this._winners = [];
     this._marbles = [];
   }
@@ -336,10 +372,7 @@ export class Roulette extends EventTarget {
 
   public start() {
     this._isRunning = true;
-    this._winnerRank = options.winningRank;
-    if (this._winnerRank >= this._marbles.length) {
-      this._winnerRank = this._marbles.length - 1;
-    }
+    this._winnerRange = clipWinnerRange(options.winnerRange, this._marbles.length);
     this._camera.startFollowingMarbles();
 
     if (this._autoRecording) {
@@ -381,6 +414,11 @@ export class Roulette extends EventTarget {
     return this._renderer.getAdHitAt(e.offsetX * sizeFactor, e.offsetY * sizeFactor);
   }
 
+  private resultCloseHitAt(e: MouseEvent): boolean {
+    const sizeFactor = this._renderer.sizeFactor;
+    return this._renderer.getResultCloseHitAt(e.offsetX * sizeFactor, e.offsetY * sizeFactor);
+  }
+
   public setTheme(themeName: keyof typeof Themes) {
     this._theme = Themes[themeName];
   }
@@ -390,7 +428,17 @@ export class Roulette extends EventTarget {
   }
 
   public setWinningRank(rank: number) {
-    this._winnerRank = rank;
+    this.setWinnerRange(rank, rank);
+  }
+
+  public setWinnerRange(start: number, end: number) {
+    options.winnerRange = { start, end };
+    this._winnerRange = clipWinnerRange(options.winnerRange, this._marbles.length);
+  }
+
+  /** 실제 구슬 수에 맞춰 잘린 범위 (0-based, 양끝 포함) */
+  public getWinnerRange(): WinnerRange {
+    return { ...this._winnerRange };
   }
 
   public setAutoRecording(value: boolean) {
@@ -438,7 +486,6 @@ export class Roulette extends EventTarget {
         }
       }
     });
-    this._totalMarbleCount = totalCount;
 
     // 카메라를 구슬 생성 위치 중앙으로 이동 + 줌인
     if (totalCount > 0) {

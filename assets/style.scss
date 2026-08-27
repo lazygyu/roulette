@@ -126,7 +126,9 @@ div.copyright a {
 
   textarea {
     width: 100%;
-    min-height: 5rem;
+    // 오른쪽 칼럼이 패널 높이를 결정하면 '여러명'을 열 때 범위 행(div.row, 35px)만큼
+    // 패널이 세로로 튄다. 왼쪽이 항상 더 크도록 그만큼 미리 확보해 높이를 고정한다
+    min-height: calc(5rem + 35px);
     border: none;
     background: #999;
     font-size: 14pt;
@@ -226,6 +228,38 @@ div.copyright a {
         display: flex;
         align-items: center;
       }
+
+      // div.right div.row 와 같은 자리에 두어야 display:flex 를 이긴다
+      &.row-range {
+        display: none;
+
+        label {
+          display: none;
+        }
+
+        &.active {
+          display: flex;
+          padding-left: 150px;
+        }
+
+        // div.right는 콘텐츠 폭으로 잡힌다. number input의 기본 폭(~169px)이 그대로
+        // 남으면 이 행을 열 때마다 오른쪽 칼럼 전체가 넓어진다. width를 0으로 눌러
+        // intrinsic 계산에서 빼고, flex-grow로 위 행이 정한 폭만 채우게 한다
+        .range-group {
+          flex: 1 1 0;
+          min-width: 0;
+
+          input[type=number] {
+            width: 0;
+          }
+        }
+
+        .range-sep {
+          flex: 0 0 24px;
+          background: transparent;
+          color: white;
+        }
+      }
     }
   }
 
@@ -285,11 +319,10 @@ div.copyright a {
 
     & > * {
       box-sizing: border-box;
-      flex-grow: 0;
-      flex-shrink: 0;
+      flex: 1 1 0;
+      min-width: 0;
       overflow: hidden;
       height: 25px;
-      width: 33%;
       border-radius: 0;
       background: #999;
       border: none;
@@ -472,6 +505,11 @@ div.copyright a {
         input[type=checkbox] {
           order: 1;
         }
+      }
+
+      &.row-range.active {
+        display: flex;
+        padding-left: 0;
       }
 
       &.row-theme {

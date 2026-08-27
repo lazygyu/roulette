@@ -73,35 +73,61 @@
     window.roulette.setMarbles(names);
     ready = names.length > 0;
     localStorage.setItem('mbr_names', names.join(','));
-    switch (winnerType) {
-      case 'first':
-        setWinnerRank(1);
-        break;
-      case 'last':
-        const total = window.roulette.getCount();
-        setWinnerRank(total);
-        break;
-    }
+    applyWinnerSetting();
   }
 
-  function setWinnerRank(rank) {
-    document.querySelector('#in_winningRank').value = rank;
-    window.options.winningRank = rank - 1;
-    window.roulette.setWinningRank(window.options.winningRank);
+  // 구슬 수가 바뀔 때마다 다시 호출된다. 범위 클리핑은 roulette이 하고, 잘린 결과를 input에 되돌려 쓴다.
+  // edited는 사용자가 방금 고친 범위 input('start' | 'end')
+  function applyWinnerSetting(edited) {
+    const rankInput = document.querySelector('#in_winningRank');
+    const startInput = document.querySelector('#in_rangeStart');
+    const endInput = document.querySelector('#in_rangeEnd');
 
-    if (winnerType === 'first') {
-      document.querySelector('.btn-first-winner').classList.toggle('active', true);
-      document.querySelector('.btn-last-winner').classList.toggle('active', false);
-      document.querySelector('#in_winningRank').classList.toggle('active', false);
-    } else if (winnerType === 'last') {
-      document.querySelector('.btn-first-winner').classList.toggle('active', false);
-      document.querySelector('.btn-last-winner').classList.toggle('active', true);
-      document.querySelector('#in_winningRank').classList.toggle('active', false);
-    } else if (winnerType === 'custom') {
-      document.querySelector('.btn-first-winner').classList.toggle('active', false);
-      document.querySelector('.btn-last-winner').classList.toggle('active', false);
-      document.querySelector('#in_winningRank').classList.toggle('active', true);
+    let start;
+    let end;
+    switch (winnerType) {
+      case 'first':
+        start = end = 1;
+        break;
+      case 'last':
+        start = end = window.roulette.getCount();
+        break;
+      case 'multi':
+        start = parseInt(startInput.value, 10) || 1;
+        end = parseInt(endInput.value, 10) || 1;
+        // 뒤집힌 범위는 방금 고친 쪽을 존중하고 반대쪽을 따라오게 한다
+        if (end < start) {
+          if (edited === 'end') {
+            start = end;
+          } else {
+            end = start;
+          }
+        }
+        break;
+      default:
+        start = end = parseInt(rankInput.value, 10) || 1;
     }
+
+    window.roulette.setWinnerRange(start - 1, end - 1);
+    const clipped = window.roulette.getWinnerRange();
+    // 범위 input은 여러명 모드일 때만 건드린다. 다른 모드가 덮어쓰면 사용자가 넣어둔 범위가 날아간다
+    if (winnerType === 'multi') {
+      startInput.value = clipped.start + 1;
+      endInput.value = clipped.end + 1;
+    } else {
+      rankInput.value = clipped.start + 1;
+    }
+
+    document.querySelector('.btn-first-winner').classList.toggle('active', winnerType === 'first');
+    document.querySelector('.btn-last-winner').classList.toggle('active', winnerType === 'last');
+    document.querySelector('.btn-multi-winner').classList.toggle('active', winnerType === 'multi');
+    rankInput.classList.toggle('active', winnerType === 'custom');
+    document.querySelector('.row-range').classList.toggle('active', winnerType === 'multi');
+  }
+
+  function selectWinnerType(type, edited) {
+    winnerType = type;
+    applyWinnerSetting(edited);
   }
 
 
@@ -207,7 +233,6 @@
 
     document.querySelector('#chkSkill').addEventListener('change', (e) => {
       window.options.useSkills = e.target.matches(':checked');
-      window.roulette.setWinningRank(window.options.winningRank);
     });
 
     document.querySelector('#chkDarkMode').addEventListener('change', (e) => {
@@ -216,21 +241,12 @@
       document.documentElement.classList.toggle('light', !window.options.darkMode);
     });
 
-    document.querySelector('#in_winningRank').addEventListener('change', (e) => {
-      const v = parseInt(e.target.value, 10);
-      winnerType = 'custom';
-      setWinnerRank(isNaN(v) ? 0 : v);
-    });
-
-    document.querySelector('.btn-last-winner').addEventListener('click', () => {
-      const total = window.roulette.getCount();
-      winnerType = 'last';
-      setWinnerRank(total);
-    });
-    document.querySelector('.btn-first-winner').addEventListener('click', () => {
-      winnerType = 'first';
-      setWinnerRank(1);
-    });
+    document.querySelector('#in_winningRank').addEventListener('change', () => selectWinnerType('custom'));
+    document.querySelector('.btn-last-winner').addEventListener('click', () => selectWinnerType('last'));
+    document.querySelector('.btn-first-winner').addEventListener('click', () => selectWinnerType('first'));
+    document.querySelector('.btn-multi-winner').addEventListener('click', () => selectWinnerType('multi'));
+    document.querySelector('#in_rangeStart').addEventListener('change', () => selectWinnerType('multi', 'start'));
+    document.querySelector('#in_rangeEnd').addEventListener('change', () => selectWinnerType('multi', 'end'));
 
     window.roulette.addEventListener('goal', () => {
       ready = false;
@@ -265,8 +281,10 @@
       mapSelector.append(option);
     });
     mapSelector.addEventListener('change', (e) => {
-      const index = e.target.value;
-      window.roulette.setMap(index);
+      window.roulette.setMap(e.target.value);
+      // setMap은 살아남은 구슬에서 이름을 뽑아 재구성한다. 골인한 구슬이 사라지고
+      // 무게(/n)도 날아가므로, 원본인 이름 입력창에서 다시 채운다
+      getReady();
     });
 
     // const checkDonateButtonLoaded = () => {
@@ -369,6 +387,15 @@
           <button class="btn-winner btn-first-winner active" data-trans>First</button>
           <button class="btn-winner btn-last-winner" data-trans>Last</button>
           <input type="number" id="in_winningRank" value="1" min="1" />
+          <button class="btn-winner btn-multi-winner" data-trans>Multiple</button>
+        </div>
+      </div>
+      <div class="row row-range">
+        <label></label>
+        <div class="btn-group range-group">
+          <input type="number" id="in_rangeStart" value="1" min="1" />
+          <span class="range-sep">~</span>
+          <input type="number" id="in_rangeEnd" value="3" min="1" />
         </div>
       </div>
       <div class="row row-theme">
