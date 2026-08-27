@@ -10620,10 +10620,11 @@ class Marble {
         this.theme = theme;
         const viewPortHw = viewPort.w / viewPort.zoom / 2;
         const viewPortHh = viewPort.h / viewPort.zoom / 2;
-        const viewPortLeft = viewPort.x - viewPortHw;
-        const viewPortRight = viewPort.x + viewPortHw;
-        const viewPortTop = viewPort.y - viewPortHh - this.size / 2;
-        const viewPortBottom = viewPort.y + viewPortHh;
+        const cullMargin = this.size;
+        const viewPortLeft = viewPort.x - viewPortHw - cullMargin;
+        const viewPortRight = viewPort.x + viewPortHw + cullMargin;
+        const viewPortTop = viewPort.y - viewPortHh - cullMargin;
+        const viewPortBottom = viewPort.y + viewPortHh + cullMargin;
         if (!isMinimap && (this.x < viewPortLeft || this.x > viewPortRight || this.y < viewPortTop || this.y > viewPortBottom)) return;
         const transform = ctx.getTransform();
         if (isMinimap) this._renderMinimap(ctx);
@@ -12036,7 +12037,7 @@ const MAP_TITLE_KO = {
     'Wheel of fortune': "\uC6B4\uBA85\uC758 \uC218\uB808\uBC14\uD034",
     BubblePop: "\uBC84\uBE14\uD31D",
     'Pot of greed': "\uC695\uB9DD\uC758 \uD56D\uC544\uB9AC",
-    'Yoru ni Kakeru': "\uBC24\uC744 \uB2EC\uB9AC\uB2E4 (\uC6D0\uBCF8 \uB9F5)"
+    'Yoru ni Kakeru': "\uBC24\uC744 \uB2EC\uB9AC\uB2E4"
 };
 const DEFAULT_COLORS = {
     background: '#000000',
@@ -12251,25 +12252,46 @@ function currentSettingsSnapshot(options) {
         colors: readColorsFromUI()
     };
 }
-function applySettings(roulette, options, preset) {
-    winnerType = preset.winnerType;
-    // 녹화·스킬은 프리셋과 무관 — 사용자가 직접 켠 값 유지
+function applyThemeLook(roulette, options, preset) {
     options.darkMode = preset.darkMode;
     document.documentElement.classList.toggle('light', !preset.darkMode);
     writeColorsToUI(preset.colors);
     applyColorsToTheme(roulette, preset.darkMode, preset.colors);
-    if (preset.winnerType === 'last') setWinnerRank(roulette, options, Math.max(1, roulette.getCount() || 1));
-    else if (preset.winnerType === 'first') setWinnerRank(roulette, options, 1);
-    else setWinnerRank(roulette, options, preset.winningRank);
-    (0, _presets.session).setActiveSettingsId(preset.id);
+}
+const RANDOM_THEME_ID = 'builtin-random';
+function pickRandomTheme() {
+    const lastId = (0, _presets.session).getLastRandomThemeId();
+    const pool = (0, _presets.settingsPresets).builtins().filter((p)=>p.id !== 'builtin-light' && p.id !== lastId);
+    const fallback = (0, _presets.settingsPresets).builtins().filter((p)=>p.id !== 'builtin-light');
+    const choices = pool.length > 0 ? pool : fallback;
+    const picked = choices[Math.floor(Math.random() * choices.length)] ?? (0, _presets.settingsPresets).builtins()[0];
+    (0, _presets.session).setLastRandomThemeId(picked.id);
+    return picked;
+}
+function selectThemeId(id) {
     const select = $('#sltSettingsPreset');
-    if (select) select.value = preset.id;
+    if (select) select.value = id;
+}
+function applyRandomTheme(roulette, options) {
+    applyThemeLook(roulette, options, pickRandomTheme());
+    (0, _presets.session).setActiveSettingsId(RANDOM_THEME_ID);
+    selectThemeId(RANDOM_THEME_ID);
+}
+function applySettings(roulette, options, preset) {
+    // 테마는 색·명암만 적용. 우승 조건·녹화·스킬은 사용자가 직접 켠 값 유지
+    applyThemeLook(roulette, options, preset);
+    (0, _presets.session).setActiveSettingsId(preset.id);
+    selectThemeId(preset.id);
 }
 function fillSettingsSelector(selectedId) {
     const select = $('#sltSettingsPreset');
     if (!select) return;
     const current = selectedId ?? select.value;
     select.innerHTML = '';
+    const randomOpt = document.createElement('option');
+    randomOpt.value = RANDOM_THEME_ID;
+    randomOpt.textContent = "\uB79C\uB364";
+    select.appendChild(randomOpt);
     (0, _presets.settingsPresets).list().forEach((preset)=>{
         const opt = document.createElement('option');
         opt.value = preset.id;
@@ -12323,17 +12345,22 @@ function bindSettingsPresetControls(roulette, options) {
     fillSettingsSelector();
     $('#sltSettingsPreset')?.addEventListener('change', ()=>{
         const id = $('#sltSettingsPreset').value;
+        if (id === RANDOM_THEME_ID) {
+            applyRandomTheme(roulette, options);
+            toast("\uD14C\uB9C8: \uB79C\uB364");
+            return;
+        }
         const preset = (0, _presets.settingsPresets).get(id);
         if (preset) {
             applySettings(roulette, options, preset);
-            toast(`\u{C124}\u{C815}: ${preset.title}`);
+            toast(`\u{D14C}\u{B9C8}: ${preset.title}`);
         }
     });
-    $('#btnAddSettingsPreset')?.addEventListener('click', ()=>{
+    const addSettingsPreset = ()=>{
         const titleInput = $('#in_settingsPresetName');
         const title = titleInput?.value.trim();
         if (!title) {
-            toast("\uC124\uC815 \uD504\uB9AC\uC14B \uC774\uB984\uC744 \uC785\uB825\uD558\uC138\uC694");
+            toast("\uD14C\uB9C8 \uC774\uB984\uC744 \uC785\uB825\uD558\uC138\uC694");
             titleInput?.focus();
             return;
         }
@@ -12344,8 +12371,16 @@ function bindSettingsPresetControls(roulette, options) {
         };
         (0, _presets.settingsPresets).upsert(preset);
         fillSettingsSelector(preset.id);
+        (0, _presets.session).setActiveSettingsId(preset.id);
         if (titleInput) titleInput.value = '';
-        toast(`\u{C124}\u{C815} \u{C800}\u{C7A5}\u{B428}: ${title}`);
+        toast(`\u{D14C}\u{B9C8} \u{C800}\u{C7A5}\u{B428}: ${title}`);
+    };
+    $('#btnAddSettingsPreset')?.addEventListener('click', addSettingsPreset);
+    $('#in_settingsPresetName')?.addEventListener('keydown', (e)=>{
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addSettingsPreset();
+        }
     });
     const delSettingsBtn = $('#btnDeleteSettingsPreset');
     if (delSettingsBtn) (0, _countdownDelete.bindCountdownDelete)(delSettingsBtn, ()=>{
@@ -12358,7 +12393,7 @@ function bindSettingsPresetControls(roulette, options) {
         fillSettingsSelector();
         const first = (0, _presets.settingsPresets).list()[0];
         if (first) applySettings(roulette, options, first);
-        toast("\uC124\uC815 \uD504\uB9AC\uC14B \uC0AD\uC81C\uB428");
+        toast("\uD14C\uB9C8 \uD504\uB9AC\uC14B \uC0AD\uC81C\uB428");
     });
 }
 function bindColorInputs(roulette, options) {
@@ -12381,9 +12416,14 @@ function bindColorInputs(roulette, options) {
 }
 function restoreActiveSettings(roulette, options) {
     const activeSettingsId = (0, _presets.session).getActiveSettingsId();
+    if (!activeSettingsId || activeSettingsId === RANDOM_THEME_ID) {
+        applyRandomTheme(roulette, options);
+        return;
+    }
     const settingsList = (0, _presets.settingsPresets).list();
-    const active = settingsList.find((p)=>p.id === activeSettingsId) ?? settingsList.find((p)=>p.id === 'builtin-dark') ?? settingsList[0];
+    const active = settingsList.find((p)=>p.id === activeSettingsId);
     if (active) applySettings(roulette, options, active);
+    else applyRandomTheme(roulette, options);
 }
 function bindSettingsIslandResize() {
     const panel = $('#settings');
@@ -12478,6 +12518,7 @@ function initMain(roulette, options) {
         ready = false;
         // Winner 유지. 조작 창을 다시 열 때(클릭/키) 구슬 초기화.
         const revealSettings = ()=>{
+            if ((0, _presets.session).getActiveSettingsId() === RANDOM_THEME_ID) applyRandomTheme(roulette, options);
             getReady(roulette);
             $('#settings')?.classList.remove('hide');
             window.removeEventListener('pointerdown', revealSettings, true);
@@ -12544,11 +12585,6 @@ function initMain(roulette, options) {
         toast("\uC774\uB984 \uD504\uB9AC\uC14B \uC0AD\uC81C\uB428");
     });
     restoreActiveSettings(roulette, options);
-    // Ensure default feel is 마지막 if no stored preference beyond builtins
-    if (!(0, _presets.session).getActiveSettingsId()) {
-        winnerType = 'last';
-        setWinnerRank(roulette, options, Math.max(1, roulette.getCount() || 1));
-    }
     bindSettingsIslandResize();
     getReady(roulette);
 }
@@ -12575,7 +12611,8 @@ const KEYS = {
     maps: 'openmarble.mapPresets',
     lastNames: 'openmarble.lastNames',
     activeSettings: 'openmarble.activeSettingsId',
-    activeMap: 'openmarble.activeMapId'
+    activeMap: 'openmarble.activeMapId',
+    lastRandomTheme: 'openmarble.lastRandomThemeId'
 };
 function loadArray(key) {
     try {
@@ -12607,239 +12644,99 @@ function colors(partial) {
         minimap: partial.minimap ?? '#333333'
     };
 }
+function builtin(id, title, darkMode, palette) {
+    return {
+        id: `builtin-${id}`,
+        title,
+        darkMode,
+        winnerType: 'last',
+        winningRank: 1,
+        useSkills: true,
+        autoRecording: false,
+        colors: colors(palette)
+    };
+}
 const settingsPresets = {
     builtins () {
         return [
-            {
-                id: 'builtin-dark',
-                title: "\uB2E4\uD06C (\uAE30\uBCF8)",
-                darkMode: true,
-                winnerType: 'last',
-                winningRank: 1,
-                useSkills: true,
-                autoRecording: false,
-                colors: colors({
-                    background: '#000000',
-                    wall: '#00ffff',
-                    circle: '#ffff00',
-                    line: '#ffffff'
-                })
-            },
-            {
-                id: 'builtin-light',
-                title: "\uB77C\uC774\uD2B8 (\uAE30\uBCF8)",
-                darkMode: false,
-                winnerType: 'last',
-                winningRank: 1,
-                useSkills: true,
-                autoRecording: false,
-                colors: colors({
-                    background: '#eeeeee',
-                    wall: '#226f92',
-                    circle: '#ffcc00',
-                    line: '#222222',
-                    skill: '#6699cc',
-                    winnerBorder: '#000000',
-                    minimap: '#fefefe'
-                })
-            },
-            {
-                id: 'builtin-neon-pink',
-                title: "\uB124\uC628 \uD551\uD06C",
-                darkMode: true,
-                winnerType: 'last',
-                winningRank: 1,
-                useSkills: true,
-                autoRecording: false,
-                colors: colors({
-                    background: '#120018',
-                    wall: '#ff2bd6',
-                    circle: '#00f0ff',
-                    line: '#ff9ad5',
-                    skill: '#ff2bd6'
-                })
-            },
-            {
-                id: 'builtin-ocean',
-                title: "\uC624\uC158 \uBE14\uB8E8",
-                darkMode: true,
-                winnerType: 'last',
-                winningRank: 1,
-                useSkills: true,
-                autoRecording: false,
-                colors: colors({
-                    background: '#021526',
-                    wall: '#3ec1d3',
-                    circle: '#ff9a3c',
-                    line: '#a0e9ff',
-                    skill: '#3ec1d3'
-                })
-            },
-            {
-                id: 'builtin-forest',
-                title: "\uD3EC\uB808\uC2A4\uD2B8",
-                darkMode: true,
-                winnerType: 'last',
-                winningRank: 1,
-                useSkills: true,
-                autoRecording: false,
-                colors: colors({
-                    background: '#0b1a12',
-                    wall: '#3ddc97',
-                    circle: '#f4d35e',
-                    line: '#c8facc',
-                    skill: '#3ddc97'
-                })
-            },
-            {
-                id: 'builtin-sunset',
-                title: "\uC120\uC14B",
-                darkMode: true,
-                winnerType: 'last',
-                winningRank: 1,
-                useSkills: true,
-                autoRecording: false,
-                colors: colors({
-                    background: '#1a0a08',
-                    wall: '#ff6b35',
-                    circle: '#ffd166',
-                    line: '#ffb4a2',
-                    skill: '#ff6b35'
-                })
-            },
-            {
-                id: 'builtin-lavender',
-                title: "\uB77C\uBCA4\uB354",
-                darkMode: true,
-                winnerType: 'last',
-                winningRank: 1,
-                useSkills: true,
-                autoRecording: false,
-                colors: colors({
-                    background: '#151022',
-                    wall: '#b388ff',
-                    circle: '#ff80ab',
-                    line: '#e1bee7',
-                    skill: '#b388ff'
-                })
-            },
-            {
-                id: 'builtin-mono',
-                title: "\uBAA8\uB178\uD06C\uB86C",
-                darkMode: true,
-                winnerType: 'last',
-                winningRank: 1,
-                useSkills: false,
-                autoRecording: false,
-                colors: colors({
-                    background: '#111111',
-                    wall: '#dddddd',
-                    circle: '#888888',
-                    line: '#ffffff',
-                    skill: '#ffffff'
-                })
-            },
-            {
-                id: 'builtin-candy',
-                title: "\uCE94\uB514",
-                darkMode: false,
-                winnerType: 'last',
-                winningRank: 1,
-                useSkills: true,
-                autoRecording: false,
-                colors: colors({
-                    background: '#fff5f8',
-                    wall: '#ff6b9d',
-                    circle: '#7bdff2',
-                    line: '#5c4b51',
-                    skill: '#ff6b9d',
-                    winnerBorder: '#5c4b51',
-                    minimap: '#ffe6ef'
-                })
-            },
-            {
-                id: 'builtin-retro',
-                title: "\uB808\uD2B8\uB85C \uADF8\uB9B0",
-                darkMode: true,
-                winnerType: 'last',
-                winningRank: 1,
-                useSkills: true,
-                autoRecording: false,
-                colors: colors({
-                    background: '#001100',
-                    wall: '#33ff66',
-                    circle: '#ccff00',
-                    line: '#99ff99',
-                    skill: '#33ff66'
-                })
-            },
-            {
-                id: 'builtin-gold',
-                title: "\uACE8\uB4DC",
-                darkMode: true,
-                winnerType: 'last',
-                winningRank: 1,
-                useSkills: true,
-                autoRecording: false,
-                colors: colors({
-                    background: '#1a1408',
-                    wall: '#d4af37',
-                    circle: '#fff1a8',
-                    line: '#f5e6b8',
-                    skill: '#d4af37'
-                })
-            },
-            {
-                id: 'builtin-ice',
-                title: "\uC544\uC774\uC2A4",
-                darkMode: false,
-                winnerType: 'last',
-                winningRank: 1,
-                useSkills: true,
-                autoRecording: false,
-                colors: colors({
-                    background: '#e8f4ff',
-                    wall: '#4ea8de',
-                    circle: '#48bfe3',
-                    line: '#023e8a',
-                    skill: '#0077b6',
-                    winnerBorder: '#023e8a',
-                    minimap: '#f0f8ff'
-                })
-            },
-            {
-                id: 'builtin-clean-neon',
-                title: "\uD074\uB9B0 \uB124\uC628",
-                darkMode: true,
-                winnerType: 'last',
-                winningRank: 1,
-                useSkills: true,
-                autoRecording: false,
-                colors: colors({
-                    background: '#000000',
-                    wall: '#00e5ff',
-                    circle: '#ffea00',
-                    line: '#ffffff'
-                })
-            },
-            {
-                id: 'builtin-soft',
-                title: "\uC18C\uD504\uD2B8 \uBCA0\uC774\uC9C0",
-                darkMode: false,
-                winnerType: 'last',
-                winningRank: 1,
-                useSkills: true,
-                autoRecording: false,
-                colors: colors({
-                    background: '#f3efe6',
-                    wall: '#8d6e63',
-                    circle: '#ef9a9a',
-                    line: '#5d4037',
-                    skill: '#a1887f',
-                    winnerBorder: '#5d4037',
-                    minimap: '#faf6f0'
-                })
-            }
+            builtin('dark', "\uBBF8\uB4DC\uB098\uC787", true, {
+                background: '#000000',
+                wall: '#00ffff',
+                circle: '#ffff00',
+                line: '#ffffff'
+            }),
+            builtin('light', "\uB77C\uC774\uD2B8", false, {
+                background: '#eeeeee',
+                wall: '#226f92',
+                circle: '#ffcc00',
+                line: '#222222',
+                skill: '#6699cc',
+                winnerBorder: '#000000',
+                minimap: '#fefefe'
+            }),
+            builtin('amethyst', "\uC790\uC218\uC815", true, {
+                background: '#14081f',
+                wall: '#9b59d0',
+                circle: '#f0c3ff',
+                line: '#d4b0f0',
+                skill: '#9b59d0'
+            }),
+            builtin('matcha', "\uB9D0\uCC28", true, {
+                background: '#12180f',
+                wall: '#7a9e4c',
+                circle: '#d4e07a',
+                line: '#c5d4a8',
+                skill: '#7a9e4c'
+            }),
+            builtin('ruby', "\uB8E8\uBE44", true, {
+                background: '#160508',
+                wall: '#d62839',
+                circle: '#ff8a9a',
+                line: '#ffc2c8',
+                skill: '#d62839'
+            }),
+            builtin('grape', "\uD3EC\uB3C4", true, {
+                background: '#140c18',
+                wall: '#8e44ad',
+                circle: '#f8c8dc',
+                line: '#d7bde2',
+                skill: '#8e44ad'
+            }),
+            builtin('coral', "\uC0B0\uD638", true, {
+                background: '#1a0c0c',
+                wall: '#ff6f61',
+                circle: '#ffd1b3',
+                line: '#ffb09a',
+                skill: '#ff6f61'
+            }),
+            builtin('honey', "\uBC8C\uAFC0", true, {
+                background: '#1a1204',
+                wall: '#f0b429',
+                circle: '#ffe08a',
+                line: '#ffecb3',
+                skill: '#f0b429'
+            }),
+            builtin('forest', "\uC774\uB07C \uD611\uACE1", true, {
+                background: '#07140e',
+                wall: '#2bc47a',
+                circle: '#e2c046',
+                line: '#b4e8bc',
+                skill: '#2bc47a'
+            }),
+            builtin('ocean', "\uC624\uC158 \uBE14\uB8E8", true, {
+                background: '#021526',
+                wall: '#3ec1d3',
+                circle: '#ff9a3c',
+                line: '#a0e9ff',
+                skill: '#3ec1d3'
+            }),
+            builtin('neon-pink', "\uB9C8\uC820\uD0C0 \uD50C\uB808\uC5B4", true, {
+                background: '#1a0022',
+                wall: '#e63bc0',
+                circle: '#1ad4e8',
+                line: '#f0b4dc',
+                skill: '#e63bc0'
+            })
         ];
     },
     list () {
@@ -12923,6 +12820,12 @@ const session = {
     setActiveMapId (id) {
         if (id == null) localStorage.removeItem(KEYS.activeMap);
         else localStorage.setItem(KEYS.activeMap, id);
+    },
+    getLastRandomThemeId () {
+        return localStorage.getItem(KEYS.lastRandomTheme);
+    },
+    setLastRandomThemeId (id) {
+        localStorage.setItem(KEYS.lastRandomTheme, id);
     }
 };
 

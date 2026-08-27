@@ -249,7 +249,7 @@ div.copyright a {
   display: flex;
 }
 
-#settings div.right div.row.row-toggles, #settings div.right div.row.winner-row, #settings div.right div.row.start-row, #settings div.right div.row.colors-row {
+#settings div.right div.row.row-toggles, #settings div.right div.row.winner-row, #settings div.right div.row.start-row, #settings div.right div.row.colors-row, #settings div.right div.row.theme-save-row {
   height: auto;
   min-height: 35px;
   padding: 4px 0;
@@ -981,6 +981,12 @@ div.toast {
   display: flex;
 }
 
+.theme-save-row .save-row {
+  flex: auto;
+  min-width: 0;
+  margin-top: 0;
+}
+
 .save-row input[type="text"] {
   color: #eee;
   background: #1a1a1a;
@@ -1028,7 +1034,7 @@ div.toast {
     right: 1rem;
   }
 
-  #settings div.right div.row.colors-row {
+  #settings div.right div.row.colors-row, #settings div.right div.row.theme-save-row {
     display: block !important;
   }
 
