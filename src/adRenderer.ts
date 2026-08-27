@@ -218,7 +218,7 @@ function drawResult(
   return { click: clickRect, close: drawCloseButton(ctx, bandW, bandY, h, elapsed) };
 }
 
-function closeButtonSize(h: number): number {
+export function closeButtonSize(h: number): number {
   return clamp(h * 0.045, 20, 34);
 }
 
@@ -230,26 +230,24 @@ function easeInOut(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 }
 
-/** 밴드 오른쪽 위 구석의 닫기 버튼. 아직 나올 때가 아니면 그리지도, 누를 수도 없다 */
-function drawCloseButton(
+/**
+ * 원형 닫기 버튼(동그라미 + X)을 중심 좌표에 그리고 히트 영역을 돌려준다.
+ * 기본 채움은 반투명이다. 광고 밴드 위에서는 밴드와 섞이는 편이 자연스럽지만,
+ * 무언가에 걸쳐놓을 때는 뒤가 비치므로 불투명한 색을 넘겨야 한다.
+ */
+export function drawCloseCircle(
   ctx: CanvasRenderingContext2D,
-  w: number,
-  bandY: number,
-  h: number,
-  elapsed: number
-): AdRect | undefined {
-  if (elapsed < CLOSE_DELAY_MS) return undefined;
-
-  const size = closeButtonSize(h);
-  const cx = w - CLOSE_INSET - size / 2;
-  const cy = bandY + CLOSE_INSET + size / 2;
+  cx: number,
+  cy: number,
+  size: number,
+  fill: string = 'rgba(0, 0, 0, 0.5)'
+): AdRect {
   const arm = size * 0.22;
 
   ctx.save();
-  ctx.globalAlpha *= Math.min(1, (elapsed - CLOSE_DELAY_MS) / CLOSE_FADE_MS);
   ctx.beginPath();
   ctx.arc(cx, cy, size / 2, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  ctx.fillStyle = fill;
   ctx.fill();
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
   ctx.lineWidth = Math.max(1.5, size * 0.07);
@@ -268,6 +266,24 @@ function drawCloseButton(
     w: size + CLOSE_HIT_PADDING * 2,
     h: size + CLOSE_HIT_PADDING * 2,
   };
+}
+
+/** 밴드 오른쪽 위 구석의 닫기 버튼. 아직 나올 때가 아니면 그리지도, 누를 수도 없다 */
+function drawCloseButton(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  bandY: number,
+  h: number,
+  elapsed: number
+): AdRect | undefined {
+  if (elapsed < CLOSE_DELAY_MS) return undefined;
+
+  const size = closeButtonSize(h);
+  ctx.save();
+  ctx.globalAlpha *= Math.min(1, (elapsed - CLOSE_DELAY_MS) / CLOSE_FADE_MS);
+  const rect = drawCloseCircle(ctx, w - CLOSE_INSET - size / 2, bandY + CLOSE_INSET + size / 2, size);
+  ctx.restore();
+  return rect;
 }
 
 function clamp(v: number, min: number, max: number): number {

@@ -1,4 +1,11 @@
-import { type AdOverlayMode, type AdOverlayState, type AdRect, drawAdOverlay } from './adRenderer';
+import {
+  type AdOverlayMode,
+  type AdOverlayState,
+  type AdRect,
+  closeButtonSize,
+  drawAdOverlay,
+  drawCloseCircle,
+} from './adRenderer';
 import type { Camera } from './camera';
 import { canvasHeight, canvasWidth, initialZoom, Themes, winnerAreaHeight } from './data/constants';
 import type { StageDef } from './data/maps';
@@ -55,6 +62,9 @@ export class RouletteRenderer {
   private _ad: RoundAd | null = null;
   private _adImageCache: Map<string, HTMLImageElement> = new Map();
   private _adOverlay: AdOverlayState | null = null;
+  private _resultCloseRect: AdRect | null = null;
+  private _resultPopupClosed = false;
+  private _lastResult: Marble[] | null = null;
   protected _keywordService: KeywordService;
 
   constructor() {
@@ -366,18 +376,34 @@ export class RouletteRenderer {
 
   private renderResult(params: RenderParameters) {
     const result = params.result;
+    // 새 결과가 나오면(또는 리셋되면) 닫힘 상태를 푼다. _result는 확정될 때마다 새 배열이다
+    if (result !== this._lastResult) {
+      this._lastResult = result;
+      this._resultPopupClosed = false;
+    }
+    this._resultCloseRect = null;
     if (!result) return;
     // 1명이면 기존 하단 Winner 표시, 여러명이면 화면 중앙 당첨자 목록 팝업
     if (result.length === 1) {
       this.renderWinner(result[0], params.theme);
-    } else {
+    } else if (!this._resultPopupClosed) {
       this.renderWinnerList(result, params);
     }
   }
 
+  /** 결과 팝업 닫기 버튼을 눌렀는지 */
+  getResultCloseHitAt(x: number, y: number): boolean {
+    return inRect(this._resultCloseRect ?? undefined, x, y);
+  }
+
+  closeResultPopup(): void {
+    this._resultPopupClosed = true;
+  }
+
   /**
-   * 여러명 모드에서 확정된 당첨자를 좌측 하단에 상시 표시한다.
-   * 우측은 랭킹 리스트가 구슬 수만큼 내려오므로 겹치지 않는 좌측 하단에 둔다.
+   * 여러명 모드에서 확정된 당첨자를 좌측 상단에 상시 표시한다.
+   * 우측은 랭킹 리스트가 구슬 수만큼 내려오므로 겹친다. 좌측은 미니맵이 세로로 긴
+   * 스트립이라 그 오른쪽에 붙인다.
    */
   private renderWinnerProgress({ winners, winnerRange, result, theme }: RenderParameters) {
     const { start, end } = winnerRange;
@@ -421,7 +447,7 @@ export class RouletteRenderer {
     const rows = shown.length + (hidden > 0 ? 1 : 0);
     const panelH = lineHeight * 1.5 + rows * lineHeight + pad;
     const panelX = MINIMAP_INSET + MINIMAP_WIDTH + pad;
-    const panelY = h - panelH - pad * 1.5;
+    const panelY = pad * 1.5;
 
     ctx.fillStyle = theme.winnerBackground;
     ctx.fillRect(panelX, panelY, panelW, panelH);
@@ -503,6 +529,10 @@ export class RouletteRenderer {
     ctx.fillStyle = theme.winnerText;
     ctx.font = `bold ${lineHeight * 1.1}px sans-serif`;
     ctx.fillText(`Winners (${winners.length})`, w / 2, panelY + titleHeight / 2);
+
+    // 버튼 중심을 팝업 우상단 꼭지점에 맞춰 걸쳐놓는다. 뒤가 비치지 않게 불투명하게 채우되,
+    // 검정으로 채우면 다크 테마에서 배경과 같아져 버튼으로 안 보이므로 대비되는 색을 쓴다
+    this._resultCloseRect = drawCloseCircle(ctx, panelX + panelW, panelY, closeButtonSize(h), '#222');
 
     const rankWidth = lineHeight * 1.8;
     winners.forEach((marble, i) => {

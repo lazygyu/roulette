@@ -317,17 +317,23 @@ export class Roulette extends EventTarget {
     });
 
     canvas.addEventListener('click', (e) => {
+      // 광고 오버레이가 팝업 위에 그려지므로 먼저 검사한다
       const hit = this.adHitAt(e);
-      if (!hit) return;
-      if (hit.type === 'close') {
-        this.hideAdOverlay();
-      } else {
-        window.open(hit.url, '_blank', 'noopener');
+      if (hit) {
+        if (hit.type === 'close') {
+          this.hideAdOverlay();
+        } else {
+          window.open(hit.url, '_blank', 'noopener');
+        }
+        return;
+      }
+      if (this.resultCloseHitAt(e)) {
+        this._renderer.closeResultPopup();
       }
     });
 
     canvas.addEventListener('pointermove', (e) => {
-      canvas.style.cursor = this.adHitAt(e) ? 'pointer' : '';
+      canvas.style.cursor = this.adHitAt(e) || this.resultCloseHitAt(e) ? 'pointer' : '';
     });
   }
 
@@ -398,6 +404,11 @@ export class Roulette extends EventTarget {
   private adHitAt(e: MouseEvent): AdHit | null {
     const sizeFactor = this._renderer.sizeFactor;
     return this._renderer.getAdHitAt(e.offsetX * sizeFactor, e.offsetY * sizeFactor);
+  }
+
+  private resultCloseHitAt(e: MouseEvent): boolean {
+    const sizeFactor = this._renderer.sizeFactor;
+    return this._renderer.getResultCloseHitAt(e.offsetX * sizeFactor, e.offsetY * sizeFactor);
   }
 
   public setTheme(themeName: keyof typeof Themes) {
