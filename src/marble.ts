@@ -118,15 +118,18 @@ export class Marble {
     this.theme = theme;
     const viewPortHw = viewPort.w / viewPort.zoom / 2;
     const viewPortHh = viewPort.h / viewPort.zoom / 2;
-    const cullMargin = this.size / 2;
-    const viewPortLeft = viewPort.x - viewPortHw - cullMargin;
-    const viewPortRight = viewPort.x + viewPortHw + cullMargin;
-    const viewPortTop = viewPort.y - viewPortHh - cullMargin;
-    const viewPortBottom = viewPort.y + viewPortHh + cullMargin;
-    if (
-      !isMinimap &&
-      (this.x < viewPortLeft || this.x > viewPortRight || this.y < viewPortTop || this.y > viewPortBottom)
-    ) {
+    const viewPortLeft = viewPort.x - viewPortHw;
+    const viewPortRight = viewPort.x + viewPortHw;
+    const viewPortTop = viewPort.y - viewPortHh;
+    const viewPortBottom = viewPort.y + viewPortHh;
+    const halfSize = this.size / 2;
+    const isOutsideView = (
+      this.x - halfSize < viewPortLeft || 
+      this.x + halfSize > viewPortRight || 
+      this.y - halfSize < viewPortTop || 
+      this.y + halfSize > viewPortBottom
+    );
+    if (!isMinimap && isOutsideView) {
       return;
     }
     const transform = ctx.getTransform();
