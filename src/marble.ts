@@ -120,12 +120,16 @@ export class Marble {
     const viewPortHh = viewPort.h / viewPort.zoom / 2;
     const viewPortLeft = viewPort.x - viewPortHw;
     const viewPortRight = viewPort.x + viewPortHw;
-    const viewPortTop = viewPort.y - viewPortHh - this.size / 2;
+    const viewPortTop = viewPort.y - viewPortHh;
     const viewPortBottom = viewPort.y + viewPortHh;
-    if (
-      !isMinimap &&
-      (this.x < viewPortLeft || this.x > viewPortRight || this.y < viewPortTop || this.y > viewPortBottom)
-    ) {
+    const halfSize = this.size / 2;
+    const isOutsideView = (
+      this.x + halfSize < viewPortLeft ||
+      this.x - halfSize > viewPortRight ||
+      this.y + halfSize < viewPortTop ||
+      this.y - halfSize > viewPortBottom
+    );
+    if (!isMinimap && isOutsideView) {
       return;
     }
     const transform = ctx.getTransform();
