@@ -46,8 +46,9 @@ export class FastForwader implements UIObject {
     return this.bound;
   }
 
-  onMouseDown?(_e?: MouseEventArgs): void {
-    this.isEnabled = true;
+  // 영역 밖에서 누르면 mouseHandler 가 undefined 를 넘긴다. 그때도 켜지면 캔버스 어디를 눌러도 2배속이 된다
+  onMouseDown?(e?: MouseEventArgs): void {
+    this.isEnabled = e !== undefined;
   }
 
   onMouseUp?(_e?: MouseEventArgs): void {

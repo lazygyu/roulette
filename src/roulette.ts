@@ -118,11 +118,14 @@ export class Roulette extends EventTarget {
     }
     this._lastTime = currentTime;
 
-    const interval = (this._updateInterval / 1000) * this._timeScale;
+    // _timeScale 은 _updateMarbles 에서 갱신되지만 물리 스텝 크기는 이 프레임 시작값으로 고정된다.
+    // 구슬 정지 판정도 같은 값을 써야 실제 진행된 물리 시간과 맞는다
+    const timeScale = this._timeScale;
+    const interval = (this._updateInterval / 1000) * timeScale;
 
     while (this._elapsed >= this._updateInterval) {
       this.physics.step(interval);
-      this._updateMarbles(this._updateInterval);
+      this._updateMarbles(this._updateInterval, timeScale);
       this._particleManager.update(this._updateInterval);
       this._updateEffects(this._updateInterval);
       this._elapsed -= this._updateInterval;
@@ -146,12 +149,12 @@ export class Roulette extends EventTarget {
     window.requestAnimationFrame(this._update);
   }
 
-  private _updateMarbles(deltaTime: number) {
+  private _updateMarbles(deltaTime: number, timeScale: number) {
     if (!this._stage) return;
 
     for (let i = 0; i < this._marbles.length; i++) {
       const marble = this._marbles[i];
-      marble.update(deltaTime);
+      marble.update(deltaTime, timeScale);
       if (marble.skill === Skills.Impact) {
         this._effects.push(new SkillEffect(marble.x, marble.y));
         this.physics.impact(marble.id);

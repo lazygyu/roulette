@@ -72,8 +72,18 @@ export class Marble {
     physics.createMarble(order, 10.25 + (order % 10) * 0.6, maxLine - line + lineDelta);
   }
 
-  update(deltaTime: number) {
-    if (this.isActive && Vector.lenSq(Vector.sub(this.lastPosition, this.position)) < 0.00001) {
+  /**
+   * @param deltaTime 벽시계 기준 경과(ms). 스킬 쿨타임 등 연출 시간에 쓴다
+   * @param timeScale 이 틱에서 물리가 실제로 진행된 비율(슬로모션이면 1 미만).
+   *   정지 판정은 이동 거리로 하므로 물리 시간에 맞춰 문턱을 줄여야 한다. 안 그러면 슬로모션 중
+   *   천천히 구르는 구슬이 멈춘 것으로 오판되어 골인 직전에 랜덤으로 튕겨진다
+   */
+  update(deltaTime: number, timeScale: number = 1) {
+    const stuckThreshold = 0.00001 * timeScale * timeScale;
+    if (this.isActive && Vector.lenSq(Vector.sub(this.lastPosition, this.position)) < stuckThreshold) {
+      // 누적에는 timeScale 을 곱하지 않는다. 이건 화면이 굳는 걸 막는 워치독이라 관객 체감 시간이 기준이다.
+      // 물리 시간으로 바꾸면 슬로모션이 깊을수록 발동이 늦어지는데, 타겟 구슬이 멈추면 _goalDist 가 고정되어
+      // 슬로모션이 풀리지 않으므로 교착을 깨야 할 상황에서 워치독이 오히려 무뎌진다
       this._stuckTime += deltaTime;
 
       if (this._stuckTime > STUCK_DELAY) {

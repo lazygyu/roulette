@@ -8,12 +8,14 @@
     "@parcel/transformer-sass": "^2.16.4",
     "@parcel/transformer-webmanifest": "^2.16.4",
     "parcel": "^2.16.4",
+    "tsx": "^4.23.13",
     "typescript": "^5.6.3"
   },
   "scripts": {
     "lint": "biome check --fix src/",
     "dev": "parcel index.html --port 1235",
-    "build": "parcel build index.html --public-url /roulette/ && node scripts/build-sw.js"
+    "build": "parcel build index.html --public-url /roulette/ && node scripts/build-sw.js",
+    "simulate": "tsx scripts/simulate.ts"
   },
   "dependencies": {
     "box2d-wasm": "^7.0.0"
