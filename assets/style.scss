@@ -71,6 +71,10 @@ div.copyright a {
     mask-image: url('images/megaphone.svg');
   }
 
+  &.shop {
+    mask-image: url('images/shop.svg');
+  }
+
   &.record {
     mask-image: url('images/record.svg');
   }
@@ -152,28 +156,15 @@ div.copyright a {
       bottom: 0;
       background: rgba(0, 0, 0, 0.5);
     }
+  }
 
-    &#btnShop {
-      height: 35px;
-
-      img {
-        width: 25px;
-        height: 25px;
-      }
-    }
-
-    &.new::before {
-      position: absolute;
-      background: #AA0000;
-      color: white;
-      content: 'NEW';
-      font-size: 9px;
-      padding: 2px 4px;
-      right: -10px;
-      top: -4px;
-      border-radius: 6px;
-      z-index: 1;
-    }
+  // <a class="btn">가 <button>과 같은 크기/모양으로 보이도록
+  a.btn {
+    text-decoration: none;
+    font-size: 10pt;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
 
   div.theme {
@@ -242,18 +233,6 @@ div.copyright a {
           padding-left: 150px;
         }
 
-        // div.right는 콘텐츠 폭으로 잡힌다. number input의 기본 폭(~169px)이 그대로
-        // 남으면 이 행을 열 때마다 오른쪽 칼럼 전체가 넓어진다. width를 0으로 눌러
-        // intrinsic 계산에서 빼고, flex-grow로 위 행이 정한 폭만 채우게 한다
-        .range-group {
-          flex: 1 1 0;
-          min-width: 0;
-
-          input[type=number] {
-            width: 0;
-          }
-        }
-
         .range-sep {
           flex: 0 0 24px;
           background: transparent;
@@ -316,6 +295,10 @@ div.copyright a {
   .btn-group {
     display: flex;
     justify-content: stretch;
+    // number input의 기본 폭(~169px)이 intrinsic 폭에 들어가 오른쪽 칼럼을 넓히지 않도록
+    // width를 0으로 누르고, 대신 그룹이 행의 남는 폭을 채우게 한다
+    flex: 1 1 0;
+    min-width: 0;
 
     & > * {
       box-sizing: border-box;
@@ -360,6 +343,7 @@ div.copyright a {
     input[type=number] {
       box-sizing: border-box;
       text-align: center;
+      width: 0;
     }
   }
 }
