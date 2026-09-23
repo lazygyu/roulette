@@ -7,6 +7,7 @@ import type { VectorLike } from './types/VectorLike';
 import type { UIObject } from './UIObject';
 import { bound } from './utils/bound.decorator';
 
+/** 미니맵 최대 배율. 맵이 길면 화면 높이에 맞춰 이보다 작아진다 */
 const MINIMAP_SCALE = 4;
 const MINIMAP_UNITS = 26;
 /** 미니맵은 좌측에 세로로 긴 스트립이다. 다른 HUD가 피해가려면 이 값이 필요하다 */
@@ -20,6 +21,7 @@ export class Minimap implements UIObject {
   private _onViewportChangeHandler: ((pos?: VectorLike) => void) | null = null;
   private boundingBox: Rect;
   private mousePosition: { x: number; y: number } | null = null;
+  private scale = MINIMAP_SCALE;
 
   constructor() {
     this.boundingBox = {
@@ -58,17 +60,21 @@ export class Minimap implements UIObject {
     };
     if (this._onViewportChangeHandler) {
       this._onViewportChangeHandler({
-        x: this.mousePosition.x / 4,
-        y: this.mousePosition.y / 4,
+        x: this.mousePosition.x / this.scale,
+        y: this.mousePosition.y / this.scale,
       });
     }
   }
 
-  render(ctx: CanvasRenderingContext2D, params: RenderParameters) {
+  render(ctx: CanvasRenderingContext2D, params: RenderParameters, _width: number, height: number) {
     if (!ctx) return;
     const { stage } = params;
     if (!stage) return;
-    this.boundingBox.h = stage.goalY * MINIMAP_SCALE;
+    // 맵이 길어도 화면 세로 안에 전부 들어가도록 배율을 줄인다
+    const maxHeight = Math.max(0, height - MINIMAP_INSET * 2);
+    this.scale = Math.min(MINIMAP_SCALE, maxHeight / stage.goalY);
+    this.boundingBox.w = MINIMAP_UNITS * this.scale;
+    this.boundingBox.h = stage.goalY * this.scale;
 
     this.lastParams = params;
 
@@ -76,7 +82,7 @@ export class Minimap implements UIObject {
     ctx.save();
     ctx.fillStyle = params.theme.minimapBackground;
     ctx.translate(MINIMAP_INSET, MINIMAP_INSET);
-    ctx.scale(MINIMAP_SCALE, MINIMAP_SCALE);
+    ctx.scale(this.scale, this.scale);
     ctx.fillRect(0, 0, MINIMAP_UNITS, stage.goalY);
 
     this.ctx.lineWidth = 3 / (params.camera.zoom + initialZoom);
