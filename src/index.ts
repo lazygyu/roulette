@@ -1,5 +1,6 @@
 import './localization';
 import { AdService } from './adService';
+import { reportCommunityMapPlay } from './communityMaps';
 import { initMapSelector } from './mapSelector';
 import options from './options';
 import { Roulette } from './roulette';
@@ -31,14 +32,15 @@ adService.onUpdate = preloadNextAd;
 adService.init();
 
 (window as any).roulette = roulette;
-// index.html 이 초기화할 때 부른다. 맵 공유마당 API 는 광고와 같은 서버에 있다
+// 맵 공유마당 API 는 광고와 같은 서버에 있다
+const mapApiBase = isLocalhost ? 'http://localhost:3000' : 'https://marblerouletteshop.com';
+
+// index.html 이 초기화할 때 부른다
 (window as any).initMapSelector = (onMapChange: () => void, toast: (key: string) => void) =>
-  initMapSelector({
-    roulette,
-    apiBase: isLocalhost ? 'http://localhost:3000' : 'https://marblerouletteshop.com',
-    onMapChange,
-    toast,
-  });
+  initMapSelector({ roulette, apiBase: mapApiBase, onMapChange, toast });
+
+// 시작 버튼. 받은 맵이면 플레이 1회를 알린다
+(window as any).reportMapPlay = () => reportCommunityMapPlay(mapApiBase, roulette.getCurrentMap()?.id ?? '');
 (window as any).options = options;
 const PREROLL_MS = 1500;
 

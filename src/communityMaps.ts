@@ -189,6 +189,19 @@ export function setSelectedMapId(id: string) {
   }
 }
 
+/**
+ * 받은 맵으로 게임을 시작했다고 알린다. 맵 공유마당의 인기순(최근 7일 플레이) 에 쓰인다.
+ * 광고 노출 집계처럼 결과를 기다리지 않는다. 본문과 헤더가 없는 POST 라 CORS 프리플라이트도 생기지 않는다
+ */
+export function reportCommunityMapPlay(apiBase: string, mapId: string) {
+  if (!mapId.startsWith('community:')) return;
+  const id = mapId.slice('community:'.length);
+  if (!COMMUNITY_MAP_ID.test(id)) return;
+  fetch(`${apiBase}/api/external/maps/${id}/play`, { method: 'POST', credentials: 'omit', keepalive: true }).catch(
+    () => {},
+  );
+}
+
 export async function fetchCommunityMap(apiBase: string, id: string): Promise<CommunityMapPackage | null> {
   const res = await fetch(`${apiBase}/api/external/maps/${id}`);
   if (!res.ok) return null;

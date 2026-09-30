@@ -220,6 +220,7 @@
         });
       }
       document.querySelector('#settings').classList.add('hide');
+      window.reportMapPlay && window.reportMapPlay();
       if (window.ads) {
         window.ads.beginRound(() => window.roulette.start());
       } else {
