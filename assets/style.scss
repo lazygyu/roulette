@@ -249,6 +249,43 @@ div.copyright a {
     background: #999;
   }
 
+  // 맵 선택 + 받은 맵 삭제 + 맵 공유마당 바로가기
+  .map-picker {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1 1 0;
+    min-width: 0;
+
+    select {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+  }
+
+  .btn-map-action {
+    flex: 0 0 25px;
+    height: 25px;
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+    background: #999;
+    color: #222;
+    font-size: 13px;
+    line-height: 25px;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+
+    &[hidden] {
+      display: none;
+    }
+
+    &:hover {
+      background: #bbb;
+    }
+  }
+
   input[type=checkbox] {
     width: 50px;
     display: inline-block;

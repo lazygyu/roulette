@@ -212,7 +212,8 @@
         const currentMap = window.roulette.getCurrentMap();
         umami.track('start', {
           count: window.roulette.getCount(),
-          map: currentMap ? currentMap.title : 'unknown',
+          // 받은 맵은 제목이 사람마다 제각각이라 id 로 모은다
+          map: currentMap ? (currentMap.id.startsWith('community:') ? currentMap.id : currentMap.title) : 'unknown',
         });
         marbles.forEach(m => {
           umami.track('marble', { name: m.name, count: m.count });
@@ -270,22 +271,10 @@
 
     document.querySelector('#btnShuffle').click();
 
-    const maps = window.roulette.getMaps();
-    const mapSelector = document.querySelector('#sltMap');
-    maps.forEach((map) => {
-      const option = document.createElement('option');
-      option.value = map.index;
-      option.innerHTML = map.title;
-      option.setAttribute('data-trans', '');
-      window.translateElement(option);
-      mapSelector.append(option);
-    });
-    mapSelector.addEventListener('change', (e) => {
-      window.roulette.setMap(e.target.value);
-      // setMap은 살아남은 구슬에서 이름을 뽑아 재구성한다. 골인한 구슬이 사라지고
-      // 무게(/n)도 날아가므로, 원본인 이름 입력창에서 다시 채운다
-      getReady();
-    });
+    // 기본 맵 + 맵 공유마당에서 받은 맵. 선택 기억과 ?installMap= 설치도 여기서 한다.
+    // 맵을 바꾸면 살아남은 구슬에서 이름을 뽑아 재구성하는데, 골인한 구슬이 사라지고
+    // 무게(/n)도 날아가므로 원본인 이름 입력창에서 다시 채운다
+    window.initMapSelector(getReady, simpleToast);
 
     // const checkDonateButtonLoaded = () => {
     //   const btn = document.querySelector('span.bmc-btn-text');
@@ -360,7 +349,11 @@
           <i class="icon map"></i>
           <span data-trans>Map</span>
         </label>
-        <select id="sltMap"></select>
+        <div class="map-picker">
+          <select id="sltMap"></select>
+          <button id="btnRemoveMap" class="btn-map-action" type="button" hidden title="Remove this map" data-trans="title">✕</button>
+          <a id="lnkMoreMaps" class="btn-map-action" href="https://marblerouletteshop.com/maps" target="_blank" rel="noopener" title="Get more maps" data-trans="title">+</a>
+        </div>
       </div>
       <div class="row row-toggles">
         <div class='toggle-item'>

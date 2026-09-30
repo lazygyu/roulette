@@ -40,6 +40,8 @@ export class Roulette extends EventTarget {
   private _winners: Marble[] = [];
   private _particleManager = new ParticleManager();
   private _stage: StageDef | null = null;
+  /** 'builtin:{index}' | 'community:{id}'. 맵 공유마당에서 받은 맵은 stages 에 없어서 인덱스 대신 이 값으로 구분한다 */
+  private _mapId = 'builtin:0';
 
   protected _camera: Camera = new Camera();
   protected _renderer: RouletteRenderer;
@@ -537,11 +539,13 @@ export class Roulette extends EventTarget {
     });
   }
 
+  /** index 는 기본 맵의 인덱스, 다운로드한 맵이면 -1 */
   public getCurrentMap() {
     if (!this._stage) return null;
     return {
       index: stages.indexOf(this._stage),
       title: this._stage.title,
+      id: this._mapId,
     };
   }
 
@@ -549,8 +553,14 @@ export class Roulette extends EventTarget {
     if (index < 0 || index > stages.length - 1) {
       throw new Error('Incorrect map number');
     }
+    this.setStage(stages[index], `builtin:${index}`);
+  }
+
+  /** 기본 맵 목록에 없는 맵(맵 공유마당에서 받은 맵) 을 쓴다 */
+  public setStage(stage: StageDef, id: string) {
     const names = this._marbles.map((marble) => marble.name);
-    this._stage = stages[index];
+    this._stage = stage;
+    this._mapId = id;
     this.setMarbles(names);
     this._camera.initializePosition();
   }
