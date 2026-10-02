@@ -86,7 +86,29 @@ export function isPlayableStage(v: unknown): v is StageDef {
   if (v.adBoards !== undefined) {
     if (!Array.isArray(v.adBoards) || !v.adBoards.every((b) => isObj(b) && isNum(b.x) && isNum(b.y))) return false;
   }
+  if (v.progress !== undefined) {
+    if (!isObj(v.progress)) return false;
+    const oneWays = v.progress.oneWays;
+    if (
+      oneWays !== undefined &&
+      (!Array.isArray(oneWays) || !oneWays.every((l) => isObj(l) && isPoint(l.from) && isPoint(l.to)))
+    ) {
+      return false;
+    }
+  }
+  if (v.zoomZones !== undefined) {
+    if (
+      !Array.isArray(v.zoomZones) ||
+      !v.zoomZones.every((z) => isObj(z) && isNum(z.x) && isNum(z.y) && isNum(z.w) && isNum(z.h) && z.w > 0 && z.h > 0)
+    ) {
+      return false;
+    }
+  }
   return true;
+}
+
+function isPoint(v: unknown): boolean {
+  return Array.isArray(v) && v.length === 2 && isNum(v[0]) && isNum(v[1]);
 }
 
 function isDownloadedMap(v: unknown): v is DownloadedMap {
@@ -198,7 +220,7 @@ export function reportCommunityMapPlay(apiBase: string, mapId: string) {
   const id = mapId.slice('community:'.length);
   if (!COMMUNITY_MAP_ID.test(id)) return;
   fetch(`${apiBase}/api/external/maps/${id}/play`, { method: 'POST', credentials: 'omit', keepalive: true }).catch(
-    () => {},
+    () => {}
   );
 }
 

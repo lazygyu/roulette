@@ -70,16 +70,19 @@ export class Camera {
     marbles,
     stage,
     needToZoom,
+    zoomIntensity = null,
     targetIndex,
   }: {
     marbles: Marble[];
     stage: StageDef;
     needToZoom: boolean;
+    /** 연출 구역이 있는 맵의 연출 강도 (0 ~ 1). null 이면 zoomY 와의 거리로 줌을 정한다 */
+    zoomIntensity?: number | null;
     targetIndex: number;
   }) {
     // set target position
     if (!this._locked) {
-      this._calcTargetPositionAndZoom(marbles, stage, needToZoom, targetIndex);
+      this._calcTargetPositionAndZoom(marbles, stage, needToZoom, targetIndex, zoomIntensity);
     }
 
     // interpolate position
@@ -90,7 +93,13 @@ export class Camera {
     this._zoom = this._interpolation(this._zoom, this._targetZoom);
   }
 
-  private _calcTargetPositionAndZoom(marbles: Marble[], stage: StageDef, needToZoom: boolean, targetIndex: number) {
+  private _calcTargetPositionAndZoom(
+    marbles: Marble[],
+    stage: StageDef,
+    needToZoom: boolean,
+    targetIndex: number,
+    zoomIntensity: number | null
+  ) {
     if (!this._shouldFollowMarbles) {
       return;
     }
@@ -98,7 +107,9 @@ export class Camera {
     if (marbles.length > 0) {
       const targetMarble = marbles[targetIndex] ? marbles[targetIndex] : marbles[0];
       this.setPosition(targetMarble.position);
-      if (needToZoom) {
+      if (needToZoom && zoomIntensity !== null) {
+        this.zoom = Math.max(1, zoomIntensity * 4);
+      } else if (needToZoom) {
         const goalDist = Math.abs(stage.zoomY - this._position.y);
         this.zoom = Math.max(1, (1 - goalDist / zoomThreshold) * 4);
       } else {
