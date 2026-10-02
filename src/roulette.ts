@@ -9,6 +9,7 @@ import { Minimap } from './minimap';
 import options, { type WinnerRange } from './options';
 import { ParticleManager } from './particleManager';
 import { Box2dPhysics } from './physics-box2d';
+import { ProgressMap } from './progressMap';
 import { RankRenderer } from './rankRenderer';
 import { type AdHit, RouletteRenderer } from './rouletteRenderer';
 import { SkillEffect } from './skillEffect';
@@ -19,6 +20,7 @@ import type { UIObject } from './UIObject';
 import { bound } from './utils/bound.decorator';
 import { parseName, shuffle } from './utils/utils';
 import { VideoRecorder } from './utils/videoRecorder';
+import { drawZoomZones, zoomZoneIntensity } from './zoomZone';
 
 /** 입력 범위를 실제 구슬 수에 맞춰 자른다. 범위를 넘기면 뒤쪽이 잘린다 */
 function clipWinnerRange({ start, end }: WinnerRange, marbleCount: number): WinnerRange {
@@ -26,6 +28,13 @@ function clipWinnerRange({ start, end }: WinnerRange, marbleCount: number): Winn
   const clippedStart = Math.min(Math.max(0, start), last);
   return { start: clippedStart, end: Math.min(Math.max(clippedStart, end), last) };
 }
+
+/**
+ * 순위 흔들림 줄이기. 구슬마다 순위 값(결승까지 남은 거리) 을 이 시간(초) 동안 부드럽게 따라가고,
+ * 앞 구슬보다 RANK_MARGIN 넘게 앞서야 자리를 바꾼다
+ */
+const RANK_EMA_SEC = 0.4;
+const RANK_MARGIN = 0.25;
 
 export class Roulette extends EventTarget {
   private _marbles: Marble[] = [];
@@ -40,6 +49,8 @@ export class Roulette extends EventTarget {
   private _winners: Marble[] = [];
   private _particleManager = new ParticleManager();
   private _stage: StageDef | null = null;
+  /** 'builtin:{index}' | 'community:{id}'. 맵 공유마당에서 받은 맵은 stages 에 없어서 인덱스 대신 이 값으로 구분한다 */
+  private _mapId = 'builtin:0';
 
   protected _camera: Camera = new Camera();
   protected _renderer: RouletteRenderer;
@@ -48,6 +59,12 @@ export class Roulette extends EventTarget {
 
   private _winnerRange: WinnerRange = { start: 0, end: 0 };
   private _goalDist: number = Infinity;
+  /** 연출 구역이 있는 맵에서 커트라인 구슬의 연출 강도 (0 ~ 1). 구역이 없으면 null 이고 zoomY 로 판단한다 */
+  private _zoomIntensity: number | null = null;
+  /** 구슬별 평활화한 순위 값 (결승까지 남은 거리) */
+  private _rankKeys = new Map<Marble, number>();
+  /** 진행도 지도 그림 (setProgressDebug 로 켰을 때 맵마다 한 번 만든다) */
+  private _progressImage: { map: ProgressMap; image: HTMLCanvasElement } | null = null;
   private _isRunning: boolean = false;
   /** 진행 중에는 null, 당첨자가 모두 확정되면 당첨자 배열 */
   private _result: Marble[] | null = null;
@@ -123,7 +140,9 @@ export class Roulette extends EventTarget {
     const timeScale = this._timeScale;
     const interval = (this._updateInterval / 1000) * timeScale;
 
+    let simSeconds = 0;
     while (this._elapsed >= this._updateInterval) {
+      simSeconds += interval;
       this.physics.step(interval);
       this._updateMarbles(this._updateInterval, timeScale);
       this._particleManager.update(this._updateInterval);
@@ -133,20 +152,74 @@ export class Roulette extends EventTarget {
     }
 
     if (this._marbles.length > 1) {
-      this._marbles.sort((a, b) => b.y - a.y);
+      this._sortMarbles(simSeconds);
     }
 
     if (this._stage) {
       this._camera.update({
         marbles: this._marbles,
         stage: this._stage,
-        needToZoom: this._goalDist < zoomThreshold,
+        needToZoom: this._zoomIntensity !== null ? this._zoomIntensity > 0 : this._goalDist < zoomThreshold,
+        zoomIntensity: this._zoomIntensity,
         targetIndex: this._winners.length > 0 ? this._targetIndex : 0,
       });
     }
 
     this._render();
     window.requestAnimationFrame(this._update);
+  }
+
+  /**
+   * 순위대로 정렬한다. 순위 값은 진행도 지도의 "결승까지 남은 거리" (progressMap.ts).
+   * dt = 이번 프레임에 진행된 물리 시간(초)
+   */
+  private _sortMarbles(dt: number) {
+    if (!this._stage) return;
+    const map = ProgressMap.for(this._stage);
+
+    /** 지난 프레임 기록이 있는 구슬 수. 구슬을 새로 넣은 직후면 0 */
+    let known = 0;
+    const alpha = 1 - Math.exp(-dt / RANK_EMA_SEC);
+    const keys = new Map<Marble, number>();
+    for (const m of this._marbles) {
+      const raw = map.distanceAt(m.x, m.y);
+      const prev = this._rankKeys.get(m);
+      if (prev !== undefined) known++;
+      keys.set(m, prev !== undefined ? prev + (raw - prev) * alpha : raw);
+    }
+    this._rankKeys = keys;
+
+    // 구슬을 막 넣었을 때는 지난 순서가 없으니 그냥 정렬한다
+    if (known < this._marbles.length / 2) {
+      this._marbles.sort((a, b) => keys.get(a)! - keys.get(b)! || b.y - a.y);
+      return;
+    }
+    // 지난 프레임 순서에서 출발해, 앞 구슬보다 RANK_MARGIN 넘게 앞설 때만 앞으로 보낸다 (여유를 둔 삽입 정렬).
+    // 순서가 거의 그대로라 일반 정렬보다 빠르다
+    const list = this._marbles;
+    for (let i = 1; i < list.length; i++) {
+      const m = list[i];
+      const k = keys.get(m)! + RANK_MARGIN;
+      let j = i;
+      while (j > 0 && k < keys.get(list[j - 1])!) {
+        list[j] = list[j - 1];
+        j--;
+      }
+      list[j] = m;
+    }
+  }
+
+  /** 진행도 지도(순위 계산에 쓰는 남은 거리), 일방통행 선, 연출 구역을 맵 위에 그린다 (테스트 플레이에서 확인용) */
+  public setProgressDebug(on: boolean) {
+    this._renderer.debugDraw = on
+      ? (ctx) => {
+          if (!this._stage) return;
+          const map = ProgressMap.for(this._stage);
+          if (this._progressImage?.map !== map) this._progressImage = { map, image: map.toCanvas() };
+          map.drawDebug(ctx, this._progressImage.image);
+          if (this._stage.zoomZones?.length) drawZoomZones(ctx, this._stage.zoomZones);
+        }
+      : null;
   }
 
   private _updateMarbles(deltaTime: number, timeScale: number) {
@@ -175,6 +248,12 @@ export class Roulette extends EventTarget {
     const targetIndex = this._targetIndex;
     const topY = this._marbles[targetIndex] ? this._marbles[targetIndex].y : 0;
     this._goalDist = Math.abs(this._stage.zoomY - topY);
+    const target = this._marbles[targetIndex];
+    this._zoomIntensity = this._stage.zoomZones?.length
+      ? target
+        ? zoomZoneIntensity(this._stage.zoomZones, target.x, target.y)
+        : 0
+      : null;
     this._timeScale = this._calcTimeScale();
 
     this._marbles = this._marbles.filter((marble) => marble.y <= this._stage?.goalY);
@@ -220,6 +299,17 @@ export class Roulette extends EventTarget {
   private _calcTimeScale(): number {
     if (!this._stage) return 1;
     const targetIndex = this._targetIndex;
+    // 연출 구역: 커트라인 구슬이 구역 가운데로 갈수록 느려진다. 경쟁하는 구슬이 있을 때만
+    if (this._zoomIntensity !== null) {
+      if (
+        this._winners.length < this._winnerRange.end + 1 &&
+        this._zoomIntensity > 0 &&
+        (this._marbles[targetIndex - 1] || this._marbles[targetIndex + 1])
+      ) {
+        return Math.max(0.2, 1 - this._zoomIntensity);
+      }
+      return 1;
+    }
     if (this._winners.length < this._winnerRange.end + 1 && this._goalDist < zoomThreshold) {
       if (
         this._marbles[targetIndex].y > this._stage.zoomY - zoomThreshold * 1.2 &&
@@ -537,11 +627,13 @@ export class Roulette extends EventTarget {
     });
   }
 
+  /** index 는 기본 맵의 인덱스, 다운로드한 맵이면 -1 */
   public getCurrentMap() {
     if (!this._stage) return null;
     return {
       index: stages.indexOf(this._stage),
       title: this._stage.title,
+      id: this._mapId,
     };
   }
 
@@ -549,8 +641,14 @@ export class Roulette extends EventTarget {
     if (index < 0 || index > stages.length - 1) {
       throw new Error('Incorrect map number');
     }
+    this.setStage(stages[index], `builtin:${index}`);
+  }
+
+  /** 기본 맵 목록에 없는 맵(맵 공유마당에서 받은 맵) 을 쓴다 */
+  public setStage(stage: StageDef, id: string) {
     const names = this._marbles.map((marble) => marble.name);
-    this._stage = stages[index];
+    this._stage = stage;
+    this._mapId = id;
     this.setMarbles(names);
     this._camera.initializePosition();
   }

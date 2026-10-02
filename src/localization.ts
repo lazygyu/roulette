@@ -47,4 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
   setLocale(browserLocale);
 });
 
+/** 요소가 아닌 문자열(confirm 등) 번역. 번역이 없으면 원문 */
+export function translate(key: string): string {
+  const table = Translations[locale ?? defaultLocale] as Record<string, string>;
+  return table[key] ?? key;
+}
+
 (window as any).translateElement = translateElement;

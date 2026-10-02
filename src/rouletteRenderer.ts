@@ -175,6 +175,8 @@ export class RouletteRenderer {
   }
 
   protected onBeforeEntities(): void {}
+  /** 장애물 아래에 월드 좌표로 덧그리는 그림 (테스트 플레이의 진행도 지도) */
+  public debugDraw: ((ctx: CanvasRenderingContext2D) => void) | null = null;
   protected onAfterScene(): void {}
 
   setAd(ad: RoundAd | null): void {
@@ -291,6 +293,7 @@ export class RouletteRenderer {
     renderParameters.camera.renderScene(this.ctx, () => {
       this.renderAdBoards(renderParameters.stage);
       this.onBeforeEntities();
+      this.debugDraw?.(this.ctx);
       this.renderEntities(renderParameters.entities);
       this.renderEffects(renderParameters);
       this.renderMarbles(renderParameters);
