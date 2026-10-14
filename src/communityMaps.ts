@@ -232,3 +232,141 @@ export async function fetchCommunityMap(apiBase: string, id: string): Promise<Co
   if (typeof pkg.author !== 'string' || !isPlayableStage(pkg.stage)) return null;
   return pkg as unknown as CommunityMapPackage;
 }
+
+// === 맵 브라우저 ===
+
+/** 서버(/api/external/maps) 목록 항목 */
+export interface CommunityMapListItem {
+  slug: string;
+  title: string;
+  authorName: string;
+  version: number;
+  downloadCount: number;
+  playCount: number;
+  recentPlayCount: number;
+}
+
+export type CommunityMapSort = 'popular' | 'latest' | 'downloads';
+
+export interface CommunityMapListPage {
+  items: CommunityMapListItem[];
+  total: number;
+}
+
+function isListItem(v: unknown): v is CommunityMapListItem {
+  return (
+    isObj(v) &&
+    typeof v.slug === 'string' &&
+    COMMUNITY_MAP_ID.test(v.slug) &&
+    typeof v.title === 'string' &&
+    typeof v.authorName === 'string' &&
+    isNum(v.version) &&
+    isNum(v.downloadCount) &&
+    isNum(v.playCount) &&
+    isNum(v.recentPlayCount)
+  );
+}
+
+export async function fetchCommunityMapList(
+  apiBase: string,
+  query: { sort: CommunityMapSort; q: string; page: number; limit: number },
+  signal?: AbortSignal
+): Promise<CommunityMapListPage | null> {
+  const params = new URLSearchParams({ sort: query.sort, page: String(query.page), limit: String(query.limit) });
+  if (query.q) params.set('q', query.q);
+  const res = await fetch(`${apiBase}/api/external/maps?${params}`, { signal });
+  if (!res.ok) return null;
+  const body = await res.json();
+  if (!isObj(body) || !Array.isArray(body.items) || !isNum(body.total)) return null;
+  return { items: body.items.filter(isListItem), total: body.total };
+}
+
+export function communityMapThumbnailUrl(apiBase: string, id: string) {
+  return `${apiBase}/api/maps/${id}/thumbnail.svg`;
+}
+
+// === 받은 맵의 업데이트 확인 ===
+//
+// 게임을 열 때 하루 한 번만 서버에 묻고 결과를 저장해 둔다. 업데이트는 사용자가 맵 브라우저에서 직접 한다.
+// 진행 중인 판의 맵이 바뀌면 안 되므로 자동으로 바꾸지 않는다.
+
+export const MAP_UPDATES_STORAGE_KEY = 'mbr_map_updates';
+const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+export interface RemoteMapState {
+  /** 서버의 최신 승인 버전. 삭제된 맵이면 null */
+  version: number | null;
+  /** 지금 받을 수 있는지. 숨김/삭제된 맵은 false */
+  available: boolean;
+}
+
+interface MapUpdatesStore {
+  checkedAt: number;
+  maps: Record<string, RemoteMapState>;
+}
+
+function readUpdates(): MapUpdatesStore | null {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(MAP_UPDATES_STORAGE_KEY) ?? 'null');
+    if (!isObj(parsed) || !isNum(parsed.checkedAt) || !isObj(parsed.maps)) return null;
+    return parsed as unknown as MapUpdatesStore;
+  } catch {
+    return null;
+  }
+}
+
+/** 마지막으로 확인한 서버 상태. 확인한 적 없는 맵은 빠져 있다 */
+export function getRemoteMapStates(): Record<string, RemoteMapState> {
+  return readUpdates()?.maps ?? {};
+}
+
+/** 받은 맵 중 서버에 더 높은 버전이 있는 맵 id */
+export function getUpdatableMapIds(maps = getDownloadedMaps()): string[] {
+  const states = getRemoteMapStates();
+  return maps
+    .filter((m) => {
+      const state = states[m.id];
+      return state?.available === true && state.version !== null && state.version > m.version;
+    })
+    .map((m) => m.id);
+}
+
+/**
+ * 하루가 지났으면 서버에 받은 맵의 최신 버전을 묻는다. 확인했으면 true.
+ * 실패해도 게임에는 영향이 없으므로 조용히 넘어간다 (다음 방문에 다시 묻는다)
+ */
+export async function checkMapUpdates(apiBase: string, now = Date.now()): Promise<boolean> {
+  const ids = getDownloadedMaps().map((m) => m.id);
+  if (ids.length === 0) return false;
+  const last = readUpdates();
+  if (last && now - last.checkedAt >= 0 && now - last.checkedAt < UPDATE_CHECK_INTERVAL_MS) return false;
+  try {
+    const res = await fetch(`${apiBase}/api/external/maps/versions?ids=${ids.join(',')}`);
+    if (!res.ok) return false;
+    const body = await res.json();
+    if (!isObj(body) || !Array.isArray(body.maps)) return false;
+    const maps: Record<string, RemoteMapState> = {};
+    for (const m of body.maps) {
+      if (!isObj(m) || typeof m.id !== 'string' || !COMMUNITY_MAP_ID.test(m.id)) continue;
+      maps[m.id] = { version: isNum(m.version) ? m.version : null, available: m.available === true };
+    }
+    localStorage.setItem(MAP_UPDATES_STORAGE_KEY, JSON.stringify({ checkedAt: now, maps } satisfies MapUpdatesStore));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** 설치/업데이트로 최신 상태를 알게 됐을 때 기록한다. 하루 한 번 확인을 기다리지 않고 표시를 맞추기 위해서다 */
+export function rememberRemoteMapState(id: string, state: RemoteMapState) {
+  const last = readUpdates();
+  if (!last) return;
+  try {
+    localStorage.setItem(
+      MAP_UPDATES_STORAGE_KEY,
+      JSON.stringify({ ...last, maps: { ...last.maps, [id]: state } } satisfies MapUpdatesStore)
+    );
+  } catch {
+    // 다음 확인 때 맞춰진다
+  }
+}
