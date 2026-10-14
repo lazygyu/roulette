@@ -284,6 +284,23 @@ div.copyright a {
     &:hover {
       background: #bbb;
     }
+
+    // 받은 맵에 업데이트가 있다
+    &.has-update {
+      position: relative;
+
+      &::after {
+        content: '';
+        position: absolute;
+        top: -3px;
+        right: -3px;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #ff5a4f;
+        border: 2px solid #666;
+      }
+    }
   }
 
   input[type=checkbox] {
@@ -643,4 +660,271 @@ div.toast {
   background-color: #0077ff;
   border: 2px solid black;
   border-radius: 10px;
+}
+
+// 맵 공유마당 브라우저 (src/mapBrowser.ts)
+dialog.map-browser {
+  width: 640px;
+  max-width: calc(100vw - 32px);
+  height: 80vh;
+  max-height: 720px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: #555;
+  color: #fefefe;
+  overflow: hidden;
+
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .mb-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .mb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: #444;
+  }
+
+  .mb-title {
+    margin: 0;
+    font-size: 14pt;
+  }
+
+  button {
+    color: #fefefe;
+    background: #222;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 10pt;
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.6;
+    }
+
+    &:not(:disabled):hover {
+      background: #000;
+    }
+  }
+
+  .mb-close {
+    background: transparent;
+    font-size: 14pt;
+    padding: 0 6px;
+  }
+
+  .mb-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px 12px 0;
+
+    .mb-tab {
+      flex: 1 1 0;
+      position: relative;
+      background: #444;
+      border-radius: 5px 5px 0 0;
+      white-space: nowrap;
+
+      &.active {
+        background: #777;
+      }
+
+      &.has-update::after {
+        content: '';
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #ff5a4f;
+      }
+    }
+  }
+
+  .mb-search {
+    margin: 0 12px;
+    padding: 6px 8px;
+    border: none;
+    border-radius: 0 0 5px 5px;
+    background: #999;
+    color: #111;
+    font-size: 11pt;
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  .mb-body {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 10px 12px;
+  }
+
+  .mb-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .mb-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px;
+    border-radius: 6px;
+    background: #666;
+  }
+
+  .mb-thumb {
+    position: relative;
+    flex: 0 0 48px;
+    height: 64px;
+    border-radius: 4px;
+    background: #000;
+    overflow: hidden;
+
+    // 세로로 긴 SVG 가 칸을 늘리지 않도록 칸에 고정한다
+    img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  }
+
+  .mb-card-info {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .mb-card-title {
+    color: #fefefe;
+    font-weight: bold;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .mb-card-author,
+  .mb-card-stats {
+    font-size: 9pt;
+    color: #ddd;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mb-card-badge {
+    align-self: flex-start;
+    font-size: 8pt;
+    padding: 1px 6px;
+    border-radius: 8px;
+
+    &.mb-badge-update {
+      background: #ff5a4f;
+    }
+
+    &.mb-badge-gone {
+      background: #333;
+      color: #bbb;
+    }
+  }
+
+  .mb-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .mb-action {
+    flex: 0 0 auto;
+    min-width: 72px;
+
+    &.mb-action-install {
+      background: #2c8470;
+    }
+
+    &.mb-action-update {
+      background: #c4413a;
+    }
+
+    &.mb-action-remove {
+      background: transparent;
+      color: #ddd;
+      font-size: 9pt;
+    }
+  }
+
+  .mb-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 0;
+    color: #ddd;
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  .mb-more {
+    display: block;
+    margin: 10px auto 0;
+    min-width: 120px;
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  .mb-footer {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 8px 12px;
+    background: #444;
+    font-size: 10pt;
+
+    a {
+      color: #fefefe;
+    }
+  }
+}
+
+@media screen and (max-width: 750px) {
+  dialog.map-browser {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+
+    .mb-tabs .mb-tab {
+      padding: 5px 4px;
+      font-size: 9pt;
+    }
+  }
 }
