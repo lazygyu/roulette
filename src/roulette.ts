@@ -210,7 +210,7 @@ export class Roulette extends EventTarget {
     }
   }
 
-  /** 진행도 지도(순위 계산에 쓰는 남은 거리), 일방통행 선, 연출 구역을 맵 위에 그린다 (테스트 플레이에서 확인용) */
+  /** 진행도 지도(순위 계산에 쓰는 남은 거리), 일방통행 선, 연출 구역, 카메라 구역을 맵 위에 그린다 (테스트 플레이에서 확인용) */
   public setProgressDebug(on: boolean) {
     this._renderer.debugDraw = on
       ? (ctx) => {
@@ -219,6 +219,7 @@ export class Roulette extends EventTarget {
           if (this._progressImage?.map !== map) this._progressImage = { map, image: map.toCanvas() };
           map.drawDebug(ctx, this._progressImage.image);
           if (this._stage.zoomZones?.length) drawZoomZones(ctx, this._stage.zoomZones);
+          if (this._stage.cameraZones?.length) drawZoomZones(ctx, this._stage.cameraZones, '200, 60, 255');
         }
       : null;
   }

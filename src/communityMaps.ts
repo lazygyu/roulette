@@ -96,15 +96,16 @@ export function isPlayableStage(v: unknown): v is StageDef {
       return false;
     }
   }
-  if (v.zoomZones !== undefined) {
-    if (
-      !Array.isArray(v.zoomZones) ||
-      !v.zoomZones.every((z) => isObj(z) && isNum(z.x) && isNum(z.y) && isNum(z.w) && isNum(z.h) && z.w > 0 && z.h > 0)
-    ) {
-      return false;
-    }
-  }
+  if (v.zoomZones !== undefined && !isZoneList(v.zoomZones)) return false;
+  if (v.cameraZones !== undefined && !isZoneList(v.cameraZones)) return false;
   return true;
+}
+
+function isZoneList(v: unknown): boolean {
+  return (
+    Array.isArray(v) &&
+    v.every((z) => isObj(z) && isNum(z.x) && isNum(z.y) && isNum(z.w) && isNum(z.h) && z.w > 0 && z.h > 0)
+  );
 }
 
 function isPoint(v: unknown): boolean {

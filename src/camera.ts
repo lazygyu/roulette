@@ -1,5 +1,5 @@
 import { initialZoom, zoomThreshold } from './data/constants';
-import type { StageDef } from './data/maps';
+import type { CameraZone, StageDef } from './data/maps';
 import type { Marble } from './marble';
 import type { VectorLike } from './types/VectorLike';
 
@@ -7,6 +7,8 @@ import type { VectorLike } from './types/VectorLike';
 const FRAME_PADDING = 2;
 /** 경쟁 구슬을 같이 잡으려고 줌아웃할 수 있는 한계. 이보다 멀리 떨어지면 대상 구슬만 따라간다 */
 const MIN_FRAME_ZOOM = 0.6;
+/** 카메라 구역에 들어가거나 나올 때 화면이 넘어가는 데 걸리는 프레임 수 */
+const ZONE_BLEND_FRAMES = 60;
 
 export class Camera {
   private _position: VectorLike = { x: 0, y: 0 };
@@ -15,6 +17,10 @@ export class Camera {
   private _targetZoom: number = 1;
   private _locked = false;
   private _shouldFollowMarbles = false;
+  /** 카메라 구역 화면이 섞이는 정도 (0 ~ 1). 구역을 드나들 때 서서히 바뀐다 */
+  private _zoneWeight = 0;
+  /** 마지막으로 들어갔던 카메라 구역. 나온 뒤에도 _zoneWeight 가 0 이 될 때까지 쓴다 */
+  private _zone: CameraZone | null = null;
 
   get zoom() {
     return this._zoom;
@@ -69,6 +75,8 @@ export class Camera {
     this._zoom = z;
     this._targetZoom = z;
     this._shouldFollowMarbles = false;
+    this._zoneWeight = 0;
+    this._zone = null;
   }
 
   update({
@@ -116,15 +124,15 @@ export class Camera {
     if (marbles.length > 0) {
       const index = marbles[targetIndex] ? targetIndex : 0;
       const targetMarble = marbles[index];
-      let zoom: number;
-      if (needToZoom && zoomIntensity !== null) {
-        zoom = Math.max(1, zoomIntensity * 4);
-      } else if (needToZoom) {
-        const goalDist = Math.abs(stage.zoomY - this._position.y);
-        zoom = Math.max(1, (1 - goalDist / zoomThreshold) * 4);
-      } else {
-        zoom = 1;
+
+      /** 줌인 연출 강도 (0 ~ 1) */
+      let intensity = 0;
+      if (needToZoom) {
+        intensity = zoomIntensity ?? 1 - Math.abs(stage.zoomY - this._position.y) / zoomThreshold;
+        intensity = Math.min(1, Math.max(0, intensity));
       }
+      let zoom = Math.max(1, intensity * 4);
+      let position: VectorLike = targetMarble.position;
 
       // 커트라인을 두고 다투는 구슬(바로 뒤, 없으면 바로 앞) 을 같이 화면에 담는다
       const rival = marbles[index + 1] ?? marbles[index - 1];
@@ -135,12 +143,31 @@ export class Camera {
           )
         : 0;
       if (rival && fitZoom >= MIN_FRAME_ZOOM) {
-        this.setPosition({ x: (targetMarble.x + rival.x) / 2, y: (targetMarble.y + rival.y) / 2 });
-        this.zoom = Math.min(zoom, fitZoom);
-      } else {
-        this.setPosition(targetMarble.position);
-        this.zoom = zoom;
+        position = { x: (targetMarble.x + rival.x) / 2, y: (targetMarble.y + rival.y) / 2 };
+        zoom = Math.min(zoom, fitZoom);
       }
+
+      // 카메라 구역: 구역 전체를 보여 준다. 줌인 연출과 겹치면 연출 강도만큼 구슬 쪽 화면으로 넘어간다.
+      // 드나들 때는 ZONE_BLEND_FRAMES 에 걸쳐 서서히 넘어간다
+      const zone = stage.cameraZones?.find(
+        (z) => Math.abs(targetMarble.x - z.x) <= z.w / 2 && Math.abs(targetMarble.y - z.y) <= z.h / 2
+      );
+      if (zone) this._zone = zone;
+      const step = 1 / ZONE_BLEND_FRAMES;
+      this._zoneWeight = zone ? Math.min(1, this._zoneWeight + step) : Math.max(0, this._zoneWeight - step);
+      if (this._zone && this._zoneWeight > 0) {
+        const z = this._zone;
+        const zoneZoom = Math.min(viewSize.x / z.w, viewSize.y / z.h);
+        const w = this._zoneWeight;
+        const t = w * w * (3 - 2 * w) * (1 - intensity);
+        position = { x: position.x + (z.x - position.x) * t, y: position.y + (z.y - position.y) * t };
+        zoom = zoom + (zoneZoom - zoom) * t;
+      } else {
+        this._zone = null;
+      }
+
+      this.setPosition(position);
+      this.zoom = zoom;
     } else {
       this.zoom = 1;
     }

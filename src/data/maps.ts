@@ -17,10 +17,20 @@ export type StageDef = {
   progress?: ProgressHints;
   /** 연출 구역. 있으면 zoomY 대신 이 구역들로 줌인과 슬로모션을 건다 */
   zoomZones?: ZoomZone[];
+  /** 카메라 구역. 카메라가 주목하는 구슬이 구역 안에 있으면 구슬 대신 구역 전체를 화면에 담는다 (결승 줌인 중에는 쓰지 않는다) */
+  cameraZones?: CameraZone[];
 };
 
 /** 연출 구역 (x, y 는 가운데, w, h 는 전체 크기). 가운데로 갈수록 연출이 세진다 */
 export type ZoomZone = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
+/** 카메라 구역 (x, y 는 가운데, w, h 는 전체 크기) */
+export type CameraZone = {
   x: number;
   y: number;
   w: number;
@@ -927,6 +937,9 @@ export const stages: StageDef[] = [
     goalY: 91,
     zoomY: 92.5,
     adBoards: [{ x: 13.0, y: 75.5, w: 9.5, h: 2.375 }],
+    // 바닥에 빠졌다 양옆으로 올라오는 구슬을 따라가면 화면 아래 빈 곳만 보이니 항아리 전체를 보여 준다
+    cameraZones: [{ x: 13, y: 74, w: 24, h: 28 }],
+    zoomZones: [{ x: 13, y: 77, w: 8, h: 10 }],
     entities: [
       {
         type: 'static',
