@@ -3,6 +3,11 @@ import type { StageDef } from './data/maps';
 import type { Marble } from './marble';
 import type { VectorLike } from './types/VectorLike';
 
+/** 경쟁 구슬을 같이 잡을 때 화면 가장자리에 남기는 여유 (월드 단위) */
+const FRAME_PADDING = 2;
+/** 경쟁 구슬을 같이 잡으려고 줌아웃할 수 있는 한계. 이보다 멀리 떨어지면 대상 구슬만 따라간다 */
+const MIN_FRAME_ZOOM = 0.6;
+
 export class Camera {
   private _position: VectorLike = { x: 0, y: 0 };
   private _targetPosition: VectorLike = { x: 0, y: 0 };
@@ -72,6 +77,7 @@ export class Camera {
     needToZoom,
     zoomIntensity = null,
     targetIndex,
+    viewSize,
   }: {
     marbles: Marble[];
     stage: StageDef;
@@ -79,10 +85,12 @@ export class Camera {
     /** 연출 구역이 있는 맵의 연출 강도 (0 ~ 1). null 이면 zoomY 와의 거리로 줌을 정한다 */
     zoomIntensity?: number | null;
     targetIndex: number;
+    /** 줌 1 일 때 화면에 보이는 월드 크기 */
+    viewSize: VectorLike;
   }) {
     // set target position
     if (!this._locked) {
-      this._calcTargetPositionAndZoom(marbles, stage, needToZoom, targetIndex, zoomIntensity);
+      this._calcTargetPositionAndZoom(marbles, stage, needToZoom, targetIndex, zoomIntensity, viewSize);
     }
 
     // interpolate position
@@ -98,22 +106,40 @@ export class Camera {
     stage: StageDef,
     needToZoom: boolean,
     targetIndex: number,
-    zoomIntensity: number | null
+    zoomIntensity: number | null,
+    viewSize: VectorLike
   ) {
     if (!this._shouldFollowMarbles) {
       return;
     }
 
     if (marbles.length > 0) {
-      const targetMarble = marbles[targetIndex] ? marbles[targetIndex] : marbles[0];
-      this.setPosition(targetMarble.position);
+      const index = marbles[targetIndex] ? targetIndex : 0;
+      const targetMarble = marbles[index];
+      let zoom: number;
       if (needToZoom && zoomIntensity !== null) {
-        this.zoom = Math.max(1, zoomIntensity * 4);
+        zoom = Math.max(1, zoomIntensity * 4);
       } else if (needToZoom) {
         const goalDist = Math.abs(stage.zoomY - this._position.y);
-        this.zoom = Math.max(1, (1 - goalDist / zoomThreshold) * 4);
+        zoom = Math.max(1, (1 - goalDist / zoomThreshold) * 4);
       } else {
-        this.zoom = 1;
+        zoom = 1;
+      }
+
+      // 커트라인을 두고 다투는 구슬(바로 뒤, 없으면 바로 앞) 을 같이 화면에 담는다
+      const rival = marbles[index + 1] ?? marbles[index - 1];
+      const fitZoom = rival
+        ? Math.min(
+            viewSize.x / 2 / (Math.abs(rival.x - targetMarble.x) / 2 + FRAME_PADDING),
+            viewSize.y / 2 / (Math.abs(rival.y - targetMarble.y) / 2 + FRAME_PADDING)
+          )
+        : 0;
+      if (rival && fitZoom >= MIN_FRAME_ZOOM) {
+        this.setPosition({ x: (targetMarble.x + rival.x) / 2, y: (targetMarble.y + rival.y) / 2 });
+        this.zoom = Math.min(zoom, fitZoom);
+      } else {
+        this.setPosition(targetMarble.position);
+        this.zoom = zoom;
       }
     } else {
       this.zoom = 1;

@@ -162,6 +162,7 @@ export class Roulette extends EventTarget {
         needToZoom: this._zoomIntensity !== null ? this._zoomIntensity > 0 : this._goalDist < zoomThreshold,
         zoomIntensity: this._zoomIntensity,
         targetIndex: this._winners.length > 0 ? this._targetIndex : 0,
+        viewSize: { x: this._renderer.width / initialZoom, y: this._renderer.height / initialZoom },
       });
     }
 
