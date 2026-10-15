@@ -59,8 +59,10 @@ export class Roulette extends EventTarget {
 
   private _winnerRange: WinnerRange = { start: 0, end: 0 };
   private _goalDist: number = Infinity;
-  /** 연출 구역이 있는 맵에서 커트라인 구슬의 연출 강도 (0 ~ 1). 구역이 없으면 null 이고 zoomY 로 판단한다 */
+  /** 연출 구역이 있는 맵에서 커트라인을 다투는 두 구슬 중 센 쪽의 연출 강도 (0 ~ 1). 구역이 없으면 null 이고 zoomY 로 판단한다 */
   private _zoomIntensity: number | null = null;
+  /** 연출이 _targetIndex 구슬이 아니라 _rivalIndex 구슬 때문에 걸렸는지 */
+  private _focusOnRival = false;
   /** 구슬별 평활화한 순위 값 (결승까지 남은 거리) */
   private _rankKeys = new Map<Marble, number>();
   /** 진행도 지도 그림 (setProgressDebug 로 켰을 때 맵마다 한 번 만든다) */
@@ -156,12 +158,14 @@ export class Roulette extends EventTarget {
     }
 
     if (this._stage) {
+      const cameraTargetIndex = this._winners.length > 0 ? this._targetIndex : 0;
       this._camera.update({
         marbles: this._marbles,
         stage: this._stage,
-        needToZoom: this._zoomIntensity !== null ? this._zoomIntensity > 0 : this._goalDist < zoomThreshold,
-        zoomIntensity: this._zoomIntensity,
-        targetIndex: this._winners.length > 0 ? this._targetIndex : 0,
+        intensity: this._zoomIntensity ?? Math.max(0, 1 - this._goalDist / zoomThreshold),
+        targetIndex: cameraTargetIndex,
+        // 첫 골인 전에는 카메라가 커트라인 대신 선두를 따라가므로 커트라인 쪽 판단을 넘기지 않는다
+        focusOnRival: cameraTargetIndex === this._targetIndex && this._focusOnRival,
         viewSize: { x: this._renderer.width / initialZoom, y: this._renderer.height / initialZoom },
       });
     }
@@ -247,15 +251,18 @@ export class Roulette extends EventTarget {
       }
     }
 
-    const targetIndex = this._targetIndex;
-    const topY = this._marbles[targetIndex] ? this._marbles[targetIndex].y : 0;
-    this._goalDist = Math.abs(this._stage.zoomY - topY);
-    const target = this._marbles[targetIndex];
-    this._zoomIntensity = this._stage.zoomZones?.length
-      ? target
-        ? zoomZoneIntensity(this._stage.zoomZones, target.x, target.y)
-        : 0
-      : null;
+    // 연출(줌인, 슬로모션) 은 커트라인을 다투는 두 구슬 중 연출이 더 센 쪽을 기준으로 건다.
+    // 예: 꼴찌를 뽑을 때는 바로 앞 구슬이 골인하는 순간 꼴찌가 정해진다
+    const stage = this._stage;
+    const zones = stage.zoomZones?.length ? stage.zoomZones : null;
+    const intensityOf = (m: Marble) =>
+      zones ? zoomZoneIntensity(zones, m.x, m.y) : Math.max(0, 1 - Math.abs(stage.zoomY - m.y) / zoomThreshold);
+    const target = this._marbles[this._targetIndex];
+    const rival = this._marbles[this._rivalIndex];
+    this._focusOnRival = !!target && !!rival && intensityOf(rival) > intensityOf(target);
+    const focus = this._focusOnRival ? rival : target;
+    this._goalDist = Math.abs(stage.zoomY - (focus ? focus.y : 0));
+    this._zoomIntensity = zones ? (focus ? intensityOf(focus) : 0) : null;
     this._timeScale = this._calcTimeScale();
 
     this._marbles = this._marbles.filter((marble) => marble.y <= this._stage?.goalY);
@@ -266,6 +273,12 @@ export class Roulette extends EventTarget {
   /** 카메라와 슬로우모션이 주목할 구슬 = 당첨 커트라인에 걸쳐있는 구슬 */
   private get _targetIndex() {
     return this._winnerRange.end - this._winners.length;
+  }
+
+  /** 커트라인을 두고 _targetIndex 구슬과 다투는 구슬 = 바로 뒤, 없으면 바로 앞 구슬 */
+  private get _rivalIndex() {
+    const i = this._targetIndex;
+    return this._marbles[i + 1] ? i + 1 : i - 1;
   }
 
   private _isWinningRank(rank: number) {
@@ -314,7 +327,8 @@ export class Roulette extends EventTarget {
     }
     if (this._winners.length < this._winnerRange.end + 1 && this._goalDist < zoomThreshold) {
       if (
-        this._marbles[targetIndex].y > this._stage.zoomY - zoomThreshold * 1.2 &&
+        this._marbles[this._focusOnRival ? this._rivalIndex : targetIndex].y >
+          this._stage.zoomY - zoomThreshold * 1.2 &&
         (this._marbles[targetIndex - 1] || this._marbles[targetIndex + 1])
       ) {
         return Math.max(0.2, this._goalDist / zoomThreshold);
@@ -614,6 +628,7 @@ export class Roulette extends EventTarget {
     this._clearMap();
     this._loadMap();
     this._goalDist = Infinity;
+    this._focusOnRival = false;
   }
 
   public getCount() {

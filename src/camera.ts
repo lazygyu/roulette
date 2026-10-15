@@ -1,4 +1,4 @@
-import { initialZoom, zoomThreshold } from './data/constants';
+import { initialZoom } from './data/constants';
 import type { CameraZone, StageDef } from './data/maps';
 import type { Marble } from './marble';
 import type { VectorLike } from './types/VectorLike';
@@ -82,23 +82,24 @@ export class Camera {
   update({
     marbles,
     stage,
-    needToZoom,
-    zoomIntensity = null,
+    intensity,
     targetIndex,
+    focusOnRival,
     viewSize,
   }: {
     marbles: Marble[];
     stage: StageDef;
-    needToZoom: boolean;
-    /** 연출 구역이 있는 맵의 연출 강도 (0 ~ 1). null 이면 zoomY 와의 거리로 줌을 정한다 */
-    zoomIntensity?: number | null;
+    /** 줌인 연출 강도 (0 ~ 1). 0 이면 줌인하지 않는다 */
+    intensity: number;
     targetIndex: number;
+    /** 연출이 대상 구슬이 아니라 다투는 구슬 때문에 걸렸으면 true. 둘이 한 화면에 안 들어가면 그 구슬을 놓치지 않는다 */
+    focusOnRival: boolean;
     /** 줌 1 일 때 화면에 보이는 월드 크기 */
     viewSize: VectorLike;
   }) {
     // set target position
     if (!this._locked) {
-      this._calcTargetPositionAndZoom(marbles, stage, needToZoom, targetIndex, zoomIntensity, viewSize);
+      this._calcTargetPositionAndZoom(marbles, stage, intensity, targetIndex, focusOnRival, viewSize);
     }
 
     // interpolate position
@@ -112,9 +113,9 @@ export class Camera {
   private _calcTargetPositionAndZoom(
     marbles: Marble[],
     stage: StageDef,
-    needToZoom: boolean,
+    intensity: number,
     targetIndex: number,
-    zoomIntensity: number | null,
+    focusOnRival: boolean,
     viewSize: VectorLike
   ) {
     if (!this._shouldFollowMarbles) {
@@ -125,15 +126,6 @@ export class Camera {
       const index = marbles[targetIndex] ? targetIndex : 0;
       const targetMarble = marbles[index];
 
-      /** 줌인 연출 강도 (0 ~ 1) */
-      let intensity = 0;
-      if (needToZoom) {
-        intensity = zoomIntensity ?? 1 - Math.abs(stage.zoomY - this._position.y) / zoomThreshold;
-        intensity = Math.min(1, Math.max(0, intensity));
-      }
-      let zoom = Math.max(1, intensity * 4);
-      let position: VectorLike = targetMarble.position;
-
       // 커트라인을 두고 다투는 구슬(바로 뒤, 없으면 바로 앞) 을 같이 화면에 담는다
       const rival = marbles[index + 1] ?? marbles[index - 1];
       const fitZoom = rival
@@ -142,9 +134,23 @@ export class Camera {
             viewSize.y / 2 / (Math.abs(rival.y - targetMarble.y) / 2 + FRAME_PADDING)
           )
         : 0;
-      if (rival && fitZoom >= MIN_FRAME_ZOOM) {
-        position = { x: (targetMarble.x + rival.x) / 2, y: (targetMarble.y + rival.y) / 2 };
-        zoom = Math.min(zoom, fitZoom);
+      const framed = rival !== undefined && fitZoom >= MIN_FRAME_ZOOM;
+      let position: VectorLike = framed
+        ? { x: (targetMarble.x + rival.x) / 2, y: (targetMarble.y + rival.y) / 2 }
+        : targetMarble.position;
+      // 연출이 없으면 둘이 들어오게 줌아웃만 하고, 연출이 세지면 둘이 다 안 들어오더라도 줌인한다
+      let zoom = Math.max(framed ? Math.min(1, fitZoom) : 1, intensity * 4);
+
+      // 줌인하느라 둘이 한 화면에 안 들어가면 연출이 걸린 구슬이 화면 안에 남도록 그쪽으로 당긴다.
+      // 연출 강도 0.25 까지 서서히 당겨 연출이 시작될 때 화면이 튀지 않게 한다
+      const focus = focusOnRival && rival ? rival : targetMarble;
+      if (intensity > 0) {
+        const hx = Math.max(0, viewSize.x / 2 / zoom - FRAME_PADDING);
+        const hy = Math.max(0, viewSize.y / 2 / zoom - FRAME_PADDING);
+        const cx = Math.min(focus.x + hx, Math.max(focus.x - hx, position.x));
+        const cy = Math.min(focus.y + hy, Math.max(focus.y - hy, position.y));
+        const pull = Math.min(1, intensity * 4);
+        position = { x: position.x + (cx - position.x) * pull, y: position.y + (cy - position.y) * pull };
       }
 
       // 카메라 구역: 구역 전체를 보여 준다. 줌인 연출과 겹치면 연출 강도만큼 구슬 쪽 화면으로 넘어간다.
