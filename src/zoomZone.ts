@@ -16,13 +16,13 @@ export function zoomZoneIntensity(zones: ZoomZone[], x: number, y: number): numb
   return best;
 }
 
-/** 월드 좌표에 연출 구역을 그린다 (디버그) */
-export function drawZoomZones(ctx: CanvasRenderingContext2D, zones: ZoomZone[]) {
+/** 월드 좌표에 연출 구역(카메라 구역) 을 그린다 (디버그). rgb = 'r, g, b' */
+export function drawZoomZones(ctx: CanvasRenderingContext2D, zones: ZoomZone[], rgb = '244, 114, 182') {
   ctx.save();
   ctx.lineWidth = 0.08;
   for (const z of zones) {
-    ctx.fillStyle = 'rgba(244, 114, 182, 0.15)';
-    ctx.strokeStyle = 'rgba(244, 114, 182, 0.9)';
+    ctx.fillStyle = `rgba(${rgb}, 0.15)`;
+    ctx.strokeStyle = `rgba(${rgb}, 0.9)`;
     ctx.fillRect(z.x - z.w / 2, z.y - z.h / 2, z.w, z.h);
     ctx.strokeRect(z.x - z.w / 2, z.y - z.h / 2, z.w, z.h);
   }
