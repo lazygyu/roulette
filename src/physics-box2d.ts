@@ -177,6 +177,15 @@ export class Box2dPhysics implements IPhysics {
     }
   }
 
+  // contact 목록에는 AABB만 겹친 contact도 섞여 있고, 새 contact가 맨 앞에 붙으므로 전체를 순회해야 한다.
+  private isTouchingAny(body: Box2D.b2Body): boolean {
+    const { getPointer } = this.Box2D;
+    for (let edge = body.GetContactList(); getPointer(edge) !== 0; edge = edge.next) {
+      if (edge.contact.IsTouching()) return true;
+    }
+    return false;
+  }
+
   step(deltaSeconds: number): void {
     this.deleteCandidates.forEach((body) => {
       this.world.DestroyBody(body);
@@ -188,8 +197,7 @@ export class Box2dPhysics implements IPhysics {
     for (let i = this.entities.length - 1; i >= 0; i--) {
       const entity = this.entities[i];
       if (entity.life > 0) {
-        const edge = entity.body.GetContactList();
-        if (edge.contact?.IsTouching()) {
+        if (this.isTouchingAny(entity.body)) {
           this.deleteCandidates.push(entity.body);
           this.entities.splice(i, 1);
         }
