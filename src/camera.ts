@@ -3,8 +3,13 @@ import type { CameraZone, StageDef } from './data/maps';
 import type { Marble } from './marble';
 import type { VectorLike } from './types/VectorLike';
 
-/** 경쟁 구슬을 같이 잡을 때 화면 가장자리에 남기는 여유 (월드 단위) */
-const FRAME_PADDING = 2;
+/**
+ * 경쟁 구슬을 같이 잡을 때 화면 가장자리에 남기는 여유 (화면 크기에 대한 한쪽 비율).
+ * 줌과 상관없이 화면에서 같은 크기라 가장자리 UI(미니맵, 순위표 등) 에 구슬이 가리지 않는다
+ */
+const FRAME_PADDING_RATIO = 0.15;
+/** 구슬 크기만큼 더 남기는 여유 (월드 단위) */
+const FRAME_MARBLE_MARGIN = 0.5;
 /** 경쟁 구슬을 같이 잡으려고 줌아웃할 수 있는 한계 */
 const MIN_FRAME_ZOOM = 0.6;
 /**
@@ -158,10 +163,11 @@ export class Camera {
       const { target: targetMarble, rival } = this._pickPair(current, marbles);
       // focusOnRival 은 지금 순위의 짝 기준이라 카메라가 아직 옛 짝을 담고 있으면 쓰지 않는다
       const isCurrent = targetMarble === current.target && rival === current.rival;
+      // 두 구슬이 화면 가장자리 여유 안쪽에 들어오는 배율
       const fitZoom = rival
         ? Math.min(
-            viewSize.x / 2 / (Math.abs(rival.x - targetMarble.x) / 2 + FRAME_PADDING),
-            viewSize.y / 2 / (Math.abs(rival.y - targetMarble.y) / 2 + FRAME_PADDING)
+            (viewSize.x * (0.5 - FRAME_PADDING_RATIO)) / (Math.abs(rival.x - targetMarble.x) / 2 + FRAME_MARBLE_MARGIN),
+            (viewSize.y * (0.5 - FRAME_PADDING_RATIO)) / (Math.abs(rival.y - targetMarble.y) / 2 + FRAME_MARBLE_MARGIN)
           )
         : 0;
       // 연출이 경쟁 구슬 때문에 걸리면 화면의 주인공을 경쟁 구슬로 서서히 바꾼다.
@@ -276,8 +282,8 @@ export class Camera {
     // 줌인하느라 둘이 한 화면에 안 들어가면 subject 가 화면 안에 남도록 그쪽으로 당긴다.
     // 연출 강도 0.25 까지 서서히 당겨 연출이 시작될 때 화면이 튀지 않게 한다
     if (intensity > 0) {
-      const hx = Math.max(0, viewSize.x / 2 / zoom - FRAME_PADDING);
-      const hy = Math.max(0, viewSize.y / 2 / zoom - FRAME_PADDING);
+      const hx = Math.max(0, (viewSize.x * (0.5 - FRAME_PADDING_RATIO)) / zoom - FRAME_MARBLE_MARGIN);
+      const hy = Math.max(0, (viewSize.y * (0.5 - FRAME_PADDING_RATIO)) / zoom - FRAME_MARBLE_MARGIN);
       const cx = Math.min(subject.x + hx, Math.max(subject.x - hx, position.x));
       const cy = Math.min(subject.y + hy, Math.max(subject.y - hy, position.y));
       const pull = Math.min(1, intensity * 4);
