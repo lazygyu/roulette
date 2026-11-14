@@ -24,7 +24,15 @@ window.addEventListener('load', () => {
 const roulette = new Roulette();
 
 const isLocalhost = ['localhost', '127.0.0.1'].includes(location.hostname);
-const adService = new AdService(isLocalhost ? 'http://localhost:3000' : 'https://marblerouletteshop.com');
+// 개발 중 `?mockAds` 로 열면 가짜 광고 서버(scripts/mock-ads.mjs)를 쓴다. 값으로 포트를 줄 수 있다 (?mockAds=3100)
+const mockAdsParam = isLocalhost ? new URLSearchParams(location.search).get('mockAds') : null;
+const adApiBase =
+  mockAdsParam !== null
+    ? `http://localhost:${mockAdsParam || '3100'}`
+    : isLocalhost
+      ? 'http://localhost:3000'
+      : 'https://marblerouletteshop.com';
+const adService = new AdService(adApiBase);
 
 // 소재를 시작 버튼 누른 뒤에 받으면 프리롤이 로고 없이 떴다가 늦게 채워진다. 미리 받아둔다
 const preloadNextAd = () => roulette.preloadAdImages(adService.nextUrls());

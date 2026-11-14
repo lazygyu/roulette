@@ -2,10 +2,6 @@
   --copyright-color: white;
 }
 
-:root.light {
-  --copyright-color: black;
-}
-
 * {
   box-sizing: border-box;
 }
@@ -91,12 +87,8 @@ div.copyright a {
     mask-image: url('images/bomb.svg');
   }
 
-  &.sun {
-    mask-image: url('images/sun.svg');
-  }
-
-  &.moon {
-    mask-image: url('images/moon.svg');
+  &.display {
+    mask-image: url('images/display.svg');
   }
 }
 
@@ -165,14 +157,6 @@ div.copyright a {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-  }
-
-  div.theme {
-    flex-grow: 1;
-    display: flex;
-    align-items: center;
-    color: white;
-    justify-content: flex-end;
   }
 
   div.left {
@@ -548,10 +532,6 @@ div.copyright a {
       &.row-range.active {
         display: flex;
         padding-left: 0;
-      }
-
-      &.row-theme {
-        display: none;
       }
 
       .icon {

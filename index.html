@@ -233,14 +233,21 @@
       window.roulette.setAutoRecording(window.options.autoRecording);
     });
 
+    const resolutionButtons = document.querySelectorAll('.btn-resolution');
+    const syncResolutionButtons = () => {
+      const current = window.roulette.getResolution();
+      resolutionButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.resolution === current));
+    };
+    resolutionButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        window.roulette.setResolution(btn.dataset.resolution);
+        syncResolutionButtons();
+      });
+    });
+    syncResolutionButtons();
+
     document.querySelector('#chkSkill').addEventListener('change', (e) => {
       window.options.useSkills = e.target.matches(':checked');
-    });
-
-    document.querySelector('#chkDarkMode').addEventListener('change', (e) => {
-      window.options.darkMode = e.target.matches(':checked');
-      window.roulette.setTheme(window.options.darkMode ? 'dark' : 'light');
-      document.documentElement.classList.toggle('light', !window.options.darkMode);
     });
 
     document.querySelector('#in_winningRank').addEventListener('change', () => selectWinnerType('custom'));
@@ -289,7 +296,7 @@
     // };
     // setTimeout(checkDonateButtonLoaded, 100);
 
-    const currentNotice = 8;
+    const currentNotice = 9;
     const noticeKey = 'lastViewedNotification';
 
     const closeNotice = () => {
@@ -392,11 +399,15 @@
           <input type="number" id="in_rangeEnd" value="3" min="1" />
         </div>
       </div>
-      <div class="row row-theme">
-        <div class='theme'>
-          <i class='icon sun'></i>
-          <input type='checkbox' id='chkDarkMode' checked />
-          <i class='icon moon'></i>
+      <div class="row">
+        <label title="Sharper rendering. Ultra may be heavy on 4K screens, especially while recording." data-trans="title">
+          <i class="icon display"></i>
+          <span data-trans>Resolution</span>
+        </label>
+        <div class="btn-group resolution-group">
+          <button class="btn-resolution" data-resolution="default" data-trans>Default</button>
+          <button class="btn-resolution" data-resolution="high">High</button>
+          <button class="btn-resolution" data-resolution="ultra">Ultra</button>
         </div>
       </div>
     </div>
@@ -427,13 +438,15 @@
 <div id="notice">
   <h2>Notice</h2>
   <div class="notice-body">
-    <h3>맵 공유마당이 열렸습니다</h3>
+    <h3>고해상도 화면을 지원합니다</h3>
     <p>
-      직접 만든 맵을 올리고, 다른 사람이 만든 맵을 받아 마블 룰렛에서 플레이할 수 있습니다.<br />
-      맵은 웹 맵 에디터로 누구나 만들 수 있고, 심사를 거쳐 공개됩니다.
-      받은 맵은 맵 목록의 "다운로드한 맵"에서 고르면 됩니다.<br />
-      <a href='https://marblerouletteshop.com/maps' target='_blank'>맵 공유마당 둘러보기</a> ·
-      <a href='https://marblerouletteshop.com/map-editor' target='_blank'>맵 만들기</a>
+      설정의 "해상도"에서 화면을 더 선명하게 그릴 수 있습니다.<br />
+      <b>기본</b>은 지금까지와 같고, <b>High</b>는 최대 1920 해상도, <b>Ultra</b>는 화면 해상도 그대로 그립니다.
+      해상도를 바꿔도 맵 구도와 화면 배치는 그대로입니다.
+    </p>
+    <p>
+      해상도를 높이면 <b>녹화 파일의 용량이 커질 수 있습니다.</b>
+      4K 같은 고해상도 화면에서 Ultra 로 녹화하면 특히 커지니, 녹화 파일을 공유하실 때는 참고해 주세요.
     </p>
   </div>
   <div class="notice-action">
