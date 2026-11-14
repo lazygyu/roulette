@@ -87,7 +87,11 @@ export class Minimap implements UIObject {
       } else if (shape.type === 'circle') {
         xs = [x - shape.radius, x + shape.radius];
       } else {
-        const reach = Math.hypot(shape.width, shape.height);
+        // 회전하는 상자는 모서리까지의 거리만큼 휩쓸고, 고정된 상자는 놓인 모양 그대로의 가로 폭만 차지한다
+        const isRotating = entity.type === 'kinematic' && entity.props.angularVelocity !== 0;
+        const reach = isRotating
+          ? Math.hypot(shape.width, shape.height)
+          : Math.abs(shape.width * Math.cos(shape.rotation)) + Math.abs(shape.height * Math.sin(shape.rotation));
         xs = [x - reach, x + reach];
       }
       for (const v of xs) {
