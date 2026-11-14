@@ -91,6 +91,10 @@ div.copyright a {
     mask-image: url('images/bomb.svg');
   }
 
+  &.display {
+    mask-image: url('images/display.svg');
+  }
+
   &.sun {
     mask-image: url('images/sun.svg');
   }

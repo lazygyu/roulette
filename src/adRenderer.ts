@@ -64,7 +64,9 @@ export function drawAdOverlay(
   w: number,
   h: number,
   state: AdOverlayState,
-  images: AdImages
+  images: AdImages,
+  /** shadowBlur 는 변환 행렬을 따르지 않으므로 해상도에 맞춰 따로 곱한다 */
+  blurScale = 1
 ): boolean {
   const now = performance.now();
   let alpha = Math.min(1, (now - state.since) / FADE_IN_MS);
@@ -83,7 +85,7 @@ export function drawAdOverlay(
   ctx.textBaseline = 'middle';
 
   if (state.mode === 'preroll') {
-    drawPreroll(ctx, w, h, state.ad, images);
+    drawPreroll(ctx, w, h, state.ad, images, blurScale);
   } else {
     const rects = drawResult(ctx, w, h, state.ad, images, now - state.since);
     state.clickRect = rects?.click;
@@ -94,7 +96,14 @@ export function drawAdOverlay(
   return true;
 }
 
-function drawPreroll(ctx: CanvasRenderingContext2D, w: number, h: number, ad: RoundAd, images: AdImages): void {
+function drawPreroll(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  ad: RoundAd,
+  images: AdImages,
+  blurScale: number
+): void {
   ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
   ctx.fillRect(0, 0, w, h);
 
@@ -115,11 +124,11 @@ function drawPreroll(ctx: CanvasRenderingContext2D, w: number, h: number, ad: Ro
   ctx.font = `700 ${provideSize}px ${SERIF}`;
   ctx.fillStyle = '#ffffff';
   ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
-  ctx.shadowBlur = provideSize * 0.18;
+  ctx.shadowBlur = provideSize * 0.18 * blurScale;
   drawSpaced(ctx, '제공', cx, y + provideSize / 2, provideSize * 0.35);
   y += provideSize + gap;
 
-  ctx.shadowBlur = sponsorSize * 0.3;
+  ctx.shadowBlur = sponsorSize * 0.3 * blurScale;
   ctx.font = `600 ${sponsorSize}px ${SANS}`;
   ctx.fillText(ad.advertiser, cx, y + sponsorSize / 2);
   y += sponsorSize + gap;

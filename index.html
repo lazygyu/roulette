@@ -233,6 +233,19 @@
       window.roulette.setAutoRecording(window.options.autoRecording);
     });
 
+    const resolutionButtons = document.querySelectorAll('.btn-resolution');
+    const syncResolutionButtons = () => {
+      const current = window.roulette.getResolution();
+      resolutionButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.resolution === current));
+    };
+    resolutionButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        window.roulette.setResolution(btn.dataset.resolution);
+        syncResolutionButtons();
+      });
+    });
+    syncResolutionButtons();
+
     document.querySelector('#chkSkill').addEventListener('change', (e) => {
       window.options.useSkills = e.target.matches(':checked');
     });
@@ -390,6 +403,17 @@
           <input type="number" id="in_rangeStart" value="1" min="1" />
           <span class="range-sep">~</span>
           <input type="number" id="in_rangeEnd" value="3" min="1" />
+        </div>
+      </div>
+      <div class="row">
+        <label title="Sharper rendering. Ultra may be heavy on 4K screens, especially while recording." data-trans="title">
+          <i class="icon display"></i>
+          <span data-trans>Resolution</span>
+        </label>
+        <div class="btn-group resolution-group">
+          <button class="btn-resolution" data-resolution="default" data-trans>Default</button>
+          <button class="btn-resolution" data-resolution="high">High</button>
+          <button class="btn-resolution" data-resolution="ultra">Ultra</button>
         </div>
       </div>
       <div class="row row-theme">

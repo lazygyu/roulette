@@ -6,12 +6,12 @@ import type { GameObject } from './gameObject';
 import type { IPhysics } from './IPhysics';
 import { Marble } from './marble';
 import { Minimap } from './minimap';
-import options, { type WinnerRange } from './options';
+import options, { isRenderResolution, saveResolution, type WinnerRange } from './options';
 import { ParticleManager } from './particleManager';
 import { Box2dPhysics } from './physics-box2d';
 import { ProgressMap } from './progressMap';
 import { RankRenderer } from './rankRenderer';
-import { type AdHit, RouletteRenderer } from './rouletteRenderer';
+import { type AdHit, type RenderResolution, RouletteRenderer } from './rouletteRenderer';
 import { SkillEffect } from './skillEffect';
 import type { RoundAd } from './types/Ad.type';
 import type { ColorTheme } from './types/ColorTheme';
@@ -101,6 +101,7 @@ export class Roulette extends EventTarget {
   constructor() {
     super();
     this._renderer = this.createRenderer();
+    this._renderer.resolution = options.resolution;
     this._renderer.init().then(() => {
       this._init().then(() => {
         this._isReady = true;
@@ -548,6 +549,18 @@ export class Roulette extends EventTarget {
   /** 실제 구슬 수에 맞춰 잘린 범위 (0-based, 양끝 포함) */
   public getWinnerRange(): WinnerRange {
     return { ...this._winnerRange };
+  }
+
+  /** 렌더링 해상도를 바꾸고 다음 방문을 위해 저장한다. 구도·UI 위치는 그대로다 */
+  public setResolution(value: RenderResolution) {
+    if (!isRenderResolution(value)) return;
+    options.resolution = value;
+    saveResolution(value);
+    this._renderer.resolution = value;
+  }
+
+  public getResolution(): RenderResolution {
+    return this._renderer.resolution;
   }
 
   public setAutoRecording(value: boolean) {

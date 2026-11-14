@@ -58,6 +58,10 @@ export const Translations = {
     Downloads: 'Downloads',
     'View on Map Share': 'View on Map Share',
     'Make a map': 'Make a map',
+    Resolution: 'Resolution',
+    Default: 'Default',
+    'Sharper rendering. Ultra may be heavy on 4K screens, especially while recording.':
+      'Sharper rendering. Ultra may be heavy on 4K screens, especially while recording.',
   },
   ko: {
     'Enter names below': '이름들을 입력하세요',
@@ -118,6 +122,10 @@ export const Translations = {
     Downloads: '다운로드',
     'View on Map Share': '공유마당에서 보기',
     'Make a map': '맵 만들기',
+    Resolution: '해상도',
+    Default: '기본',
+    'Sharper rendering. Ultra may be heavy on 4K screens, especially while recording.':
+      '화면을 더 선명하게 그립니다. 4K 화면에서 Ultra 는 특히 녹화할 때 무거울 수 있습니다.',
   },
 } as const;
 

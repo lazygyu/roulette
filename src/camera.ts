@@ -301,12 +301,13 @@ export class Camera {
     return current + d / delta;
   }
 
-  renderScene(ctx: CanvasRenderingContext2D, callback: (ctx: CanvasRenderingContext2D) => void) {
+  /** view = 논리 좌표계 화면 크기. 고해상도에서는 캔버스 픽셀 크기와 다르므로 ctx.canvas 를 쓰지 않는다 */
+  renderScene(ctx: CanvasRenderingContext2D, view: VectorLike, callback: (ctx: CanvasRenderingContext2D) => void) {
     const zoomFactor = initialZoom * 2 * this._zoom;
     ctx.save();
     ctx.translate(-this.x * this._zoom, -this.y * this._zoom);
     ctx.scale(this.zoom, this.zoom);
-    ctx.translate(ctx.canvas.width / zoomFactor, ctx.canvas.height / zoomFactor);
+    ctx.translate(view.x / zoomFactor, view.y / zoomFactor);
     callback(ctx);
     ctx.restore();
   }
