@@ -250,12 +250,6 @@
       window.options.useSkills = e.target.matches(':checked');
     });
 
-    document.querySelector('#chkDarkMode').addEventListener('change', (e) => {
-      window.options.darkMode = e.target.matches(':checked');
-      window.roulette.setTheme(window.options.darkMode ? 'dark' : 'light');
-      document.documentElement.classList.toggle('light', !window.options.darkMode);
-    });
-
     document.querySelector('#in_winningRank').addEventListener('change', () => selectWinnerType('custom'));
     document.querySelector('.btn-last-winner').addEventListener('click', () => selectWinnerType('last'));
     document.querySelector('.btn-first-winner').addEventListener('click', () => selectWinnerType('first'));
@@ -414,13 +408,6 @@
           <button class="btn-resolution" data-resolution="default" data-trans>Default</button>
           <button class="btn-resolution" data-resolution="high">High</button>
           <button class="btn-resolution" data-resolution="ultra">Ultra</button>
-        </div>
-      </div>
-      <div class="row row-theme">
-        <div class='theme'>
-          <i class='icon sun'></i>
-          <input type='checkbox' id='chkDarkMode' checked />
-          <i class='icon moon'></i>
         </div>
       </div>
     </div>
