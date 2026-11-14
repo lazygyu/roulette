@@ -11,3 +11,4 @@ src/preview.ts
 custom.html
 preview.html
 scripts/build-custom.sh
+.mock-ads
